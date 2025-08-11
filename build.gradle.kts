@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "2.2.0"
     kotlin("plugin.serialization") version "2.2.0"
-    id("io.ktor.plugin") version "3.2.2"
-    id("org.openapi.generator") version "7.9.0"
+    id("io.ktor.plugin") version "3.2.3"
+    id("org.openapi.generator") version "7.14.0"
     application
 }
 
@@ -23,36 +23,42 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-server-status-pages-jvm")
-    
+
     // Ktor Client (for NVDB API calls)
     implementation("io.ktor:ktor-client-core")
     implementation("io.ktor:ktor-client-cio")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-client-logging")
+
+    // JSON processing for generated Java client (Latest Jackson versions)
+    implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
     
-    // OkHttp for generated client
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // OpenAPI Generator dependencies
+    implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     
+    // Jakarta EE annotations (modern standard)
+    implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
+
     // Database
-    implementation("org.jetbrains.exposed:exposed-core:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:0.44.1")
+    implementation("org.jetbrains.exposed:exposed-core:1.0.0-beta-5")
+    implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0-beta-5")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:1.0.0-beta-5")
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("com.h2database:h2:2.3.232")
     implementation("com.zaxxer:HikariCP:6.0.0")
-    
+
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-    
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
     // Logging
-    implementation("ch.qos.logback:logback-classic:1.5.6")
-    
+    implementation("ch.qos.logback:logback-classic:1.5.18")
+
     // OpenLR
     implementation("org.locationtech.jts:jts-core:1.20.0")
-    
+
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")
@@ -69,6 +75,7 @@ tasks.withType<KotlinCompile> {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.time.ExperimentalTime")
     }
 }
 
@@ -77,27 +84,34 @@ tasks.withType<Test> {
 }
 
 openApiGenerate {
-    generatorName.set("kotlin")
+    generatorName.set("java")
     inputSpec.set("$projectDir/nvdb-api.json")
     outputDir.set("${layout.buildDirectory.get()}/generated")
     packageName.set("no.vegvesen.nvdb.client")
-    configOptions.set(mapOf(
-        "dateLibrary" to "kotlinx-datetime",
-        "enumPropertyNaming" to "UPPERCASE",
-        "serializationLibrary" to "kotlinx_serialization"
-    ))
+    configOptions.set(
+        mapOf(
+            "library" to "native",
+            "useJakartaEe" to "true",
+            "hideGenerationTimestamp" to "true"
+        )
+    )
 }
 
-// Temporarily disabled until API client issues are resolved
-// sourceSets {
-//     main {
-//         kotlin {
-//             srcDir("${layout.buildDirectory.get()}/generated/src/main/kotlin")
-//         }
-//     }
-// }
+sourceSets {
+    main {
+        kotlin {
+            srcDir("${layout.buildDirectory.get()}/generated/src/main/kotlin")
+        }
+        java {
+            srcDir("${layout.buildDirectory.get()}/generated/src/main/java")
+        }
+    }
+}
 
-// Temporarily disabled
-// tasks.compileKotlin {
-//     dependsOn(tasks.openApiGenerate)
-// }
+tasks.compileKotlin {
+    dependsOn(tasks.openApiGenerate)
+}
+
+tasks.compileJava {
+    dependsOn(tasks.openApiGenerate)
+}

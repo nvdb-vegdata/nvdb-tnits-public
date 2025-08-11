@@ -1,14 +1,13 @@
 package no.vegvesen.nvdb.service
 
-import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
-import no.vegvesen.nvdb.database.SpeedLimit
-import no.vegvesen.nvdb.database.SpeedLimitEntity
 import no.vegvesen.nvdb.database.SpeedLimitTable
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Serializable
 data class TnItsSpeedLimit(
@@ -29,53 +28,56 @@ data class TnItsSnapshot(
 )
 
 class TnItsService {
-    
+
     fun generateFullSnapshot(): TnItsSnapshot {
         val speedLimits = transaction {
             SpeedLimitTable.selectAll().map { row: ResultRow ->
                 TnItsSpeedLimit(
                     id = "NVDB_${row[SpeedLimitTable.nvdbId]}",
                     speedLimit = row[SpeedLimitTable.speedLimit],
-                    locationReference = row[SpeedLimitTable.openLrReference] ?: generateOpenLrReference(row[SpeedLimitTable.geometry]),
+                    locationReference = row[SpeedLimitTable.openLrReference]
+                        ?: generateOpenLrReference(row[SpeedLimitTable.geometry]),
                     validFrom = row[SpeedLimitTable.validFrom]?.toString(),
                     validTo = row[SpeedLimitTable.validTo]?.toString(),
                     lastUpdated = row[SpeedLimitTable.modifiedAt].toString()
                 )
             }
         }
-        
+
         return TnItsSnapshot(
-            timestamp = kotlinx.datetime.Clock.System.now().toString(),
+            timestamp = Clock.System.now().toString(),
             type = "FULL",
             baseDate = null,
             speedLimits = speedLimits
         )
     }
-    
-    fun generateIncrementalSnapshot(since: LocalDateTime): TnItsSnapshot {
+
+    fun generateIncrementalSnapshot(since: Instant): TnItsSnapshot {
         val speedLimits = transaction {
-            SpeedLimitEntity.find { 
-                SpeedLimitTable.modifiedAt greater since 
-            }.map { entity: SpeedLimitEntity ->
-                TnItsSpeedLimit(
-                    id = "NVDB_${entity.nvdbId}",
-                    speedLimit = entity.speedLimit,
-                    locationReference = entity.openLrReference ?: generateOpenLrReference(entity.geometry),
-                    validFrom = entity.validFrom?.toString(),
-                    validTo = entity.validTo?.toString(),
-                    lastUpdated = entity.modifiedAt.toString()
-                )
-            }
+            SpeedLimitTable
+                .selectAll()
+                .where { SpeedLimitTable.modifiedAt greater since }
+                .map { row: ResultRow ->
+                    TnItsSpeedLimit(
+                        id = "NVDB_${row[SpeedLimitTable.nvdbId]}",
+                        speedLimit = row[SpeedLimitTable.speedLimit],
+                        locationReference = row[SpeedLimitTable.openLrReference]
+                            ?: generateOpenLrReference(row[SpeedLimitTable.geometry]),
+                        validFrom = row[SpeedLimitTable.validFrom]?.toString(),
+                        validTo = row[SpeedLimitTable.validTo]?.toString(),
+                        lastUpdated = row[SpeedLimitTable.modifiedAt].toString()
+                    )
+                }
         }
-        
+
         return TnItsSnapshot(
-            timestamp = kotlinx.datetime.Clock.System.now().toString(),
+            timestamp = Clock.System.now().toString(),
             type = "INCREMENTAL",
             baseDate = since.toString(),
             speedLimits = speedLimits
         )
     }
-    
+
     private fun generateOpenLrReference(geometry: String): String {
         // Placeholder for OpenLR encoding
         // In a real implementation, this would use an OpenLR library

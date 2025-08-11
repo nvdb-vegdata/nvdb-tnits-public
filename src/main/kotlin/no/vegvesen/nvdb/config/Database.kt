@@ -5,9 +5,9 @@ import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
 import no.vegvesen.nvdb.database.RoadnetTable
 import no.vegvesen.nvdb.database.SpeedLimitTable
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 fun Application.configureDatabase() {
     val databaseUrl = environment.config.propertyOrNull("database.url")?.getString()
