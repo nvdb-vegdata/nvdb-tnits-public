@@ -6,6 +6,7 @@ plugins {
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.14.0"
     id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
+    id("com.github.ben-manes.versions") version "0.52.0"
     application
 }
 
@@ -24,6 +25,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-server-status-pages-jvm")
+    implementation("io.github.smiley4:ktor-openapi:5.2.0")
+    implementation("io.github.smiley4:ktor-swagger-ui:5.2.0")
+    implementation("io.github.smiley4:ktor-redoc:5.2.0")
 
     // Ktor Client (for NVDB API calls)
     implementation("io.ktor:ktor-client-core")
@@ -117,40 +121,26 @@ tasks.compileJava {
     dependsOn(tasks.openApiGenerate)
 }
 
+tasks.named("runKtlintCheckOverMainSourceSet") {
+    dependsOn(tasks.openApiGenerate)
+}
+
 // Git hooks setup
 tasks.register("installGitHooks") {
     description = "Install git hooks for code formatting"
     group = "build setup"
+    notCompatibleWithConfigurationCache("Task manipulates files outside of project directory")
 
     doLast {
         val hooksDir = File(rootDir, ".git/hooks")
         val preCommitHook = File(hooksDir, "pre-commit")
+        val preCommitTemplate = File(rootDir, "git-hooks/pre-commit")
 
-        val hookContent =
-            """
-            #!/bin/sh
+        if (!preCommitTemplate.exists()) {
+            throw GradleException("Pre-commit hook template not found at: ${preCommitTemplate.absolutePath}")
+        }
 
-            # Run ktlint check and format
-            echo "Running ktlint check and format..."
-
-            # Run ktlint format to fix issues
-            ./gradlew ktlintFormat
-
-            # Check if ktlint made any changes
-            if ! git diff --quiet; then
-                echo "ktlint made formatting changes. Staging them..."
-                # Stage any changes made by ktlint
-                git add -A
-            fi
-
-            # Run ktlint check to ensure everything passes
-            ./gradlew ktlintCheck
-
-            # Exit with ktlint check result
-            exit ${'$'}?
-            """.trimIndent()
-
-        preCommitHook.writeText(hookContent)
+        preCommitHook.writeText(preCommitTemplate.readText())
         preCommitHook.setExecutable(true)
 
         println("✅ Git pre-commit hook installed successfully")

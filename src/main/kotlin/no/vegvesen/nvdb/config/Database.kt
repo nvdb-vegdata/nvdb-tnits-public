@@ -3,8 +3,8 @@ package no.vegvesen.nvdb.config
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import no.vegvesen.nvdb.database.SpeedLimitTable
 import no.vegvesen.nvdb.database.Veglenker
+import no.vegvesen.nvdb.database.Vegobjekter
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -34,6 +34,6 @@ fun Application.configureDatabase() {
     Database.connect(dataSource)
 
     transaction {
-        SchemaUtils.create(Veglenker, SpeedLimitTable)
+        SchemaUtils.create(Veglenker, Vegobjekter)
     }
 }
