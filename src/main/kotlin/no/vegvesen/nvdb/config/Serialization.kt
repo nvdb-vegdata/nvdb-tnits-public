@@ -10,18 +10,20 @@ import kotlinx.serialization.json.Json
 
 fun Application.configureSerialization() {
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = true
-            ignoreUnknownKeys = true
-        })
+        json(
+            Json {
+                prettyPrint = true
+                isLenient = true
+                ignoreUnknownKeys = true
+            },
+        )
     }
-    
+
     install(CORS) {
         anyHost()
         allowHeader("Content-Type")
     }
-    
+
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respond(mapOf("error" to (cause.message ?: "Unknown error")))

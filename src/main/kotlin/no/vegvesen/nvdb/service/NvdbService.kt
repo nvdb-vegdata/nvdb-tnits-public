@@ -23,17 +23,20 @@ import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 class NvdbService {
-    private val client = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
+    private val client =
+        HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    },
+                )
+            }
+            install(Logging) {
+                level = LogLevel.INFO
+            }
         }
-        install(Logging) {
-            level = LogLevel.INFO
-        }
-    }
 
     suspend fun loadInitialRoadnet(): Int {
         // This is a placeholder implementation
@@ -91,8 +94,8 @@ class NvdbService {
         }
     }
 
-    suspend fun findChangedSpeedLimits(since: Instant): List<SpeedLimit> {
-        return transaction {
+    suspend fun findChangedSpeedLimits(since: Instant): List<SpeedLimit> =
+        transaction {
             SpeedLimitTable
                 .selectAll()
                 .where { SpeedLimitTable.modifiedAt greater since }
@@ -113,11 +116,10 @@ class NvdbService {
                         municipality = row[SpeedLimitTable.municipality],
                         county = row[SpeedLimitTable.county],
                         createdAt = row[SpeedLimitTable.createdAt],
-                        modifiedAt = row[SpeedLimitTable.modifiedAt]
+                        modifiedAt = row[SpeedLimitTable.modifiedAt],
                     )
                 }
         }
-    }
 
     fun close() {
         client.close()

@@ -4,14 +4,19 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
-import kotlin.time.Clock
 import kotlinx.serialization.Serializable
 import no.vegvesen.nvdb.service.NvdbService
 import no.vegvesen.nvdb.service.TnItsService
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @Serializable
-data class LoadResponse(val message: String, val roadnetCount: Int, val speedLimitCount: Int, val timestamp: String)
+data class LoadResponse(
+    val message: String,
+    val roadnetCount: Int,
+    val speedLimitCount: Int,
+    val timestamp: String,
+)
 
 @OptIn(ExperimentalTime::class)
 fun Route.apiRoutes() {
@@ -28,8 +33,8 @@ fun Route.apiRoutes() {
                     message = "Initial load completed successfully",
                     roadnetCount = roadnetCount,
                     speedLimitCount = speedLimitCount,
-                    timestamp = Clock.System.now().toString()
-                )
+                    timestamp = Clock.System.now().toString(),
+                ),
             )
         }
 

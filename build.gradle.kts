@@ -5,6 +5,7 @@ plugins {
     kotlin("plugin.serialization") version "2.2.0"
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.14.0"
+    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
     application
 }
 
@@ -35,10 +36,10 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
-    
+
     // OpenAPI Generator dependencies
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
-    
+
     // Jakarta EE annotations (modern standard)
     implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
 
@@ -92,8 +93,8 @@ openApiGenerate {
         mapOf(
             "library" to "native",
             "useJakartaEe" to "true",
-            "hideGenerationTimestamp" to "true"
-        )
+            "hideGenerationTimestamp" to "true",
+        ),
     )
 }
 

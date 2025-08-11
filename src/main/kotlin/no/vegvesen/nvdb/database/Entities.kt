@@ -20,7 +20,7 @@ data class SpeedLimit(
     val municipality: String?,
     val county: String?,
     val createdAt: Instant,
-    val modifiedAt: Instant
+    val modifiedAt: Instant,
 )
 
 @Serializable
@@ -35,5 +35,5 @@ data class RoadnetSegment(
     val municipality: String?,
     val county: String?,
     val createdAt: Instant,
-    val modifiedAt: Instant
+    val modifiedAt: Instant,
 )
