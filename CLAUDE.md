@@ -67,6 +67,25 @@ The project includes OpenAPI client generation from NVDB's API specification:
 
 Tests use Kotest framework and can be run individually or as a suite. The application includes integration tests that start the full Ktor server for endpoint testing.
 
+### Code Style and Formatting
+
+The project uses ktlint for code formatting and style checking. After cloning the repository, new team members should run:
+
+```bash
+./gradlew installGitHooks    # Install pre-commit hook for automatic formatting
+```
+
+This installs a git pre-commit hook that automatically:
+- Runs `ktlint` formatting on all Kotlin files
+- Stages any formatting changes
+- Ensures code passes style checks before commit
+
+You can also run ktlint manually:
+```bash
+./gradlew ktlintCheck        # Check code style
+./gradlew ktlintFormat       # Format code automatically
+```
+
 ## Important Implementation Notes
 
 - **Exposed ORM Version**: Uses stable version 0.44.1 due to compatibility issues with beta versions

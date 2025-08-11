@@ -116,3 +116,44 @@ tasks.compileKotlin {
 tasks.compileJava {
     dependsOn(tasks.openApiGenerate)
 }
+
+// Git hooks setup
+tasks.register("installGitHooks") {
+    description = "Install git hooks for code formatting"
+    group = "build setup"
+
+    doLast {
+        val hooksDir = File(rootDir, ".git/hooks")
+        val preCommitHook = File(hooksDir, "pre-commit")
+
+        val hookContent =
+            """
+            #!/bin/sh
+
+            # Run ktlint check and format
+            echo "Running ktlint check and format..."
+
+            # Run ktlint format to fix issues
+            ./gradlew ktlintFormat
+
+            # Check if ktlint made any changes
+            if ! git diff --quiet; then
+                echo "ktlint made formatting changes. Staging them..."
+                # Stage any changes made by ktlint
+                git add -A
+            fi
+
+            # Run ktlint check to ensure everything passes
+            ./gradlew ktlintCheck
+
+            # Exit with ktlint check result
+            exit ${'$'}?
+            """.trimIndent()
+
+        preCommitHook.writeText(hookContent)
+        preCommitHook.setExecutable(true)
+
+        println("✅ Git pre-commit hook installed successfully")
+        println("The hook will automatically run ktlint formatting on commits")
+    }
+}
