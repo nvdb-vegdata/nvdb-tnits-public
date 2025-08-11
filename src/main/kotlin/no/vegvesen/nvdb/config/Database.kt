@@ -3,8 +3,8 @@ package no.vegvesen.nvdb.config
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import no.vegvesen.nvdb.database.RoadnetTable
 import no.vegvesen.nvdb.database.SpeedLimitTable
+import no.vegvesen.nvdb.database.Veglenker
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -12,7 +12,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 fun Application.configureDatabase() {
     val databaseUrl =
         environment.config.propertyOrNull("database.url")?.getString()
-            ?: "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+            ?: "jdbc:h2:file:./data/nvdb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1"
     val databaseUser = environment.config.propertyOrNull("database.user")?.getString() ?: "sa"
     val databasePassword = environment.config.propertyOrNull("database.password")?.getString() ?: ""
 
@@ -34,6 +34,6 @@ fun Application.configureDatabase() {
     Database.connect(dataSource)
 
     transaction {
-        SchemaUtils.create(RoadnetTable, SpeedLimitTable)
+        SchemaUtils.create(Veglenker, SpeedLimitTable)
     }
 }

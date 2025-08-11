@@ -72,6 +72,7 @@ local.properties
 # Database
 *.db
 *.h2.db
+data/
 
 # Environment variables
 .env
