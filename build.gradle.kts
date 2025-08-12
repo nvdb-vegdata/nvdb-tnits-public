@@ -103,13 +103,14 @@ tasks.withType<Test> {
 openApiGenerate {
     generatorName.set("java")
     inputSpec.set("$projectDir/nvdb-api.json")
-    outputDir.set("${layout.buildDirectory.get()}/generated")
+    outputDir.set("${layout.buildDirectory.get()}/generated-sources/openapi")
     packageName.set("no.vegvesen.nvdb.client")
     configOptions.set(
         mapOf(
             "library" to "native",
             "useJakartaEe" to "true",
             "hideGenerationTimestamp" to "true",
+            "sourceFolder" to "",
         ),
     )
 }
@@ -140,18 +141,14 @@ tasks.register<JavaExec>("generateTnItsClasses") {
             "schemas/tnits/openlr.xsd",
         )
 
-    inputs.dir("src/main/xsd")
     inputs.dir("schemas")
     outputs.dir(outputDir)
 }
 
 sourceSets {
     main {
-        kotlin {
-            srcDir("${layout.buildDirectory.get()}/generated/src/main/kotlin")
-        }
         java {
-            srcDir("${layout.buildDirectory.get()}/generated/src/main/java")
+            srcDir("${layout.buildDirectory.get()}/generated-sources/openapi")
             srcDir("${layout.buildDirectory.get()}/generated-sources/jaxb")
         }
     }
