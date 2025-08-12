@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
 
 @Serializable
 data class HealthResponse(
@@ -29,7 +30,7 @@ fun Route.healthRoutes() {
         call.respond(
             HealthResponse(
                 "OK",
-                kotlinx.datetime.Clock.System
+                Clock.System
                     .now()
                     .toString(),
             ),

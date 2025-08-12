@@ -5,8 +5,12 @@ import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.openapitools.client.ApiClient
 
 fun Route.apiRoutes() {
+    val apiClient = ApiClient()
+    apiClient.updateBaseUri("https://nvdbapiles.atlas.vegvese.no/api/v4")
+
     route("/api") {
         post("/initial-load", {
             description = "Load initial roadnet and speed limit data from NVDB"

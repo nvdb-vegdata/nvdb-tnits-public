@@ -17,6 +17,8 @@ repositories {
     mavenCentral()
 }
 
+val jaxb by configurations.creating
+
 dependencies {
     // Ktor Server
     implementation("io.ktor:ktor-server-core-jvm")
@@ -64,6 +66,16 @@ dependencies {
     // OpenLR
     implementation("org.locationtech.jts:jts-core:1.20.0")
 
+    // JAXB for XML schema binding
+    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.5")
+    jaxb("org.glassfish.jaxb:jaxb-xjc:4.0.5")
+    jaxb("org.glassfish.jaxb:jaxb-runtime:4.0.5")
+
+    // Pre-built GML 3.2.1 JAXB bindings
+    implementation("org.jvnet.ogc:gml-v_3_2_1:2.6.1")
+    jaxb("org.jvnet.ogc:gml-v_3_2_1:2.6.1")
+
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")
@@ -102,6 +114,37 @@ openApiGenerate {
     )
 }
 
+// Custom JAXB task to generate TN-ITS classes from XSD
+tasks.register<JavaExec>("generateTnItsClasses") {
+    group = "build"
+    description = "Generate TN-ITS Java classes from XSD schemas"
+
+    classpath = jaxb
+    mainClass.set("com.sun.tools.xjc.XJCFacade")
+
+    val outputDir = "${layout.buildDirectory.get()}/generated-sources/jaxb"
+    val packageName = "no.vegvesen.nvdb.tnits.model"
+
+    doFirst {
+        file(outputDir).mkdirs()
+    }
+
+    args =
+        listOf(
+            "-d",
+            outputDir,
+            "-extension",
+            "-nv",
+            "-p",
+            packageName,
+            "schemas/tnits/openlr.xsd",
+        )
+
+    inputs.dir("src/main/xsd")
+    inputs.dir("schemas")
+    outputs.dir(outputDir)
+}
+
 sourceSets {
     main {
         kotlin {
@@ -109,20 +152,24 @@ sourceSets {
         }
         java {
             srcDir("${layout.buildDirectory.get()}/generated/src/main/java")
+            srcDir("${layout.buildDirectory.get()}/generated-sources/jaxb")
         }
     }
 }
 
 tasks.compileKotlin {
     dependsOn(tasks.openApiGenerate)
+    dependsOn("generateTnItsClasses")
 }
 
 tasks.compileJava {
     dependsOn(tasks.openApiGenerate)
+    dependsOn("generateTnItsClasses")
 }
 
 tasks.named("runKtlintCheckOverMainSourceSet") {
     dependsOn(tasks.openApiGenerate)
+    dependsOn("generateTnItsClasses")
 }
 
 // Git hooks setup
