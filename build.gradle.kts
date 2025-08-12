@@ -18,6 +18,7 @@ repositories {
 }
 
 val jaxb by configurations.creating
+val gmlBinding by configurations.creating
 
 dependencies {
     // Ktor Server
@@ -74,7 +75,9 @@ dependencies {
 
     // Pre-built GML 3.2.1 JAXB bindings
     implementation("org.jvnet.ogc:gml-v_3_2_1:2.6.1")
-    jaxb("org.jvnet.ogc:gml-v_3_2_1:2.6.1")
+    gmlBinding("org.jvnet.ogc:gml-v_3_2_1:2.6.1") {
+        isTransitive = false
+    }
 
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
@@ -86,6 +89,23 @@ dependencies {
 
 application {
     mainClass.set("no.vegvesen.nvdb.ApplicationKt")
+}
+
+// Provider for the location of the extracted GML episode file
+val gmlEpisode = layout.buildDirectory.file("episodes/gml.episode")
+
+// Extract META-INF/sun-jaxb.episode from the prebuilt GML bindings JAR
+tasks.register<Copy>("extractGmlEpisode") {
+    val conf = configurations.named("gmlBinding")
+    val gmlJar = conf.get().files.first { it.name.startsWith("gml-v_3_2_1") }
+    from(zipTree(gmlJar)) {
+        include("META-INF/sun-jaxb.episode")
+        eachFile { path = name } // flatten
+        includeEmptyDirs = false
+    }
+    into(gmlEpisode.get().asFile.parentFile)
+    rename("sun-jaxb.episode", "gml.episode")
+    outputs.file(gmlEpisode)
 }
 
 tasks.withType<KotlinCompile> {
@@ -117,8 +137,7 @@ openApiGenerate {
 
 // Custom JAXB task to generate TN-ITS classes from XSD
 tasks.register<JavaExec>("generateTnItsClasses") {
-    group = "build"
-    description = "Generate TN-ITS Java classes from XSD schemas"
+    dependsOn("extractGmlEpisode")
 
     classpath = jaxb
     mainClass.set("com.sun.tools.xjc.XJCFacade")
@@ -126,19 +145,21 @@ tasks.register<JavaExec>("generateTnItsClasses") {
     val outputDir = "${layout.buildDirectory.get()}/generated-sources/jaxb"
     val packageName = "no.vegvesen.nvdb.tnits.model"
 
-    doFirst {
-        file(outputDir).mkdirs()
-    }
+    doFirst { file(outputDir).mkdirs() }
 
     args =
         listOf(
+            "-catalog",
+            "$projectDir/schemas/catalog.xml", // offline resolution
             "-d",
             outputDir,
             "-extension",
             "-nv",
             "-p",
             packageName,
-            "schemas/tnits/openlr.xsd",
+            "-b",
+            gmlEpisode.get().asFile.absolutePath, // bind to prebuilt GML
+            "schemas/tnits/RoadFeatures.xsd",
         )
 
     inputs.dir("schemas")
@@ -160,11 +181,6 @@ tasks.compileKotlin {
 }
 
 tasks.compileJava {
-    dependsOn(tasks.openApiGenerate)
-    dependsOn("generateTnItsClasses")
-}
-
-tasks.named("runKtlintCheckOverMainSourceSet") {
     dependsOn(tasks.openApiGenerate)
     dependsOn("generateTnItsClasses")
 }
