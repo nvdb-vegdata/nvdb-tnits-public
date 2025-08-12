@@ -1,5 +1,34 @@
 package no.vegvesen.nvdb.services
 
+/**
+ * Service for converting NVDB road network references to OpenLR format
+ * compliant with TN-ITS specification.
+ *
+ * TODO: Implementation temporarily disabled due to TN-ITS model class generation issues.
+ * The TN-ITS model classes cannot be generated due to unresolved XLink schema conflicts
+ * in the W3C XLink specification that require extensive JAXB customization to resolve.
+ *
+ * To enable this functionality:
+ * 1. Resolve XLink "Title" property conflicts in http://www.w3.org/1999/xlink.xsd
+ * 2. Generate TN-ITS model classes using: ./gradlew generateTnItsClasses
+ * 3. Replace this stub with the full implementation
+ */
+class OpenLRMapper {
+    /**
+     * Maps NVDB road link data to an OpenLR XML location reference string.
+     * Currently returns a placeholder implementation.
+     *
+     * @param veglenkesekvensId The NVDB road link sequence ID
+     * @param veglenkenummer The NVDB road link number
+     * @return OpenLR XML string representation (placeholder)
+     */
+    fun mapToOpenLR(
+        veglenkesekvensId: Long,
+        veglenkenummer: Int,
+    ): String = "<!-- TN-ITS OpenLR mapping not available - see class documentation -->"
+}
+
+/*
 import jakarta.xml.bind.JAXBContext
 import jakarta.xml.bind.Marshaller
 import no.vegvesen.nvdb.tnits.model.*
@@ -14,13 +43,13 @@ class OpenLRMapper {
     private val jaxbContext = JAXBContext.newInstance(ObjectFactory::class.java)
 
     /**
-     * Maps NVDB road link data to an OpenLR XML location reference string.
-     * This is a simplified implementation for demonstration purposes.
-     *
-     * @param veglenkesekvensId The NVDB road link sequence ID
-     * @param veglenkenummer The NVDB road link number
-     * @return OpenLR XML string representation
-     */
+ * Maps NVDB road link data to an OpenLR XML location reference string.
+ * This is a simplified implementation for demonstration purposes.
+ *
+ * @param veglenkesekvensId The NVDB road link sequence ID
+ * @param veglenkenummer The NVDB road link number
+ * @return OpenLR XML string representation
+ */
     fun mapToOpenLR(
         veglenkesekvensId: Long,
         veglenkenummer: Int,
@@ -90,3 +119,4 @@ class OpenLRMapper {
         return stringWriter.toString()
     }
 }
+*/
