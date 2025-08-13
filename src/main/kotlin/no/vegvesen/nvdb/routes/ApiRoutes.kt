@@ -1,10 +1,13 @@
 package no.vegvesen.nvdb.routes
 
 import io.github.smiley4.ktoropenapi.get
-import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import no.vegvesen.nvdb.OpenLR
+import no.vegvesen.nvdb.Segment
+import no.vegvesen.nvdb.SpeedLimitFeature
+import no.vegvesen.nvdb.buildOneSpeedLimitFeature
 import org.openapitools.client.ApiClient
 
 fun Route.apiRoutes() {
@@ -12,40 +15,24 @@ fun Route.apiRoutes() {
     apiClient.updateBaseUri("https://nvdbapiles.atlas.vegvese.no/api/v4")
 
     route("/api") {
-        post("/initial-load", {
-            description = "Load initial roadnet and speed limit data from NVDB"
-            summary = "Loads initial data"
-        }) {
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                mapOf("message" to "Initial load endpoint not yet implemented"),
-            )
-        }
-
-        get("/snapshot/full", {
-            description = "Generate complete TN-ITS speed limit snapshot"
-            summary = "Generate full snapshot"
-            tags = listOf("Snapshots")
-        }) {
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                mapOf("message" to "Full snapshot endpoint not yet implemented"),
-            )
-        }
-
-        get("/snapshot/daily/{date}", {
-            description = "Generate incremental changes since specified date"
-            summary = "Generate daily snapshot"
-            tags = listOf("Snapshots")
-            request {
-                pathParameter<String>("date") {
-                    description = "Date since when to generate changes (YYYY-MM-DD format)"
-                }
-            }
-        }) {
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                mapOf("message" to "Daily snapshot endpoint not yet implemented"),
+        get("/speed-limit") {
+            val speedLimit =
+                SpeedLimitFeature(
+                    docLocalId = "123",
+                    stableId = "1234",
+                    operation = "modify",
+                    kmh = 10,
+                    openLR = OpenLR(base64 = "base64string"),
+                    geometry =
+                        listOf(
+                            Segment(lon = 10.0, lat = 59.0),
+                            Segment(lon = 11.0, lat = 60.0),
+                        ),
+                    linearHref = "linearHrefExample",
+                )
+            call.respondText(
+                buildOneSpeedLimitFeature(speedLimit),
+                ContentType.Application.Xml,
             )
         }
     }

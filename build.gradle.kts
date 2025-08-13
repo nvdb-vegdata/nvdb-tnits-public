@@ -17,10 +17,6 @@ repositories {
     mavenCentral()
 }
 
-val jaxb by configurations.creating
-val gmlBinding by configurations.creating
-val xlinkBinding by configurations.creating
-
 dependencies {
     // Ktor Server
     implementation("io.ktor:ktor-server-core-jvm")
@@ -31,7 +27,6 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages-jvm")
     implementation("io.github.smiley4:ktor-openapi:5.2.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.2.0")
-    implementation("io.github.smiley4:ktor-redoc:5.2.0")
 
     // Ktor Client (for NVDB API calls)
     implementation("io.ktor:ktor-client-core")
@@ -66,24 +61,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
     // OpenLR
+    implementation("org.openlr:openlr-encoder:2.0-beta3")
     implementation("org.locationtech.jts:jts-core:1.20.0")
 
-    // JAXB for XML schema binding
-    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
-    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.5")
-    jaxb("org.glassfish.jaxb:jaxb-xjc:4.0.5")
-    jaxb("org.glassfish.jaxb:jaxb-runtime:4.0.5")
-
-    // Pre-built GML 3.2.1 JAXB bindings
-    implementation("org.jvnet.ogc:gml-v_3_2_1:2.6.1")
-    gmlBinding("org.jvnet.ogc:gml-v_3_2_1:2.6.1") {
-        isTransitive = false
-    }
-
-    // Pre-built XLink 1.0 JAXB bindings (episode will be extracted)
-    xlinkBinding("org.hisrc.w3c:xlink-v_1_0:1.4.0") {
-        isTransitive = false
-    }
+    implementation("org.redundent:kotlin-xml-builder:1.9.3")
 
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
@@ -95,6 +76,9 @@ dependencies {
 
 application {
     mainClass.set("no.vegvesen.nvdb.ApplicationKt")
+
+    val isDevelopment: Boolean = project.ext.has("development")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
 tasks.withType<KotlinCompile> {
@@ -125,80 +109,10 @@ openApiGenerate {
     )
 }
 
-// Provider for the location of the extracted XLink episode file
-val xlinkEpisode = layout.buildDirectory.file("episodes/xlink.episode")
-
-// Extract META-INF/sun-jaxb.episode from the prebuilt XLink bindings JAR
-tasks.register<Copy>("extractXlinkEpisode") {
-    val conf = configurations.named("xlinkBinding")
-    val xlinkJar = conf.get().files.first { it.name.startsWith("xlink-v_1_0") }
-    from(zipTree(xlinkJar)) {
-        include("META-INF/sun-jaxb.episode")
-        eachFile { path = name } // flatten
-        includeEmptyDirs = false
-    }
-    into(xlinkEpisode.get().asFile.parentFile)
-    rename("sun-jaxb.episode", "xlink.episode")
-    outputs.file(xlinkEpisode)
-}
-
-// Provider for the location of the extracted GML episode file
-val gmlEpisode = layout.buildDirectory.file("episodes/gml.episode")
-
-// Extract META-INF/sun-jaxb.episode from the prebuilt GML bindings JAR
-tasks.register<Copy>("extractGmlEpisode") {
-    val conf = configurations.named("gmlBinding")
-    val gmlJar = conf.get().files.first { it.name.startsWith("gml-v_3_2_1") }
-    from(zipTree(gmlJar)) {
-        include("META-INF/sun-jaxb.episode")
-        eachFile { path = name } // flatten
-        includeEmptyDirs = false
-    }
-    into(gmlEpisode.get().asFile.parentFile)
-    rename("sun-jaxb.episode", "gml.episode")
-    outputs.file(gmlEpisode)
-}
-
-// Note: TN-ITS class generation currently fails due to unresolved XLink schema conflicts
-// This is a known limitation - the TN-ITS schema imports create XLink property name conflicts
-// that require extensive JAXB customization to resolve
-tasks.register<JavaExec>("generateTnItsClasses") {
-    dependsOn("extractGmlEpisode", "extractXlinkEpisode")
-
-    classpath = jaxb
-    mainClass.set("com.sun.tools.xjc.XJCFacade")
-
-    val outputDir = "${layout.buildDirectory.get()}/generated-sources/jaxb"
-    val packageName = "no.vegvesen.nvdb.tnits.model"
-
-    doFirst { file(outputDir).mkdirs() }
-
-    args =
-        listOf(
-            "-catalog",
-            "$projectDir/schemas/catalog.xml",
-            "-d",
-            outputDir,
-            "-extension",
-            "-nv",
-            "-p",
-            packageName,
-            "-b",
-            gmlEpisode.get().asFile.absolutePath,
-            "-b",
-            xlinkEpisode.get().asFile.absolutePath,
-            "schemas/tnits/RoadFeatures.xsd",
-        )
-
-    inputs.dir("schemas")
-    outputs.dir(outputDir)
-}
-
 sourceSets {
     main {
         java {
             srcDir("${layout.buildDirectory.get()}/generated-sources/openapi")
-            srcDir("${layout.buildDirectory.get()}/generated-sources/jaxb")
             exclude("**/src/test/**") // Exclude generated test files
         }
     }
@@ -206,14 +120,10 @@ sourceSets {
 
 tasks.compileKotlin {
     dependsOn(tasks.openApiGenerate)
-    // Note: enable generateTnItsClasses when you want TN-ITS classes generated (XLink conflicts handled via episode)
-    // dependsOn("generateTnItsClasses")
 }
 
 tasks.compileJava {
     dependsOn(tasks.openApiGenerate)
-    // Note: enable generateTnItsClasses when you want TN-ITS classes generated (XLink conflicts handled via episode)
-    // dependsOn("generateTnItsClasses")
 }
 
 // Fix ktlint dependency on generated sources
