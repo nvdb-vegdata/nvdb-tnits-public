@@ -1,0 +1,2 @@
+-- Database initialization script for TN-ITS prototype
+-- Tables will be created automatically by Exposed ORM when the application starts
