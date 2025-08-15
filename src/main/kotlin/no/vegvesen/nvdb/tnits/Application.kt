@@ -18,10 +18,10 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 suspend fun main() {
-    println("Starting NVDB TN-ITS Console Application...")
+    println("Starter NVDB TN-ITS konsollapplikasjon...")
     val config = loadConfig()
     configureDatabase(config)
-    println("Application initialized successfully!")
+    println("Applikasjon initialisert vellykket!")
 
     val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")
 
@@ -35,7 +35,7 @@ suspend fun main() {
 private suspend fun updateVeglenker() {
     var lastHendelseId =
         KeyValue.get<Long>("veglenker_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
-            KeyValue.get<Instant>("veglenker_backfill_completed") ?: error("Backfill is not completed yet"),
+            KeyValue.get<Instant>("veglenker_backfill_completed") ?: error("Backfill er ikke ferdig"),
         )
 
     do {
@@ -64,7 +64,7 @@ private suspend fun updateVeglenker() {
                 KeyValue.put("veglenker_last_hendelse_id", lastHendelseId)
             }
         }
-        println("Processed ${response.hendelser.size} hendelser, last ID: $lastHendelseId")
+        println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
     } while (response.hendelser.isNotEmpty())
 }
 
@@ -72,11 +72,11 @@ private suspend fun backfillVeglenker() {
     var lastId = KeyValue.get<VeglenkeId>("veglenker_backfill_last_id")
 
     if (lastId == null) {
-        println("No backfill started yet. Starting backfill...")
+        println("Ingen backfill har blitt startet ennå. Starter backfill...")
         val now = Clock.System.now()
         KeyValue.put("veglenker_backfill_started", now)
     } else {
-        println("Backfill in progress. Resuming from last ID: $lastId")
+        println("Backfill pågår. Gjenopptar fra siste ID: $lastId")
     }
 
     var totalCount = 0
@@ -87,7 +87,7 @@ private suspend fun backfillVeglenker() {
 
         transaction {
             if (veglenker.isEmpty()) {
-                println("No veglenker to insert, backfill complete.")
+                println("Ingen veglenker å sette inn, backfill fullført.")
                 KeyValue.put("veglenker_backfill_completed", Clock.System.now())
             } else {
                 insertVeglenker(veglenker)
@@ -95,7 +95,7 @@ private suspend fun backfillVeglenker() {
             }
 
             totalCount += veglenker.size
-            println("Inserted ${veglenker.size} veglenker, total count: $totalCount")
+            println("Satt inn ${veglenker.size} veglenker, totalt antall: $totalCount")
         }
     } while (veglenker.isNotEmpty())
 }
