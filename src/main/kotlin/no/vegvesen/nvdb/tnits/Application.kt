@@ -23,68 +23,52 @@ suspend fun main() {
     configureDatabase(config)
     println("Application initialized successfully!")
 
-    /*
-    Fetch veglenker:
-    - States:
-    1. No backfill
-    2. Backfill in progress
-    3. Backfill complete - no incremental loads
-    4. Backfill complete - previous incremental load
-
-    Mode: Backfill/Live
-    Can be derived from "Backfill completed" timestamp
-     */
-
     val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")
 
     if (veglenkerBackfillCompleted == null) {
-        startOrResumeBackfill()
-    } else {
-        // Live mode
-        println("Backfill already completed at $veglenkerBackfillCompleted. Running in live mode.")
-
-        var lastHendelseId =
-            KeyValue.get<Long>("veglenker_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
-                veglenkerBackfillCompleted,
-            )
-
-        do {
-            val response =
-                uberiketApi.getVeglenkesekvensHendelser(
-                    start = lastHendelseId,
-                )
-
-            if (response.hendelser.isNotEmpty()) {
-                lastHendelseId = response.hendelser.last().hendelseId
-                val changedIds = response.hendelser.map { it.nettelementId }.toSet()
-                val veglenker = mutableListOf<VeglenkeMedId>()
-                var start: VeglenkeId? = null
-
-                do {
-                    val batch =
-                        uberiketApi
-                            .streamVeglenker(
-                                start = start,
-                                ider = changedIds,
-                            ).toList()
-
-                    if (batch.isNotEmpty()) {
-                        veglenker.addAll(batch)
-                        start = batch.last().veglenkeId
-                    }
-                } while (batch.isNotEmpty())
-                transaction {
-                    Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
-                    insertVeglenker(veglenker)
-                    KeyValue.put("veglenker_last_hendelse_id", lastHendelseId)
-                }
-            }
-            println("Processed ${response.hendelser.size} hendelser, last ID: $lastHendelseId")
-        } while (response.hendelser.isNotEmpty())
+        backfillVeglenker()
     }
+
+    updateVeglenker()
 }
 
-private suspend fun startOrResumeBackfill() {
+private suspend fun updateVeglenker() {
+    var lastHendelseId =
+        KeyValue.get<Long>("veglenker_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
+            KeyValue.get<Instant>("veglenker_backfill_completed") ?: error("Backfill is not completed yet"),
+        )
+
+    do {
+        val response =
+            uberiketApi.getVeglenkesekvensHendelser(
+                start = lastHendelseId,
+            )
+
+        if (response.hendelser.isNotEmpty()) {
+            lastHendelseId = response.hendelser.last().hendelseId
+            val changedIds = response.hendelser.map { it.nettelementId }.toSet()
+            val veglenker = mutableListOf<VeglenkeMedId>()
+            var start: VeglenkeId? = null
+
+            do {
+                val batch = uberiketApi.streamVeglenker(start = start, ider = changedIds).toList()
+
+                if (batch.isNotEmpty()) {
+                    veglenker.addAll(batch)
+                    start = batch.last().veglenkeId
+                }
+            } while (batch.isNotEmpty())
+            transaction {
+                Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
+                insertVeglenker(veglenker)
+                KeyValue.put("veglenker_last_hendelse_id", lastHendelseId)
+            }
+        }
+        println("Processed ${response.hendelser.size} hendelser, last ID: $lastHendelseId")
+    } while (response.hendelser.isNotEmpty())
+}
+
+private suspend fun backfillVeglenker() {
     var lastId = KeyValue.get<VeglenkeId>("veglenker_backfill_last_id")
 
     if (lastId == null) {
@@ -98,11 +82,7 @@ private suspend fun startOrResumeBackfill() {
     var totalCount = 0
 
     do {
-        val veglenker =
-            uberiketApi
-                .streamVeglenker(
-                    start = lastId,
-                ).toList()
+        val veglenker = uberiketApi.streamVeglenker(start = lastId).toList()
         lastId = veglenker.lastOrNull()?.veglenkeId
 
         transaction {

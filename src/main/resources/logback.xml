@@ -11,5 +11,5 @@
     </root>
 
     <logger name="no.vegvesen.nvdb.tnits" level="DEBUG"/>
-    <logger name="Exposed" level="DEBUG"/>
+    <!--    <logger name="Exposed" level="DEBUG"/>-->
 </configuration>
