@@ -33,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * VeglenkesekvensEndret
+ * Hendelse som indikerer at en veglenkesekvens har blitt endret. Porter og veglenker som ikke er hverken erstattet eller fjernet, er ikke inkludert i hendelsen.
  */
 @JsonPropertyOrder({
   VeglenkesekvensEndret.JSON_PROPERTY_PORTER_ERSTATTET,
@@ -94,7 +94,7 @@ public class VeglenkesekvensEndret extends VegnettHendelse {
   }
 
   /**
-   * Liste med informasjon om portene som denne veglenkesekvensen er tilkoblet (erstatter eksisterende porter)
+   * Porter som har blitt endret i veglenkesekvensen, identifisert ved nummer.
    * @return porterErstattet
    */
   @jakarta.annotation.Nonnull
@@ -128,7 +128,7 @@ public class VeglenkesekvensEndret extends VegnettHendelse {
   }
 
   /**
-   * Liste med id-er for porter som er fjernet
+   * Liste med porter som er fjernet, identifisert ved nummer.
    * @return porterFjernet
    */
   @jakarta.annotation.Nonnull
@@ -162,7 +162,7 @@ public class VeglenkesekvensEndret extends VegnettHendelse {
   }
 
   /**
-   * Liste med informasjon om veglenkene som veglenkesekvensen består av (erstatter eksisterende veglenker)
+   * Veglenker som har blitt endret i veglenkesekvensen, identifisert ved nummer.
    * @return veglenkerErstattet
    */
   @jakarta.annotation.Nonnull
@@ -196,7 +196,7 @@ public class VeglenkesekvensEndret extends VegnettHendelse {
   }
 
   /**
-   * Liste med id-er for veglenker som er fjernet
+   * Liste med veglenker som er fjernet, identifisert ved nummer.
    * @return veglenkerFjernet
    */
   @jakarta.annotation.Nonnull
@@ -222,7 +222,7 @@ public class VeglenkesekvensEndret extends VegnettHendelse {
   }
 
   /**
-   * Lengden på veglenkesekvensen i meter
+   * Lengden på veglenkesekvensen i meter. Bare satt hvis endret.
    * @return lengde
    */
   @jakarta.annotation.Nullable

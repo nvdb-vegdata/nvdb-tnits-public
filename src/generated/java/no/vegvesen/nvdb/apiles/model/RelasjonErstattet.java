@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import no.vegvesen.nvdb.apiles.model.RelasjonEndring;
-import no.vegvesen.nvdb.apiles.model.VegobjektId;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -47,19 +46,19 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public class RelasjonErstattet extends RelasjonEndring {
   public static final String JSON_PROPERTY_BARN = "barn";
   @jakarta.annotation.Nonnull
-  private Set<VegobjektId> barn = new LinkedHashSet<>();
+  private Set<Long> barn = new LinkedHashSet<>();
 
   public RelasjonErstattet() {
 
   }
 
-  public RelasjonErstattet barn(@jakarta.annotation.Nonnull Set<VegobjektId> barn) {
+  public RelasjonErstattet barn(@jakarta.annotation.Nonnull Set<Long> barn) {
     
     this.barn = barn;
     return this;
   }
 
-  public RelasjonErstattet addBarnItem(VegobjektId barnItem) {
+  public RelasjonErstattet addBarnItem(Long barnItem) {
     if (this.barn == null) {
       this.barn = new LinkedHashSet<>();
     }
@@ -75,7 +74,7 @@ public class RelasjonErstattet extends RelasjonEndring {
   @JsonProperty(JSON_PROPERTY_BARN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Set<VegobjektId> getBarn() {
+  public Set<Long> getBarn() {
     return barn;
   }
 
@@ -83,7 +82,7 @@ public class RelasjonErstattet extends RelasjonEndring {
   @JsonDeserialize(as = LinkedHashSet.class)
   @JsonProperty(JSON_PROPERTY_BARN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBarn(@jakarta.annotation.Nonnull Set<VegobjektId> barn) {
+  public void setBarn(@jakarta.annotation.Nonnull Set<Long> barn) {
     this.barn = barn;
   }
 

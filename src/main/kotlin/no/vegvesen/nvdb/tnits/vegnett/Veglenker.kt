@@ -1,18 +1,20 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.apiles.model.VeglenkeMedId
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
+import no.vegvesen.nvdb.tnits.extensions.putSync
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
 import no.vegvesen.nvdb.tnits.model.veglenkeId
 import no.vegvesen.nvdb.tnits.uberiketApi
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -42,10 +44,12 @@ suspend fun updateVeglenker() {
                     start = batch.last().veglenkeId
                 }
             } while (batch.isNotEmpty())
-            transaction {
+
+            newSuspendedTransaction(Dispatchers.IO) {
                 Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
                 insertVeglenker(veglenker)
-                KeyValue.put("veglenker_last_hendelse_id", lastHendelseId)
+                // Keep progress update atomic within the same transaction
+                KeyValue.putSync("veglenker_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
         }
@@ -70,15 +74,15 @@ suspend fun backfillVeglenker() {
         val veglenker = uberiketApi.streamVeglenker(start = lastId).toList()
         lastId = veglenker.lastOrNull()?.veglenkeId
 
-        transaction {
-            if (veglenker.isEmpty()) {
-                println("Ingen veglenker å sette inn, backfill fullført.")
-                KeyValue.put("veglenker_backfill_completed", Clock.System.now())
-            } else {
+        if (veglenker.isEmpty()) {
+            println("Ingen veglenker å sette inn, backfill fullført.")
+            KeyValue.put("veglenker_backfill_completed", Clock.System.now())
+        } else {
+            newSuspendedTransaction(Dispatchers.IO) {
                 insertVeglenker(veglenker)
-                KeyValue.put("veglenker_backfill_last_id", lastId!!)
+                // Keep progress update atomic within the same transaction
+                KeyValue.putSync("veglenker_backfill_last_id", lastId!!)
             }
-
             totalCount += veglenker.size
             println("Satt inn ${veglenker.size} veglenker, totalt antall: $totalCount")
         }

@@ -33,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * VeglenkesekvensOpprettet
+ * Hendelse som indikerer at en veglenkesekvens har blitt opprettet. Inneholder informasjon om porter og veglenker som er tilkoblet denne sekvensen. Kan være en fullstendig erstatning av eksisterende veglenkesekvens, eller en ny opprettelse av en sekvens som ikke tidligere har eksistert.
  */
 @JsonPropertyOrder({
   VeglenkesekvensOpprettet.JSON_PROPERTY_PORTER,

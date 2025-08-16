@@ -27,7 +27,6 @@ import java.util.Set;
 import no.vegvesen.nvdb.apiles.model.EgenskapVerdi;
 import no.vegvesen.nvdb.apiles.model.Gyldighetsperiode;
 import no.vegvesen.nvdb.apiles.model.Stedfesting;
-import no.vegvesen.nvdb.apiles.model.VegobjektId;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -68,7 +67,7 @@ public class Vegobjekt {
 
   public static final String JSON_PROPERTY_BARN = "barn";
   @jakarta.annotation.Nullable
-  private Map<String, Set<VegobjektId>> barn = new HashMap<>();
+  private Map<String, Set<Long>> barn = new HashMap<>();
 
   public static final String JSON_PROPERTY_STEDFESTING = "stedfesting";
   @jakarta.annotation.Nullable
@@ -214,13 +213,13 @@ public class Vegobjekt {
     this.egenskaper = egenskaper;
   }
 
-  public Vegobjekt barn(@jakarta.annotation.Nullable Map<String, Set<VegobjektId>> barn) {
+  public Vegobjekt barn(@jakarta.annotation.Nullable Map<String, Set<Long>> barn) {
     
     this.barn = barn;
     return this;
   }
 
-  public Vegobjekt putBarnItem(String key, Set<VegobjektId> barnItem) {
+  public Vegobjekt putBarnItem(String key, Set<Long> barnItem) {
     if (this.barn == null) {
       this.barn = new HashMap<>();
     }
@@ -236,14 +235,14 @@ public class Vegobjekt {
   @JsonProperty(JSON_PROPERTY_BARN)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Map<String, Set<VegobjektId>> getBarn() {
+  public Map<String, Set<Long>> getBarn() {
     return barn;
   }
 
 
   @JsonProperty(JSON_PROPERTY_BARN)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setBarn(@jakarta.annotation.Nullable Map<String, Set<VegobjektId>> barn) {
+  public void setBarn(@jakarta.annotation.Nullable Map<String, Set<Long>> barn) {
     this.barn = barn;
   }
 

@@ -1,17 +1,19 @@
 package no.vegvesen.nvdb.tnits.vegobjekter
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.apiles.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
+import no.vegvesen.nvdb.tnits.extensions.putSync
 import no.vegvesen.nvdb.tnits.uberiketApi
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -45,14 +47,15 @@ suspend fun updateVegobjekter(typeId: Int) {
                 }
             } while (batch.isNotEmpty() && vegobjekter.size < changedIds.size)
 
-            transaction {
+            newSuspendedTransaction(Dispatchers.IO) {
                 changedIds.forEach { vegobjektId ->
                     Vegobjekter.deleteWhere {
                         (Vegobjekter.vegobjektId eq vegobjektId) and (Vegobjekter.vegobjektType eq typeId)
                     }
                 }
                 insertVegobjekter(vegobjekter)
-                KeyValue.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
+                // Keep progress update atomic within the same transaction
+                KeyValue.putSync("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
         }
@@ -77,15 +80,15 @@ suspend fun backfillVegobjekter(typeId: Int) {
         val vegobjekter = uberiketApi.streamVegobjekter(typeId = typeId, start = lastId).toList()
         lastId = vegobjekter.lastOrNull()?.id
 
-        transaction {
-            if (vegobjekter.isEmpty()) {
-                println("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
-                KeyValue.put("vegobjekter_${typeId}_backfill_completed", Clock.System.now())
-            } else {
+        if (vegobjekter.isEmpty()) {
+            println("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
+            KeyValue.put("vegobjekter_${typeId}_backfill_completed", Clock.System.now())
+        } else {
+            newSuspendedTransaction(Dispatchers.IO) {
                 insertVegobjekter(vegobjekter)
-                KeyValue.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
+                // Keep progress update atomic within the same transaction
+                KeyValue.putSync("vegobjekter_${typeId}_backfill_last_id", lastId!!)
             }
-
             totalCount += vegobjekter.size
             println("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
         }

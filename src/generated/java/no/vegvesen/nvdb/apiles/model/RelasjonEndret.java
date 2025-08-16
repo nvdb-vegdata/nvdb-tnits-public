@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import no.vegvesen.nvdb.apiles.model.RelasjonEndring;
-import no.vegvesen.nvdb.apiles.model.VegobjektId;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -48,23 +47,23 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public class RelasjonEndret extends RelasjonEndring {
   public static final String JSON_PROPERTY_BARN_LAGT_TIL = "barnLagtTil";
   @jakarta.annotation.Nonnull
-  private Set<VegobjektId> barnLagtTil = new LinkedHashSet<>();
+  private Set<Long> barnLagtTil = new LinkedHashSet<>();
 
   public static final String JSON_PROPERTY_BARN_FJERNET = "barnFjernet";
   @jakarta.annotation.Nonnull
-  private Set<VegobjektId> barnFjernet = new LinkedHashSet<>();
+  private Set<Long> barnFjernet = new LinkedHashSet<>();
 
   public RelasjonEndret() {
 
   }
 
-  public RelasjonEndret barnLagtTil(@jakarta.annotation.Nonnull Set<VegobjektId> barnLagtTil) {
+  public RelasjonEndret barnLagtTil(@jakarta.annotation.Nonnull Set<Long> barnLagtTil) {
     
     this.barnLagtTil = barnLagtTil;
     return this;
   }
 
-  public RelasjonEndret addBarnLagtTilItem(VegobjektId barnLagtTilItem) {
+  public RelasjonEndret addBarnLagtTilItem(Long barnLagtTilItem) {
     if (this.barnLagtTil == null) {
       this.barnLagtTil = new LinkedHashSet<>();
     }
@@ -80,7 +79,7 @@ public class RelasjonEndret extends RelasjonEndring {
   @JsonProperty(JSON_PROPERTY_BARN_LAGT_TIL)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Set<VegobjektId> getBarnLagtTil() {
+  public Set<Long> getBarnLagtTil() {
     return barnLagtTil;
   }
 
@@ -88,17 +87,17 @@ public class RelasjonEndret extends RelasjonEndring {
   @JsonDeserialize(as = LinkedHashSet.class)
   @JsonProperty(JSON_PROPERTY_BARN_LAGT_TIL)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBarnLagtTil(@jakarta.annotation.Nonnull Set<VegobjektId> barnLagtTil) {
+  public void setBarnLagtTil(@jakarta.annotation.Nonnull Set<Long> barnLagtTil) {
     this.barnLagtTil = barnLagtTil;
   }
 
-  public RelasjonEndret barnFjernet(@jakarta.annotation.Nonnull Set<VegobjektId> barnFjernet) {
+  public RelasjonEndret barnFjernet(@jakarta.annotation.Nonnull Set<Long> barnFjernet) {
     
     this.barnFjernet = barnFjernet;
     return this;
   }
 
-  public RelasjonEndret addBarnFjernetItem(VegobjektId barnFjernetItem) {
+  public RelasjonEndret addBarnFjernetItem(Long barnFjernetItem) {
     if (this.barnFjernet == null) {
       this.barnFjernet = new LinkedHashSet<>();
     }
@@ -114,7 +113,7 @@ public class RelasjonEndret extends RelasjonEndring {
   @JsonProperty(JSON_PROPERTY_BARN_FJERNET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Set<VegobjektId> getBarnFjernet() {
+  public Set<Long> getBarnFjernet() {
     return barnFjernet;
   }
 
@@ -122,7 +121,7 @@ public class RelasjonEndret extends RelasjonEndring {
   @JsonDeserialize(as = LinkedHashSet.class)
   @JsonProperty(JSON_PROPERTY_BARN_FJERNET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBarnFjernet(@jakarta.annotation.Nonnull Set<VegobjektId> barnFjernet) {
+  public void setBarnFjernet(@jakarta.annotation.Nonnull Set<Long> barnFjernet) {
     this.barnFjernet = barnFjernet;
   }
 
