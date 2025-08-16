@@ -21,4 +21,8 @@ suspend fun main() {
     }
 
     updateVeglenker()
+
+    val vegobjektTyper = listOf(105, 821)
+
+    // TODO: Implement vegobjekter backfill and update logic
 }

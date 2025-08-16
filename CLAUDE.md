@@ -4,52 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Kotlin prototype for exporting TN-ITS (Transport Network - Intelligent Transport Systems) daily changes for speed limits from the Norwegian Road Database (NVDB). The application provides REST APIs to:
+This is a Kotlin console application prototype for synchronizing road network data (veglenker) from the Norwegian Road
+Database (NVDB) to a local database. The application performs:
 
-1. Load initial roadnet and speed limit data from NVDB
-2. Generate full TN-ITS compliant snapshots of speed limits
-3. Create incremental daily snapshots showing changes since a specific date
-4. Convert location references to OpenLR format for TN-ITS compliance
+1. Initial backfill of all road network data from NVDB
+2. Incremental updates by processing change events from NVDB's event stream
+3. Data storage using Exposed ORM with support for H2 and PostgreSQL databases
+4. Future extension to handle speed limits and other road objects for TN-ITS compliance
 
 ## Architecture
 
-The application follows a layered architecture using Ktor as the web framework and Exposed ORM for database operations:
+The application follows a console-based architecture with Exposed ORM for database operations:
 
-- **Application.kt**: Main entry point that configures Ktor server on port 8080
-- **config/**: Configuration modules for serialization, database, and routing setup
-- **database/**: Exposed ORM table definitions and entity classes for roadnet and speed limits
-- **routes/**: REST API route handlers for health checks and main API endpoints
-- **service/**: Business logic layer containing NvdbService (data loading) and TnItsService (snapshot generation)
+- **Application.kt**: Main entry point with suspend main() function that orchestrates data synchronization
+- **config/**: Configuration modules for database setup and application settings
+- **database/**: Exposed ORM table definitions and entity classes for road network data
+- **vegnett/**: Core business logic for road network data backfilling and incremental updates
+- **services/**: API client services for communicating with NVDB's Uberikt API
 
 ### Database Schema
 
-Two main tables store the road network data:
-- `RoadnetTable`: Basic road network segments with geometry and administrative data
-- `SpeedLimitTable`: Speed limit objects with NVDB IDs, OpenLR references, and validity periods
+The main table stores road network data:
 
-Both tables include change tracking fields (`createdAt`, `modifiedAt`) to support incremental updates.
+- `Veglenker`: Road network segments (veglenker) with NVDB IDs, sequence numbers, and full road data
+- `KeyValue`: Simple key-value store for tracking application state (backfill progress, last processed event IDs)
+- `Stedfestinger`: Location references for road objects (future use)
+- `Vegobjekter`: Road objects like speed limits (future use)
 
-### Key REST Endpoints
+All tables include timestamp fields for change tracking.
 
-- `POST /api/initial-load`: Loads initial roadnet and speed limit data
-- `GET /api/snapshot/full`: Generates complete TN-ITS speed limit snapshot
-- `GET /api/snapshot/daily/{date}`: Generates incremental changes since specified date
-- `GET /health`: Health check endpoint
+### Console Application Flow
+
+1. **Startup**: Check if initial backfill has been completed
+2. **Backfill**: If first run, download all road network data from NVDB
+3. **Incremental Updates**: Process change events from NVDB's event stream
+4. **Future**: Extend to handle speed limits and other road objects (types 105, 821)
 
 ## Development Commands
 
 ### Build and Test
+
 ```bash
 ./gradlew build          # Full build including tests
 ./gradlew test           # Run tests only
-./gradlew run            # Start the application (http://localhost:8080)
+./gradlew run            # Start the console application
 ```
 
 ### Database Configuration
 
-The application supports both H2 (development) and PostgreSQL (production) databases. Configuration is handled through environment variables:
+The application supports both H2 (development) and PostgreSQL (production) databases. Configuration is handled through
+environment variables:
+
 - `DATABASE_URL`: JDBC connection string
-- `DATABASE_USER`: Database username  
+- `DATABASE_USER`: Database username
 - `DATABASE_PASSWORD`: Database password
 
 If not set, defaults to H2 in-memory database for development.
@@ -57,30 +64,36 @@ If not set, defaults to H2 in-memory database for development.
 ### OpenAPI Client Generation
 
 The project includes OpenAPI client generation from NVDB's API specification:
+
 ```bash
 ./gradlew openApiGenerate    # Generate client from nvdb-api.json
 ```
 
-**Note**: The generated client is currently disabled in the build due to compatibility issues with the Kotlin serialization library. The generation works but integration is pending resolution of serialization conflicts.
+**Note**: The generated client is currently disabled in the build due to compatibility issues with the Kotlin
+serialization library. The generation works but integration is pending resolution of serialization conflicts.
 
 ### Testing
 
-Tests use Kotest framework and can be run individually or as a suite. The application includes integration tests that start the full Ktor server for endpoint testing.
+Tests use Kotest framework and can be run individually or as a suite. The application includes unit tests for the
+console application logic.
 
 ### Code Style and Formatting
 
-The project uses ktlint for code formatting and style checking. After cloning the repository, new team members should run:
+The project uses ktlint for code formatting and style checking. After cloning the repository, new team members should
+run:
 
 ```bash
 ./gradlew installGitHooks    # Install pre-commit hook for automatic formatting
 ```
 
 This installs a git pre-commit hook that automatically:
+
 - Runs `ktlint` formatting on all Kotlin files
 - Stages any formatting changes
 - Ensures code passes style checks before commit
 
 You can also run ktlint manually:
+
 ```bash
 ./gradlew ktlintCheck        # Check code style
 ./gradlew ktlintFormat       # Format code automatically
@@ -88,9 +101,12 @@ You can also run ktlint manually:
 
 ## Important Implementation Notes
 
-- **Exposed ORM Version**: Uses stable version 0.44.1 due to compatibility issues with beta versions
-- **OpenLR Integration**: Currently uses placeholder OpenLR encoding - real implementation would require an OpenLR library
-- **Change Detection**: Uses database timestamps for incremental updates rather than NVDB's native change tracking
-- **TN-ITS Compliance**: Implements basic TN-ITS data structure but may need refinement for full compliance
+- **Exposed ORM Version**: Uses beta version 1.0.0-beta-5 for latest features
+- **OpenLR Integration**: Currently uses placeholder OpenLR encoding - real implementation would require an OpenLR
+  library
+- **Change Detection**: Uses NVDB's native event stream (veglenkesekvens hendelser) for incremental updates
+- **Data Processing**: Implements backfill and incremental update patterns for large-scale data synchronization
+- **State Management**: Tracks processing state using KeyValue table to support resumable operations
 
-The codebase is structured to allow easy extension with additional road object types beyond speed limits.
+The console application is designed to be extended with additional road object types like speed limits (105) and traffic
+signs (821).
