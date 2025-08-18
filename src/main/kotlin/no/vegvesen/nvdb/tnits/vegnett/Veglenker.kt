@@ -54,7 +54,7 @@ suspend fun updateVeglenker() {
             println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
         }
     } while (response.hendelser.isNotEmpty())
-    println("Oppdatering av veglenker fullført. Siste hendelse ID: $lastHendelseId")
+    println("Oppdatering av veglenker fullført. Siste hendelse-ID: $lastHendelseId")
 }
 
 suspend fun backfillVeglenker() {

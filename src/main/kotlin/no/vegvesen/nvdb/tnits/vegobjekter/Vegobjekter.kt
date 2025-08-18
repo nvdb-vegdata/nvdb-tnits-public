@@ -60,7 +60,7 @@ suspend fun updateVegobjekter(typeId: Int) {
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
         }
     } while (response.hendelser.isNotEmpty())
-    println("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse ID: $lastHendelseId")
+    println("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse-ID: $lastHendelseId")
 }
 
 suspend fun backfillVegobjekter(typeId: Int) {

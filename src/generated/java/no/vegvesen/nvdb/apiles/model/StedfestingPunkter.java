@@ -35,9 +35,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * StedfestingPunkter
  */
 @JsonPropertyOrder({
-  StedfestingPunkter.JSON_PROPERTY_PUNKTER,
-  StedfestingPunkter.JSON_PROPERTY_IS_EMPTY,
-  StedfestingPunkter.JSON_PROPERTY_SIZE
+  StedfestingPunkter.JSON_PROPERTY_PUNKTER
 })
 @jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.14.0")
 @JsonIgnoreProperties(
@@ -50,14 +48,6 @@ public class StedfestingPunkter extends Stedfesting {
   public static final String JSON_PROPERTY_PUNKTER = "punkter";
   @jakarta.annotation.Nonnull
   private Set<StedfestingPunkt> punkter = new LinkedHashSet<>();
-
-  public static final String JSON_PROPERTY_IS_EMPTY = "isEmpty";
-  @jakarta.annotation.Nonnull
-  private Boolean isEmpty;
-
-  public static final String JSON_PROPERTY_SIZE = "size";
-  @jakarta.annotation.Nonnull
-  private Integer size;
 
   public StedfestingPunkter() {
 
@@ -97,56 +87,6 @@ public class StedfestingPunkter extends Stedfesting {
     this.punkter = punkter;
   }
 
-  public StedfestingPunkter isEmpty(@jakarta.annotation.Nonnull Boolean isEmpty) {
-    
-    this.isEmpty = isEmpty;
-    return this;
-  }
-
-  /**
-   * Get isEmpty
-   * @return isEmpty
-   */
-  @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_IS_EMPTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsEmpty() {
-    return isEmpty;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_EMPTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsEmpty(@jakarta.annotation.Nonnull Boolean isEmpty) {
-    this.isEmpty = isEmpty;
-  }
-
-  public StedfestingPunkter size(@jakarta.annotation.Nonnull Integer size) {
-    
-    this.size = size;
-    return this;
-  }
-
-  /**
-   * Get size
-   * @return size
-   */
-  @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_SIZE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getSize() {
-    return size;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SIZE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSize(@jakarta.annotation.Nonnull Integer size) {
-    this.size = size;
-  }
-
 
   @Override
   public StedfestingPunkter type(@jakarta.annotation.Nonnull String type) {
@@ -164,14 +104,12 @@ public class StedfestingPunkter extends Stedfesting {
     }
     StedfestingPunkter stedfestingPunkter = (StedfestingPunkter) o;
     return Objects.equals(this.punkter, stedfestingPunkter.punkter) &&
-        Objects.equals(this.isEmpty, stedfestingPunkter.isEmpty) &&
-        Objects.equals(this.size, stedfestingPunkter.size) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(punkter, isEmpty, size, super.hashCode());
+    return Objects.hash(punkter, super.hashCode());
   }
 
   @Override
@@ -180,8 +118,6 @@ public class StedfestingPunkter extends Stedfesting {
     sb.append("class StedfestingPunkter {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    punkter: ").append(toIndentedString(punkter)).append("\n");
-    sb.append("    isEmpty: ").append(toIndentedString(isEmpty)).append("\n");
-    sb.append("    size: ").append(toIndentedString(size)).append("\n");
     sb.append("}");
     return sb.toString();
   }

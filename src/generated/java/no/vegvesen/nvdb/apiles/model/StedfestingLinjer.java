@@ -35,11 +35,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * StedfestingLinjer
  */
 @JsonPropertyOrder({
-  StedfestingLinjer.JSON_PROPERTY_LINJER,
-  StedfestingLinjer.JSON_PROPERTY_IS_EMPTY,
-  StedfestingLinjer.JSON_PROPERTY_SIZE,
-  StedfestingLinjer.JSON_PROPERTY_FIRST,
-  StedfestingLinjer.JSON_PROPERTY_LAST
+  StedfestingLinjer.JSON_PROPERTY_LINJER
 })
 @jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.14.0")
 @JsonIgnoreProperties(
@@ -52,22 +48,6 @@ public class StedfestingLinjer extends Stedfesting {
   public static final String JSON_PROPERTY_LINJER = "linjer";
   @jakarta.annotation.Nonnull
   private List<StedfestingLinje> linjer = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_IS_EMPTY = "isEmpty";
-  @jakarta.annotation.Nonnull
-  private Boolean isEmpty;
-
-  public static final String JSON_PROPERTY_SIZE = "size";
-  @jakarta.annotation.Nonnull
-  private Integer size;
-
-  public static final String JSON_PROPERTY_FIRST = "first";
-  @jakarta.annotation.Nullable
-  private StedfestingLinje first;
-
-  public static final String JSON_PROPERTY_LAST = "last";
-  @jakarta.annotation.Nullable
-  private StedfestingLinje last;
 
   public StedfestingLinjer() {
 
@@ -106,106 +86,6 @@ public class StedfestingLinjer extends Stedfesting {
     this.linjer = linjer;
   }
 
-  public StedfestingLinjer isEmpty(@jakarta.annotation.Nonnull Boolean isEmpty) {
-    
-    this.isEmpty = isEmpty;
-    return this;
-  }
-
-  /**
-   * Get isEmpty
-   * @return isEmpty
-   */
-  @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_IS_EMPTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsEmpty() {
-    return isEmpty;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_EMPTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsEmpty(@jakarta.annotation.Nonnull Boolean isEmpty) {
-    this.isEmpty = isEmpty;
-  }
-
-  public StedfestingLinjer size(@jakarta.annotation.Nonnull Integer size) {
-    
-    this.size = size;
-    return this;
-  }
-
-  /**
-   * Get size
-   * @return size
-   */
-  @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_SIZE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getSize() {
-    return size;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SIZE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSize(@jakarta.annotation.Nonnull Integer size) {
-    this.size = size;
-  }
-
-  public StedfestingLinjer first(@jakarta.annotation.Nullable StedfestingLinje first) {
-    
-    this.first = first;
-    return this;
-  }
-
-  /**
-   * Get first
-   * @return first
-   */
-  @jakarta.annotation.Nullable
-  @JsonProperty(JSON_PROPERTY_FIRST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public StedfestingLinje getFirst() {
-    return first;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FIRST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setFirst(@jakarta.annotation.Nullable StedfestingLinje first) {
-    this.first = first;
-  }
-
-  public StedfestingLinjer last(@jakarta.annotation.Nullable StedfestingLinje last) {
-    
-    this.last = last;
-    return this;
-  }
-
-  /**
-   * Get last
-   * @return last
-   */
-  @jakarta.annotation.Nullable
-  @JsonProperty(JSON_PROPERTY_LAST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public StedfestingLinje getLast() {
-    return last;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_LAST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setLast(@jakarta.annotation.Nullable StedfestingLinje last) {
-    this.last = last;
-  }
-
 
   @Override
   public StedfestingLinjer type(@jakarta.annotation.Nonnull String type) {
@@ -223,16 +103,12 @@ public class StedfestingLinjer extends Stedfesting {
     }
     StedfestingLinjer stedfestingLinjer = (StedfestingLinjer) o;
     return Objects.equals(this.linjer, stedfestingLinjer.linjer) &&
-        Objects.equals(this.isEmpty, stedfestingLinjer.isEmpty) &&
-        Objects.equals(this.size, stedfestingLinjer.size) &&
-        Objects.equals(this.first, stedfestingLinjer.first) &&
-        Objects.equals(this.last, stedfestingLinjer.last) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(linjer, isEmpty, size, first, last, super.hashCode());
+    return Objects.hash(linjer, super.hashCode());
   }
 
   @Override
@@ -241,10 +117,6 @@ public class StedfestingLinjer extends Stedfesting {
     sb.append("class StedfestingLinjer {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    linjer: ").append(toIndentedString(linjer)).append("\n");
-    sb.append("    isEmpty: ").append(toIndentedString(isEmpty)).append("\n");
-    sb.append("    size: ").append(toIndentedString(size)).append("\n");
-    sb.append("    first: ").append(toIndentedString(first)).append("\n");
-    sb.append("    last: ").append(toIndentedString(last)).append("\n");
     sb.append("}");
     return sb.toString();
   }

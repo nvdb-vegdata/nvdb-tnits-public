@@ -1,8 +1,7 @@
 package no.vegvesen.nvdb.tnits
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.config.configureDatabase
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.database.KeyValue
@@ -19,28 +18,27 @@ suspend fun main() {
     configureDatabase(config)
     println("Applikasjon startet, databasen er konfigurert!")
 
-    val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")
-
-    if (veglenkerBackfillCompleted == null) {
-        backfillVeglenker()
-    }
-
-    updateVeglenker()
-
     val vegobjektTyper = listOf(105, 821)
 
     coroutineScope {
-        vegobjektTyper
-            .map { typeId ->
-                async {
-                    val backfillCompleted = KeyValue.get<Instant>("vegobjekter_${typeId}_backfill_completed")
+        launch {
+            println("Oppdaterer veglenker...")
+            val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")
+            if (veglenkerBackfillCompleted == null) {
+                backfillVeglenker()
+            }
+            updateVeglenker()
+        }
 
-                    if (backfillCompleted == null) {
-                        backfillVegobjekter(typeId)
-                    }
-
-                    updateVegobjekter(typeId)
+        vegobjektTyper.forEach { typeId ->
+            println("Oppdaterer vegobjekter for type $typeId...")
+            launch {
+                val backfillCompleted = KeyValue.get<Instant>("vegobjekter_${typeId}_backfill_completed")
+                if (backfillCompleted == null) {
+                    backfillVegobjekter(typeId)
                 }
-            }.awaitAll()
+                updateVegobjekter(typeId)
+            }
+        }
     }
 }
