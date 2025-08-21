@@ -2,15 +2,21 @@ package no.vegvesen.nvdb.tnits.vegnett
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
-import no.vegvesen.nvdb.apiles.model.VeglenkeMedId
+import kotlinx.datetime.toKotlinLocalDate
+import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Veglenker
+import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.putSync
+import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
 import no.vegvesen.nvdb.tnits.model.veglenkeId
 import no.vegvesen.nvdb.tnits.uberiketApi
+import no.vegvesen.nvdb.tnits.utstrekning
+import no.vegvesen.nvdb.tnits.vegobjekter.MAX_DATE
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -34,16 +40,18 @@ suspend fun updateVeglenker() {
             lastHendelseId = response.hendelser.last().hendelseId
             val changedIds = response.hendelser.map { it.nettelementId }.toSet()
             val veglenker = mutableListOf<VeglenkeMedId>()
-            var start: VeglenkeId? = null
 
-            do {
-                val batch = uberiketApi.streamVeglenker(start = start, ider = changedIds).toList()
+            changedIds.forEachChunked(100) { chunk ->
+                var start: VeglenkeId? = null
+                do {
+                    val batch = uberiketApi.streamVeglenker(start = start, ider = chunk).toList()
 
-                if (batch.isNotEmpty()) {
-                    veglenker.addAll(batch)
-                    start = batch.last().veglenkeId
-                }
-            } while (batch.isNotEmpty())
+                    if (batch.isNotEmpty()) {
+                        veglenker.addAll(batch)
+                        start = batch.last().veglenkeId
+                    }
+                } while (batch.isNotEmpty())
+            }
 
             newSuspendedTransaction(Dispatchers.IO) {
                 Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
@@ -90,10 +98,18 @@ suspend fun backfillVeglenker() {
 }
 
 private fun insertVeglenker(veglenker: List<VeglenkeMedId>) {
-    Veglenker.batchInsert(veglenker) { veglenke ->
+    Veglenker.batchInsert(veglenker, shouldReturnGeneratedValues = false) { veglenke ->
         this[Veglenker.veglenkesekvensId] = veglenke.veglenkesekvensId
         this[Veglenker.veglenkenummer] = veglenke.veglenkenummer
-        this[Veglenker.data] = veglenke
         this[Veglenker.sistEndret] = Clock.System.now()
+        this[Veglenker.startdato] = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate()
+        this[Veglenker.sluttdato] = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate()
+            ?: MAX_DATE
+        this[Veglenker.startnode] = veglenke.startnode
+        this[Veglenker.sluttnode] = veglenke.sluttnode
+        this[Veglenker.startposisjon] = veglenke.utstrekning.startposisjon.toBigDecimal()
+        this[Veglenker.sluttposisjon] = veglenke.utstrekning.sluttposisjon.toBigDecimal()
+        this[Veglenker.geometri] = parseWkt(veglenke.geometri.wkt, SRID.UTM33)
+        this[Veglenker.typeVeg] = veglenke.typeVeg
     }
 }

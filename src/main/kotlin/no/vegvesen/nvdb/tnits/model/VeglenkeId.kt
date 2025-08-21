@@ -1,7 +1,7 @@
 package no.vegvesen.nvdb.tnits.model
 
 import kotlinx.serialization.Serializable
-import no.vegvesen.nvdb.apiles.model.VeglenkeMedId
+import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
 
 @Serializable
 data class VeglenkeId(

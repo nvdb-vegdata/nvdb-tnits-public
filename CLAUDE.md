@@ -10,7 +10,7 @@ Database (NVDB) to a local database. The application performs:
 1. Initial backfill of all road network data from NVDB
 2. Incremental updates by processing change events from NVDB's event stream
 3. Data storage using Exposed ORM with support for H2 and PostgreSQL databases
-4. Future extension to handle speed limits and other road objects for TN-ITS compliance
+4. Exporting speed limits and other road objects for TN-ITS compliance
 
 ## Architecture
 
@@ -20,16 +20,16 @@ The application follows a console-based architecture with Exposed ORM for databa
 - **config/**: Configuration modules for database setup and application settings
 - **database/**: Exposed ORM table definitions and entity classes for road network data
 - **vegnett/**: Core business logic for road network data backfilling and incremental updates
-- **services/**: API client services for communicating with NVDB's Uberikt API
+- **services/**: API client services for communicating with NVDB's Uberiket API and Datakatalogen
 
 ### Database Schema
 
 The main table stores road network data:
 
-- `Veglenker`: Road network segments (veglenker) with NVDB IDs, sequence numbers, and full road data
+- `Veglenker`: Road network links (veglenker) with NVDB IDs, link numbers, and full road data
 - `KeyValue`: Simple key-value store for tracking application state (backfill progress, last processed event IDs)
-- `Stedfestinger`: Location references for road objects (future use)
-- `Vegobjekter`: Road objects like speed limits (future use)
+- `Stedfestinger`: Location references for road objects
+- `Vegobjekter`: Road objects like speed limits
 
 All tables include timestamp fields for change tracking.
 
@@ -63,19 +63,40 @@ If not set, defaults to H2 in-memory database for development.
 
 ### OpenAPI Client Generation
 
-The project includes OpenAPI client generation from NVDB's API specification:
+The project includes OpenAPI client generation from several API specifications:
 
 ```bash
-./gradlew openApiGenerate    # Generate client from nvdb-api.json
+./gradlew generateAllApiModels
 ```
-
-**Note**: The generated client is currently disabled in the build due to compatibility issues with the Kotlin
-serialization library. The generation works but integration is pending resolution of serialization conflicts.
 
 ### Testing
 
-Tests use Kotest framework and can be run individually or as a suite. The application includes unit tests for the
+Tests use Kotest 6.0 framework and can be run individually or as a suite. The application includes unit tests for the
 console application logic.
+
+#### Running Tests
+
+**Run all tests:**
+
+```bash
+./gradlew test           # Run all tests
+```
+
+**Run specific test classes:**
+
+```bash
+./gradlew test --tests='XmlTest'                               # Run by class name pattern
+./gradlew test --tests='no.vegvesen.nvdb.tnits.xml.XmlTest'    # Run by full qualified class name
+./gradlew test --tests='no.vegvesen.nvdb.tnits.geometry.*'     # Run all tests in package
+```
+
+#### Test Structure
+
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlTest.kt` - XML streaming DSL tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/ProjectToTest.kt` - Geometry projection tests
+
+The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific
+filtering.
 
 ### Code Style and Formatting
 

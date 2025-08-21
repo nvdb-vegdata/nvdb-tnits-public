@@ -4,12 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.flow.Flow
-import no.vegvesen.nvdb.apiles.model.VeglenkeMedId
-import no.vegvesen.nvdb.apiles.model.VegnettHendelserSide
-import no.vegvesen.nvdb.apiles.model.VegnettNotifikasjon
-import no.vegvesen.nvdb.apiles.model.Vegobjekt
-import no.vegvesen.nvdb.apiles.model.VegobjektHendelserSide
-import no.vegvesen.nvdb.apiles.model.VegobjektNotifikasjon
+import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.extensions.executeAsNdjsonFlow
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
 import kotlin.time.Instant
@@ -54,6 +49,7 @@ class UberiketApi(
 
     suspend fun streamVegobjekter(
         typeId: Int,
+        ider: Collection<Long>? = null,
         start: Long? = null,
         antall: Int = VEGOBJEKTER_PAGE_SIZE,
     ): Flow<Vegobjekt> =
@@ -61,6 +57,7 @@ class UberiketApi(
             .prepareGet("vegobjekter/$typeId/stream") {
                 parameter("start", start?.toString())
                 parameter("antall", antall)
+                parameter("ider", ider?.joinToString(","))
             }.executeAsNdjsonFlow<Vegobjekt>()
 
     suspend fun getLatestVegobjektHendelseId(

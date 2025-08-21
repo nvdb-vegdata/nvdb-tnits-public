@@ -2,15 +2,20 @@ package no.vegvesen.nvdb.tnits.vegobjekter
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
-import no.vegvesen.nvdb.apiles.model.Vegobjekt
+import kotlinx.datetime.LocalDate
+import no.vegvesen.nvdb.apiles.uberiket.Retning
+import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
+import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
+import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.database.KeyValue
+import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
+import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.putSync
 import no.vegvesen.nvdb.tnits.uberiketApi
-import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
@@ -25,6 +30,8 @@ suspend fun updateVegobjekter(typeId: Int) {
                 ?: error("Backfill for type $typeId er ikke ferdig"),
         )
 
+    println("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $lastHendelseId")
+
     do {
         val response =
             uberiketApi.getVegobjektHendelser(
@@ -36,22 +43,22 @@ suspend fun updateVegobjekter(typeId: Int) {
             lastHendelseId = response.hendelser.last().hendelseId
             val changedIds = response.hendelser.map { it.vegobjektId }.toSet()
             val vegobjekter = mutableListOf<Vegobjekt>()
-            var start: Long? = null
 
-            do {
-                val batch = uberiketApi.streamVegobjekter(typeId = typeId, start = start).toList()
+            changedIds.forEachChunked(100) { chunk ->
+                var start: Long? = null
+                do {
+                    val batch = uberiketApi.streamVegobjekter(typeId = typeId, start = start, ider = chunk).toList()
 
-                if (batch.isNotEmpty()) {
-                    vegobjekter.addAll(batch.filter { it.id in changedIds })
-                    start = batch.last().id
-                }
-            } while (batch.isNotEmpty() && vegobjekter.size < changedIds.size)
+                    if (batch.isNotEmpty()) {
+                        vegobjekter.addAll(batch.filter { it.id in changedIds })
+                        start = batch.last().id
+                    }
+                } while (batch.isNotEmpty())
+            }
 
             newSuspendedTransaction(Dispatchers.IO) {
-                changedIds.forEach { vegobjektId ->
-                    Vegobjekter.deleteWhere {
-                        (Vegobjekter.vegobjektId eq vegobjektId) and (Vegobjekter.vegobjektType eq typeId)
-                    }
+                Vegobjekter.deleteWhere {
+                    Vegobjekter.vegobjektId inList changedIds
                 }
                 insertVegobjekter(vegobjekter)
                 // Keep progress update atomic within the same transaction
@@ -95,12 +102,58 @@ suspend fun backfillVegobjekter(typeId: Int) {
     } while (vegobjekter.isNotEmpty())
 }
 
+val MAX_DATE = LocalDate(9999, 12, 31)
+
 private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
-    Vegobjekter.batchInsert(vegobjekter) { vegobjekt ->
+    Vegobjekter.batchInsert(vegobjekter, shouldReturnGeneratedValues = false) { vegobjekt ->
         this[Vegobjekter.vegobjektId] = vegobjekt.id
         this[Vegobjekter.vegobjektVersjon] = vegobjekt.versjon
         this[Vegobjekter.vegobjektType] = vegobjekt.typeId
         this[Vegobjekter.data] = vegobjekt
         this[Vegobjekter.sistEndret] = Clock.System.now()
     }
+    val stedfestinger =
+        vegobjekter.flatMap { vegobjekt ->
+            vegobjekt.getStedfestingLinjer()
+        }
+    Stedfestinger.batchInsert(stedfestinger) { stedfesting ->
+        this[Stedfestinger.vegobjektId] = stedfesting.vegobjektId
+        this[Stedfestinger.vegobjektType] = stedfesting.vegobjektType
+        this[Stedfestinger.veglenkesekvensId] = stedfesting.veglenkesekvensId
+        this[Stedfestinger.startposisjon] = stedfesting.startposisjon.toBigDecimal()
+        this[Stedfestinger.sluttposisjon] = stedfesting.sluttposisjon.toBigDecimal()
+        this[Stedfestinger.retning] = stedfesting.retning
+        this[Stedfestinger.sideposisjon] = stedfesting.sideposisjon
+        this[Stedfestinger.kjorefelt] = stedfesting.kjorefelt
+    }
 }
+
+fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> =
+    when (val stedfesting = this.stedfesting) {
+        is StedfestingLinjer ->
+            stedfesting.linjer.map {
+                VegobjektStedfesting(
+                    veglenkesekvensId = it.id,
+                    startposisjon = it.startposisjon,
+                    sluttposisjon = it.sluttposisjon,
+                    retning = it.retning,
+                    sideposisjon = it.sideposisjon,
+                    kjorefelt = it.kjorefelt,
+                    vegobjektId = this.id,
+                    vegobjektType = this.typeId,
+                )
+            }
+
+        else -> error("Forventet StedfestingLinjer, fikk ${stedfesting::class.simpleName}")
+    }
+
+data class VegobjektStedfesting(
+    val vegobjektId: Long,
+    val vegobjektType: Int,
+    val veglenkesekvensId: Long,
+    val startposisjon: Double,
+    val sluttposisjon: Double,
+    val retning: Retning? = null,
+    val sideposisjon: Sideposisjon? = null,
+    val kjorefelt: List<String> = emptyList(),
+)

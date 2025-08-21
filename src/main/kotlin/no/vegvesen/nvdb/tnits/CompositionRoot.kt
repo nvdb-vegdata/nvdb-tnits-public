@@ -9,7 +9,10 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
+import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
+import org.openlr.encoder.EncoderFactory
+import org.openlr.location.LocationFactory
 
 private fun ObjectMapper.initialize(): ObjectMapper =
     apply {
@@ -22,7 +25,7 @@ private fun ObjectMapper.initialize(): ObjectMapper =
 
 val objectMapper: ObjectMapper = ObjectMapper().initialize()
 
-val httpClient =
+val uberiketHttpClient =
     HttpClient(CIO) {
         expectSuccess = true
         install(ContentNegotiation) {
@@ -37,4 +40,25 @@ val httpClient =
         }
     }
 
-val uberiketApi = UberiketApi(httpClient)
+val uberiketApi = UberiketApi(uberiketHttpClient)
+
+val datakatalogHttpClient =
+    HttpClient(CIO) {
+        expectSuccess = true
+        install(ContentNegotiation) {
+            jackson {
+                initialize()
+            }
+        }
+        defaultRequest {
+            url("https://nvdbapiles.atlas.vegvesen.no/datakatalog/api/v1/")
+            headers.append("Accept", "application/json")
+            headers.append("X-Client", "nvdb-tnits-console")
+        }
+    }
+
+val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
+
+val openLrEncoder = EncoderFactory().create()
+
+val locationFactory = LocationFactory()
