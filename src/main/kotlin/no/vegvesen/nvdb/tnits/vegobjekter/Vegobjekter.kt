@@ -15,9 +15,11 @@ import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.putSync
 import no.vegvesen.nvdb.tnits.uberiketApi
+import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -57,11 +59,23 @@ suspend fun updateVegobjekter(typeId: Int) {
             }
 
             newSuspendedTransaction(Dispatchers.IO) {
+                val existingStedfestedeVeglenkesekvensIds =
+                    Stedfestinger
+                        .select(Stedfestinger.veglenkesekvensId)
+                        .where { Stedfestinger.vegobjektId inList changedIds }
+                        .withDistinct(true)
+                        .map { it[Stedfestinger.veglenkesekvensId] }
+                        .toSet()
+                val updatedStedfestedeVeglenkesekvensIds =
+                    vegobjekter
+                        .flatMap { it.getStedfestingLinjer() }
+                        .map { it.veglenkesekvensId }
+                        .toSet()
                 Vegobjekter.deleteWhere {
                     Vegobjekter.vegobjektId inList changedIds
                 }
                 insertVegobjekter(vegobjekter)
-                // Keep progress update atomic within the same transaction
+                publishChangedVeglenkesekvensIds(existingStedfestedeVeglenkesekvensIds + updatedStedfestedeVeglenkesekvensIds)
                 KeyValue.putSync("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")

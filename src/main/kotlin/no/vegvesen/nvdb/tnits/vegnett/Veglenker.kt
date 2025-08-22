@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
+import no.vegvesen.nvdb.tnits.database.DirtyVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
@@ -56,13 +57,20 @@ suspend fun updateVeglenker() {
             newSuspendedTransaction(Dispatchers.IO) {
                 Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
                 insertVeglenker(veglenker)
-                // Keep progress update atomic within the same transaction
+                publishChangedVeglenkesekvensIds(changedIds)
                 KeyValue.putSync("veglenker_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
         }
     } while (response.hendelser.isNotEmpty())
     println("Oppdatering av veglenker fullført. Siste hendelse-ID: $lastHendelseId")
+}
+
+fun publishChangedVeglenkesekvensIds(changedIds: Collection<Long>) {
+    DirtyVeglenkesekvenser.batchInsert(changedIds) {
+        this[DirtyVeglenkesekvenser.veglenkesekvensId] = it
+        this[DirtyVeglenkesekvenser.sistEndret] = Clock.System.now()
+    }
 }
 
 suspend fun backfillVeglenker() {
@@ -111,5 +119,14 @@ private fun insertVeglenker(veglenker: List<VeglenkeMedId>) {
         this[Veglenker.sluttposisjon] = veglenke.utstrekning.sluttposisjon.toBigDecimal()
         this[Veglenker.geometri] = parseWkt(veglenke.geometri.wkt, SRID.UTM33)
         this[Veglenker.typeVeg] = veglenke.typeVeg
+        this[Veglenker.detaljniva] = veglenke.detaljniva
+        veglenke.superstedfesting?.let { stedfesting ->
+            this[Veglenker.superstedfestingId] = stedfesting.id
+            this[Veglenker.superstedfestingStartposisjon] =
+                stedfesting.startposisjon.toBigDecimal()
+            this[Veglenker.superstedfestingSluttposisjon] =
+                stedfesting.sluttposisjon.toBigDecimal()
+            this[Veglenker.superstedfestingKjorefelt] = stedfesting.kjorefelt.ifEmpty { null }
+        }
     }
 }

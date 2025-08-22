@@ -4,6 +4,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
+import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinje
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
 import no.vegvesen.nvdb.tnits.config.FETCH_SIZE
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
@@ -11,12 +12,14 @@ import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.xml.xmlDocument
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.locationtech.jts.geom.Geometry
 import org.openlr.locationreference.LineLocationReference
+import java.nio.file.Files
 import kotlin.time.Clock
 
 val OsloZone = TimeZone.of("Europe/Oslo")
@@ -36,7 +39,23 @@ suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
         .tillatteVerdier
         .associate { it.id to it.verdi!! }
 
-suspend fun generateSpeedLimitsFullSnapshot() {}
+suspend fun generateSpeedLimitsFullSnapshot() {
+    val path =
+        Files.createTempFile("TNITS_SpeedLimits_${Clock.System.now().toString().replace(":", "-")}_complete", ".xml")
+    println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
+    xmlDocument(
+        path,
+        rootQName = "tnits:FeatureCollection",
+        namespaces =
+            mapOf(
+                "tnits" to "http://vegvesen.no/tnits",
+                "gml" to "http://www.opengis.net/gml/3.2",
+                "xsi" to "http://www.w3.org/2001/XMLSchema-instance",
+            ),
+        indent = "\t",
+    ) {
+    }
+}
 
 suspend fun generateSequence(): Sequence<SpeedLimit> {
     val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
@@ -131,6 +150,17 @@ fun ResultRow.toVeglenke(): Veglenke =
         startposisjon = this[Veglenker.startposisjon].toDouble(),
         sluttposisjon = this[Veglenker.sluttposisjon].toDouble(),
         geometri = this[Veglenker.geometri],
+        typeVeg = this[Veglenker.typeVeg],
+        detaljniva = this[Veglenker.detaljniva],
+        superstedfesting =
+            this[Veglenker.superstedfestingId]?.let { superstedfestingId ->
+                StedfestingLinje().apply {
+                    id = superstedfestingId
+                    startposisjon = get(Veglenker.superstedfestingStartposisjon)?.toDouble() ?: 0.0
+                    sluttposisjon = get(Veglenker.superstedfestingSluttposisjon)?.toDouble() ?: 0.0
+                    kjorefelt = get(Veglenker.superstedfestingKjorefelt) ?: emptyList()
+                }
+            },
     )
 
 data class Utstrekning(

@@ -51,15 +51,23 @@ class Xml(
 
     inline fun element(
         qName: String,
+        namespaceDeclarations: Map<String, String> = emptyMap(),
         block: Xml.() -> Unit,
     ) {
         writeIndent()
         hasChildElements = true // Mark that this element exists, so parent knows it has child elements
+
+        // Add any namespace declarations to context before resolving QName
+        namespaceDeclarations.forEach { (p, u) -> namespaces[p] = u }
         val (prefix, localName, namespace) = splitQName(qName)
         when {
             prefix != null && namespace != null -> writer.writeStartElement(prefix, localName, namespace)
             prefix == null -> writer.writeStartElement(localName)
             else -> writer.writeStartElement(prefix, localName, "")
+        }
+        // Write namespace declarations on this element
+        namespaceDeclarations.forEach { (p, u) ->
+            writer.writeNamespace(p, u)
         }
         depth++
         val previousHasChildElements = hasChildElements
@@ -81,7 +89,7 @@ class Xml(
         }
     }
 
-    operator fun String.invoke(block: Xml.() -> Unit) = element(this, block)
+    operator fun String.invoke(block: Xml.() -> Unit) = element(this, block = block)
 
     fun attribute(
         qName: String,
@@ -101,44 +109,6 @@ class Xml(
 
     operator fun String.unaryMinus() {
         text(this)
-    }
-
-    @PublishedApi
-    internal inline fun rootElement(
-        qName: String,
-        namespaces: Map<String, String> = emptyMap(),
-        block: Xml.() -> Unit,
-    ) {
-        writeIndent()
-        hasChildElements = true
-
-        // First, add namespaces to our context
-        namespaces.forEach { (p, u) -> this.namespaces[p] = u }
-
-        // Now splitQName can find the URI for the prefix
-        val (prefix, localName, namespace) = splitQName(qName)
-        when {
-            prefix != null && namespace != null -> writer.writeStartElement(prefix, localName, namespace)
-            prefix == null -> writer.writeStartElement(localName)
-            else -> writer.writeStartElement(prefix, localName, "")
-        }
-
-        // Write namespace declarations on the root element
-        namespaces.forEach { (p, u) ->
-            writer.writeNamespace(p, u)
-        }
-
-        depth++
-        val previousHasChildElements = hasChildElements
-        hasChildElements = false
-        this.block()
-        val elementHasChildElements = hasChildElements
-        hasChildElements = previousHasChildElements
-        depth--
-        if (elementHasChildElements) {
-            writeIndent()
-        }
-        writer.writeEndElement()
     }
 
     fun splitQName(qName: String): Triple<String?, String, String?> {
@@ -195,7 +165,7 @@ inline fun xmlDocument(
     indent: String? = null,
     crossinline writeChildren: Xml.() -> Unit,
 ) = xmlStream(os, encoding, indent) {
-    rootElement(rootQName, namespaces) {
+    element(rootQName, namespaces) {
         writeChildren()
     }
 }
@@ -254,7 +224,7 @@ suspend inline fun <T> writeFlow(
     val xml = Xml(writer, indent)
     try {
         xml.startDocument(encoding)
-        xml.rootElement(rootQName, namespaces) {
+        xml.element(rootQName, namespaces) {
             flow.collect { item -> writeItem(item) }
         }
         xml.endDocument()

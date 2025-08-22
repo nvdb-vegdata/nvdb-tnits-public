@@ -1,9 +1,6 @@
 package no.vegvesen.nvdb.tnits.database
 
-import no.vegvesen.nvdb.apiles.uberiket.Retning
-import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
-import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
+import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.database.GeometryWkbColumnType.Companion.geometryWkb
 import no.vegvesen.nvdb.tnits.database.JacksonJsonbColumnType.Companion.jacksonJsonb
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -23,6 +20,13 @@ object Veglenker : Table("veglenker") {
     val startnode = long("startnode")
     val sluttnode = long("sluttnode")
     val typeVeg = enumeration<TypeVeg>("type_veg")
+    val detaljniva = enumeration<Detaljniva>("detaljniva")
+    val superstedfestingId = long("superstedfesting_id").nullable()
+    val superstedfestingStartposisjon =
+        decimal("superstedfesting_startposisjon", precision = 9, scale = 8).nullable()
+    val superstedfestingSluttposisjon =
+        decimal("superstedfesting_sluttposisjon", precision = 9, scale = 8).nullable()
+    val superstedfestingKjorefelt = jacksonJsonb<List<String>>("superstedfesting_kjorefelt").nullable()
 
     override val primaryKey = PrimaryKey(veglenkesekvensId, veglenkenummer)
 
@@ -78,4 +82,13 @@ object KeyValue : Table("key_value") {
     val value = text("value")
 
     override val primaryKey = PrimaryKey(key)
+}
+
+object DirtyVeglenkesekvenser : Table("dirty_veglenkesekvenser") {
+    val veglenkesekvensId = long("veglenkesekvens_id")
+    val sistEndret = timestamp("sist_endret")
+
+    init {
+        index(isUnique = false, sistEndret)
+    }
 }

@@ -5,16 +5,12 @@ import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.config.configureDatabase
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.database.KeyValue
-import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenker
+import no.vegvesen.nvdb.tnits.vegnett.updateVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.backfillVegobjekter
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import no.vegvesen.nvdb.tnits.vegobjekter.updateVegobjekter
 import kotlin.time.Instant
-
-fun generateOpenLrLines() {
-    Veglenker.selectAll()
-}
 
 suspend fun main() {
     println("Starter NVDB TN-ITS konsollapplikasjon...")
@@ -31,6 +27,7 @@ suspend fun main() {
             if (veglenkerBackfillCompleted == null) {
                 backfillVeglenker()
             }
+            updateVeglenker()
         }
 
         vegobjektTyper.forEach { typeId ->
@@ -40,6 +37,7 @@ suspend fun main() {
                 if (backfillCompleted == null) {
                     backfillVegobjekter(typeId)
                 }
+                updateVegobjekter(typeId)
             }
         }
     }
