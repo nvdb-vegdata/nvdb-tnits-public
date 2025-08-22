@@ -40,7 +40,11 @@ data class OpenLrLine(
     override fun getLength(): Double = geometri.length
 
     companion object {
-        fun fromVeglenke(veglenke: Veglenke, frc: FunctionalRoadClass, fow: FormOfWay): OpenLrLine {
+        fun fromVeglenke(
+            veglenke: Veglenke,
+            frc: FunctionalRoadClass,
+            fow: FormOfWay,
+        ): OpenLrLine {
             val geometry = veglenke.geometri
 
             if (geometry !is LineString) {
@@ -63,12 +67,11 @@ data class OpenLrLine(
                 sluttnode = endNode,
                 geometri = geometry,
                 frc = frc,
-                fow = fow
+                fow = fow,
             )
         }
     }
 }
-
 
 data class OpenLrNode(
     val valid: Boolean,

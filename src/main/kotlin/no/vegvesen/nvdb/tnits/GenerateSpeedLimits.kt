@@ -124,13 +124,14 @@ suspend fun generateSequence(): Sequence<SpeedLimit> {
     }
 }
 
-fun ResultRow.toVeglenke(): Veglenke = Veglenke(
-    veglenkesekvensId = this[Veglenker.veglenkesekvensId],
-    veglenkenummer = this[Veglenker.veglenkenummer],
-    startposisjon = this[Veglenker.startposisjon].toDouble(),
-    sluttposisjon = this[Veglenker.sluttposisjon].toDouble(),
-    geometri = this[Veglenker.geometri],
-)
+fun ResultRow.toVeglenke(): Veglenke =
+    Veglenke(
+        veglenkesekvensId = this[Veglenker.veglenkesekvensId],
+        veglenkenummer = this[Veglenker.veglenkenummer],
+        startposisjon = this[Veglenker.startposisjon].toDouble(),
+        sluttposisjon = this[Veglenker.sluttposisjon].toDouble(),
+        geometri = this[Veglenker.geometri],
+    )
 
 data class Utstrekning(
     val veglenkesekvensId: Long,

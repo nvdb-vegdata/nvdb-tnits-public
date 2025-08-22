@@ -11,6 +11,9 @@ import java.nio.file.StandardOpenOption
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.stream.XMLStreamWriter
 
+@PublishedApi
+internal val xmlOutputFactory: XMLOutputFactory by lazy { XMLOutputFactory.newFactory() }
+
 /**
  * Minimal streaming XML DSL built on StAX, inspired by redundent.kotlin.xml.
  * - "prefix:Local" { ... }      -> element
@@ -22,9 +25,14 @@ class Xml(
     val writer: XMLStreamWriter,
     private val indent: String? = null,
 ) {
-    private val namespaces = mutableMapOf<String, String>()
+    @PublishedApi
+    internal val namespaces = mutableMapOf<String, String>()
 
-    @PublishedApi internal var depth = 0
+    @PublishedApi
+    internal var depth = 0
+
+    @PublishedApi
+    internal var hasChildElements = false
 
     fun startDocument(
         encoding: String = "UTF-8",
@@ -41,19 +49,12 @@ class Xml(
         }
     }
 
-    fun namespace(
-        prefix: String,
-        uri: String,
-    ) {
-        namespaces[prefix] = uri
-        writer.writeNamespace(prefix, uri)
-    }
-
     inline fun element(
         qName: String,
         block: Xml.() -> Unit,
     ) {
         writeIndent()
+        hasChildElements = true // Mark that this element exists, so parent knows it has child elements
         val (prefix, localName, namespace) = splitQName(qName)
         when {
             prefix != null && namespace != null -> writer.writeStartElement(prefix, localName, namespace)
@@ -61,13 +62,20 @@ class Xml(
             else -> writer.writeStartElement(prefix, localName, "")
         }
         depth++
+        val previousHasChildElements = hasChildElements
+        hasChildElements = false
         this.block()
+        val elementHasChildElements = hasChildElements
+        hasChildElements = previousHasChildElements
         depth--
-        writeIndent()
+        if (elementHasChildElements) {
+            writeIndent()
+        }
         writer.writeEndElement()
     }
 
-    @PublishedApi internal fun writeIndent() {
+    @PublishedApi
+    internal fun writeIndent() {
         indent?.let { indentStr ->
             writer.writeCharacters("\n" + indentStr.repeat(depth))
         }
@@ -87,10 +95,50 @@ class Xml(
         }
     }
 
-    fun text(value: String) = writer.writeCharacters(value)
+    fun text(value: String) {
+        writer.writeCharacters(value)
+    }
 
     operator fun String.unaryMinus() {
         text(this)
+    }
+
+    @PublishedApi
+    internal inline fun rootElement(
+        qName: String,
+        namespaces: Map<String, String> = emptyMap(),
+        block: Xml.() -> Unit,
+    ) {
+        writeIndent()
+        hasChildElements = true
+
+        // First, add namespaces to our context
+        namespaces.forEach { (p, u) -> this.namespaces[p] = u }
+
+        // Now splitQName can find the URI for the prefix
+        val (prefix, localName, namespace) = splitQName(qName)
+        when {
+            prefix != null && namespace != null -> writer.writeStartElement(prefix, localName, namespace)
+            prefix == null -> writer.writeStartElement(localName)
+            else -> writer.writeStartElement(prefix, localName, "")
+        }
+
+        // Write namespace declarations on the root element
+        namespaces.forEach { (p, u) ->
+            writer.writeNamespace(p, u)
+        }
+
+        depth++
+        val previousHasChildElements = hasChildElements
+        hasChildElements = false
+        this.block()
+        val elementHasChildElements = hasChildElements
+        hasChildElements = previousHasChildElements
+        depth--
+        if (elementHasChildElements) {
+            writeIndent()
+        }
+        writer.writeEndElement()
     }
 
     fun splitQName(qName: String): Triple<String?, String, String?> {
@@ -110,15 +158,10 @@ class Xml(
 inline fun xmlStream(
     os: OutputStream,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     block: Xml.() -> Unit,
 ) {
-    val factory =
-        XMLOutputFactory.newFactory().apply {
-            if (repairingNamespaces) setProperty("javax.xml.stream.isRepairingNamespaces", true)
-        }
-    val writer = factory.createXMLStreamWriter(os, encoding)
+    val writer = xmlOutputFactory.createXMLStreamWriter(os, encoding)
     val xml = Xml(writer, indent)
     try {
         xml.startDocument(encoding)
@@ -134,13 +177,12 @@ inline fun xmlStream(
 inline fun xmlStream(
     path: Path,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
     crossinline block: Xml.() -> Unit,
 ) {
     BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-        xmlStream(os, encoding, repairingNamespaces, indent) { block() }
+        xmlStream(os, encoding, indent) { block() }
     }
 }
 
@@ -150,12 +192,10 @@ inline fun xmlDocument(
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     crossinline writeChildren: Xml.() -> Unit,
-) = xmlStream(os, encoding, repairingNamespaces, indent) {
-    rootQName {
-        namespaces.forEach { (p, u) -> namespace(p, u) }
+) = xmlStream(os, encoding, indent) {
+    rootElement(rootQName, namespaces) {
         writeChildren()
     }
 }
@@ -166,12 +206,11 @@ inline fun xmlDocument(
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
     crossinline writeChildren: Xml.() -> Unit,
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-    xmlDocument(os, rootQName, namespaces, encoding, repairingNamespaces, indent, writeChildren)
+    xmlDocument(os, rootQName, namespaces, encoding, indent, writeChildren)
 }
 
 /** Stream a Sequence<T> under a root element to OutputStream. */
@@ -181,10 +220,9 @@ inline fun <T> writeSequence(
     namespaces: Map<String, String> = emptyMap(),
     items: Sequence<T>,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     crossinline writeItem: Xml.(T) -> Unit,
-) = xmlDocument(os, rootQName, namespaces, encoding, repairingNamespaces, indent) {
+) = xmlDocument(os, rootQName, namespaces, encoding, indent) {
     for (item in items) writeItem(item)
 }
 
@@ -195,12 +233,11 @@ inline fun <T> writeSequence(
     namespaces: Map<String, String> = emptyMap(),
     items: Sequence<T>,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
     crossinline writeItem: Xml.(T) -> Unit,
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-    writeSequence(os, rootQName, namespaces, items, encoding, repairingNamespaces, indent, writeItem)
+    writeSequence(os, rootQName, namespaces, items, encoding, indent, writeItem)
 }
 
 /** Stream a Flow<T> under a root element to OutputStream. */
@@ -210,20 +247,14 @@ suspend inline fun <T> writeFlow(
     namespaces: Map<String, String> = emptyMap(),
     flow: Flow<T>,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     crossinline writeItem: Xml.(T) -> Unit,
 ) {
-    val factory =
-        XMLOutputFactory.newFactory().apply {
-            if (repairingNamespaces) setProperty("javax.xml.stream.isRepairingNamespaces", true)
-        }
-    val writer = factory.createXMLStreamWriter(os, encoding)
+    val writer = xmlOutputFactory.createXMLStreamWriter(os, encoding)
     val xml = Xml(writer, indent)
     try {
         xml.startDocument(encoding)
-        xml.element(rootQName) {
-            namespaces.forEach { (prefix, uri) -> namespace(prefix, uri) }
+        xml.rootElement(rootQName, namespaces) {
             flow.collect { item -> writeItem(item) }
         }
         xml.endDocument()
@@ -240,13 +271,12 @@ suspend inline fun <T> writeFlow(
     namespaces: Map<String, String> = emptyMap(),
     flow: Flow<T>,
     encoding: String = "UTF-8",
-    repairingNamespaces: Boolean = true,
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
     crossinline writeItem: Xml.(T) -> Unit,
 ) = withContext(Dispatchers.IO) {
     BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-        writeFlow(os, rootQName, namespaces, flow, encoding, repairingNamespaces, indent, writeItem)
+        writeFlow(os, rootQName, namespaces, flow, encoding, indent, writeItem)
     }
 }
 

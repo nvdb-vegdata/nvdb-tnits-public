@@ -11,7 +11,6 @@ import org.locationtech.jts.geom.PrecisionModel
 import org.locationtech.jts.io.WKTReader
 import javax.xml.crypto.dsig.TransformException
 
-
 object SRID {
     const val UTM33 = 25833
     const val WGS84 = 4326

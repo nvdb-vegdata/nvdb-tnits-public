@@ -11,7 +11,6 @@ import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.date
 import org.jetbrains.exposed.v1.datetime.timestamp
 
-
 object Veglenker : Table("veglenker") {
     val veglenkesekvensId = long("veglenkesekvens_id")
     val veglenkenummer = integer("veglenkenummer")

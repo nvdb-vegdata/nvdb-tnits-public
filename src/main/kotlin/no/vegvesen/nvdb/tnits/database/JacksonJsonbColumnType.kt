@@ -10,10 +10,10 @@ import kotlin.reflect.KClass
 class JacksonJsonbColumnType<T : Any>(
     clazz: KClass<T>,
 ) : JsonColumnType<T>({
-    objectMapper.writeValueAsString(it)
-}, {
-    objectMapper.readValue(it, clazz.java)
-}) {
+        objectMapper.writeValueAsString(it)
+    }, {
+        objectMapper.readValue(it, clazz.java)
+    }) {
     override val usesBinaryFormat: Boolean = true
 
     override fun sqlType(): String =
@@ -23,7 +23,6 @@ class JacksonJsonbColumnType<T : Any>(
         }
 
     companion object {
-        inline fun <reified T : Any> Table.jacksonJsonb(name: String) =
-            registerColumn(name, JacksonJsonbColumnType(T::class))
+        inline fun <reified T : Any> Table.jacksonJsonb(name: String) = registerColumn(name, JacksonJsonbColumnType(T::class))
     }
 }

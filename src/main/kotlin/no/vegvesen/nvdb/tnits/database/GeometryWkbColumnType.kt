@@ -20,18 +20,19 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
 
     override fun sqlType(): String = "BYTEA"
 
-    override fun valueFromDB(value: Any): Geometry = when (value) {
-        is Geometry -> value
-        is ByteArray -> reader.read(value)
-        is ByteBuffer -> {
-            val arr = ByteArray(value.remaining())
-            value.get(arr)
-            reader.read(arr)
-        }
+    override fun valueFromDB(value: Any): Geometry =
+        when (value) {
+            is Geometry -> value
+            is ByteArray -> reader.read(value)
+            is ByteBuffer -> {
+                val arr = ByteArray(value.remaining())
+                value.get(arr)
+                reader.read(arr)
+            }
 
-        is Blob -> value.getBytes(1, value.length().toInt()).also { value.free() }.let(reader::read)
-        else -> error("Unsupported DB value for Geometry WKB: ${value::class} ($value)")
-    }
+            is Blob -> value.getBytes(1, value.length().toInt()).also { value.free() }.let(reader::read)
+            else -> error("Unsupported DB value for Geometry WKB: ${value::class} ($value)")
+        }
 
     override fun notNullValueToDB(value: Geometry): Any = writeWkb(value)
 
@@ -41,10 +42,7 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
     private fun writeWkb(g: Geometry): ByteArray = writer.write(g)
 
     companion object {
-
         /** Table helper */
-        fun Table.geometryWkb(name: String): Column<Geometry> =
-            registerColumn(name, GeometryWkbColumnType())
-
+        fun Table.geometryWkb(name: String): Column<Geometry> = registerColumn(name, GeometryWkbColumnType())
     }
 }

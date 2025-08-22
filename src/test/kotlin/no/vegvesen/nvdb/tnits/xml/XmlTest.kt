@@ -70,7 +70,7 @@ class XmlTest :
 
             val xml = output.toString("UTF-8")
             xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="" xmlns:test="http://example.com/test"><test:element xmlns:gml="http://www.opengis.net/gml/3.2.1" gml:id="test-1">content</test:element></gml:Root>"""
+                """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test"><test:element gml:id="test-1">content</test:element></gml:Root>"""
         }
 
         "xmlDocument Path should delegate to OutputStream version" {
@@ -84,7 +84,7 @@ class XmlTest :
 
             val content = tempFile.readText()
             content shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><ns:root xmlns:ns=""><ns:child xmlns:ns="http://example.com">test</ns:child></ns:root>"""
+                """<?xml version="1.0" encoding="UTF-8"?><ns:root xmlns:ns="http://example.com"><ns:child>test</ns:child></ns:root>"""
         }
 
         "writeSequence should process items with OutputStream" {
@@ -148,20 +148,21 @@ class XmlTest :
 
         "namespace handling should work correctly" {
             val output = ByteArrayOutputStream()
+            val namespaces =
+                mapOf(
+                    "gml" to "http://www.opengis.net/gml/3.2.1",
+                    "xlink" to "http://www.w3.org/1999/xlink",
+                )
 
-            xmlStream(output) {
-                "gml:FeatureCollection" {
-                    namespace("gml", "http://www.opengis.net/gml/3.2.1")
-                    namespace("xlink", "http://www.w3.org/1999/xlink")
-                    "gml:featureMember" {
-                        attribute("xlink:href", "#feature1")
-                    }
+            xmlDocument(output, "gml:FeatureCollection", namespaces) {
+                "gml:featureMember" {
+                    attribute("xlink:href", "#feature1")
                 }
             }
 
             val xml = output.toString("UTF-8")
             xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><gml:FeatureCollection xmlns:gml="" xmlns:xlink="http://www.w3.org/1999/xlink"><gml:featureMember xmlns:gml="http://www.opengis.net/gml/3.2.1" xlink:href="#feature1"></gml:featureMember></gml:FeatureCollection>"""
+                """<?xml version="1.0" encoding="UTF-8"?><gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:xlink="http://www.w3.org/1999/xlink"><gml:featureMember xlink:href="#feature1"></gml:featureMember></gml:FeatureCollection>"""
         }
 
         "complex nested structure should generate correct XML" {
@@ -262,10 +263,10 @@ class XmlTest :
 
             val xml = output.toString("UTF-8")
             val expected = """<?xml version="1.0" encoding="UTF-8"?>
-<ns:root xmlns:ns="">
-    <ns:metadata xmlns:ns="http://example.com" version="1.0"></ns:metadata>
+<ns:root xmlns:ns="http://example.com">
+    <ns:metadata version="1.0"></ns:metadata>
     <ns:data>
-        <ns:item xmlns:ns="http://example.com">value</ns:item>
+        <ns:item>value</ns:item>
     </ns:data>
 </ns:root>
 """
