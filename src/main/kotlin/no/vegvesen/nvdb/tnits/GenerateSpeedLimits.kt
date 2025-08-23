@@ -1,6 +1,7 @@
 package no.vegvesen.nvdb.tnits
 
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
@@ -12,15 +13,14 @@ import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.xml.xmlDocument
+import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.locationtech.jts.geom.Geometry
-import org.openlr.locationreference.LineLocationReference
 import java.nio.file.Files
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 val OsloZone = TimeZone.of("Europe/Oslo")
 
@@ -39,25 +39,61 @@ suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
         .tillatteVerdier
         .associate { it.id to it.verdi!! }
 
+fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
+
 suspend fun generateSpeedLimitsFullSnapshot() {
+    val now = Clock.System.now().truncateToSeconds()
     val path =
-        Files.createTempFile("TNITS_SpeedLimits_${Clock.System.now().toString().replace(":", "-")}_complete", ".xml")
+        Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_complete", ".xml")
     println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
-    xmlDocument(
+
+    val speedLimits = generateSpeedLimits()
+
+    writeXmlDocument(
         path,
-        rootQName = "tnits:FeatureCollection",
+        rootQName = "RoadFeatureDataset",
         namespaces =
             mapOf(
-                "tnits" to "http://vegvesen.no/tnits",
-                "gml" to "http://www.opengis.net/gml/3.2",
+                "" to "http://spec.tn-its.eu/schemas/",
+                "gml" to "http://www.opengis.net/gml/3.2.1",
                 "xsi" to "http://www.w3.org/2001/XMLSchema-instance",
             ),
         indent = "\t",
     ) {
+        "metadata" {
+            "Metadata" {
+                "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
+                "datasetCreationTime" { now }
+            }
+        }
+        "type" { "Complete" }
+        "roadFeatures" {
+            speedLimits.forEach { speedLimit ->
+                "RoadFeature" {
+                    "validFrom" { speedLimit.validFrom }
+                    speedLimit.validTo?.let {
+                        "validTo" { it }
+                    }
+                    "beginLifespanVersion" {
+                        speedLimit.validFrom.atStartOfDayIn(OsloZone)
+                    }
+                    speedLimit.validTo?.let {
+                        "endLifespanVersion" {
+                            it.atStartOfDayIn(OsloZone)
+                        }
+                    }
+                    "updateInfo" {
+                        "UpdateInfo" {
+                            "type" { "Add" }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
-suspend fun generateSequence(): Sequence<SpeedLimit> {
+suspend fun generateSpeedLimits(): Sequence<SpeedLimit> {
     val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
 
     return sequence {
@@ -204,10 +240,3 @@ object EgenskapsTyper {
 const val FartsgrenseEgenskapTypeId = 2021
 
 const val FartsgrenseEgenskapTypeIdString = FartsgrenseEgenskapTypeId.toString()
-
-data class SpeedLimit(
-    val id: Long,
-    val kmh: Int,
-    val geometry: Geometry,
-    val locationReferences: List<LineLocationReference>,
-)

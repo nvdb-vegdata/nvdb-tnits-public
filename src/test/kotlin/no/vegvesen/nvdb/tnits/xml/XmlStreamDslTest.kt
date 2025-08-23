@@ -9,7 +9,7 @@ import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.readText
 
-class XmlTest :
+class XmlStreamDslTest :
     StringSpec({
 
         lateinit var tempFile: Path
@@ -22,13 +22,13 @@ class XmlTest :
             tempFile.deleteIfExists()
         }
 
-        "xmlStream should generate basic XML with OutputStream" {
+        "writeXmlStream should generate basic XML with OutputStream" {
             val output = ByteArrayOutputStream()
 
-            xmlStream(output) {
+            writeXmlStream(output) {
                 "root" {
                     "child" {
-                        -"text content"
+                        +"text content"
                     }
                     "other" {
                         attribute("attr", "value")
@@ -40,11 +40,11 @@ class XmlTest :
             xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child><other attr="value"></other></root>"""
         }
 
-        "xmlStream should work with Path" {
-            xmlStream(tempFile) {
+        "writeXmlStream should work with Path" {
+            writeXmlStream(tempFile) {
                 "root" {
                     "test" {
-                        -"path content"
+                        +"path content"
                     }
                 }
             }
@@ -53,7 +53,7 @@ class XmlTest :
             content shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><test>path content</test></root>"""
         }
 
-        "xmlDocument should generate document with namespaces using OutputStream" {
+        "writeXmlDocument should generate document with namespaces using OutputStream" {
             val output = ByteArrayOutputStream()
             val namespaces =
                 mapOf(
@@ -61,10 +61,10 @@ class XmlTest :
                     "test" to "http://example.com/test",
                 )
 
-            xmlDocument(output, "gml:Root", namespaces) {
+            writeXmlDocument(output, "gml:Root", namespaces) {
                 "test:element" {
                     attribute("gml:id", "test-1")
-                    -"content"
+                    +"content"
                 }
             }
 
@@ -73,12 +73,12 @@ class XmlTest :
                 """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test"><test:element gml:id="test-1">content</test:element></gml:Root>"""
         }
 
-        "xmlDocument Path should delegate to OutputStream version" {
+        "writeXmlDocument Path should delegate to OutputStream version" {
             val namespaces = mapOf("ns" to "http://example.com")
 
-            xmlDocument(tempFile, "ns:root", namespaces) {
+            writeXmlDocument(tempFile, "ns:root", namespaces) {
                 "ns:child" {
-                    -"test"
+                    +"test"
                 }
             }
 
@@ -94,7 +94,7 @@ class XmlTest :
             writeSequence(output, "list", items = items) { item: String ->
                 "item" {
                     attribute("value", item)
-                    -item
+                    +item
                 }
             }
 
@@ -108,7 +108,7 @@ class XmlTest :
 
             writeSequence(tempFile, "numbers", items = items) { num: Int ->
                 "number" {
-                    -num.toString()
+                    +num.toString()
                 }
             }
 
@@ -123,7 +123,7 @@ class XmlTest :
 
             writeFlow(output, "flow-root", flow = flow) { item: String ->
                 "flow-item" {
-                    -item.uppercase()
+                    +item.uppercase()
                 }
             }
 
@@ -154,7 +154,7 @@ class XmlTest :
                     "xlink" to "http://www.w3.org/1999/xlink",
                 )
 
-            xmlDocument(output, "gml:FeatureCollection", namespaces) {
+            writeXmlDocument(output, "gml:FeatureCollection", namespaces) {
                 "gml:featureMember" {
                     attribute("xlink:href", "#feature1")
                 }
@@ -168,22 +168,22 @@ class XmlTest :
         "complex nested structure should generate correct XML" {
             val output = ByteArrayOutputStream()
 
-            xmlDocument(output, "root") {
+            writeXmlDocument(output, "root") {
                 "metadata" {
                     attribute("version", "1.0")
-                    "author" { -"Test Author" }
-                    "date" { -"2024-01-01" }
+                    "author" { +"Test Author" }
+                    "date" { +"2024-01-01" }
                 }
                 "data" {
                     "items" {
                         repeat(3) { i ->
                             "item" {
                                 attribute("id", (i + 1).toString())
-                                "name" { -"Item ${i + 1}" }
+                                "name" { +"Item ${i + 1}" }
                                 "properties" {
                                     "property" {
                                         attribute("key", "type")
-                                        -"test"
+                                        +"test"
                                     }
                                 }
                             }
@@ -198,13 +198,13 @@ class XmlTest :
             xml shouldBe expected
         }
 
-        "xmlStream should support indentation with custom indent string" {
+        "writeXmlStream should support indentation with custom indent string" {
             val output = ByteArrayOutputStream()
 
-            xmlStream(output, indent = "  ") {
+            writeXmlStream(output, indent = "  ") {
                 "root" {
                     "child" {
-                        -"text content"
+                        +"text content"
                     }
                     "other" {
                         attribute("attr", "value")
@@ -222,14 +222,14 @@ class XmlTest :
             xml shouldBe expected
         }
 
-        "xmlStream should support indentation with tab character" {
+        "writeXmlStream should support indentation with tab character" {
             val output = ByteArrayOutputStream()
 
-            xmlStream(output, indent = "\t") {
+            writeXmlStream(output, indent = "\t") {
                 "root" {
                     "nested" {
                         "deep" {
-                            -"content"
+                            +"content"
                         }
                     }
                 }
@@ -246,17 +246,17 @@ class XmlTest :
             xml shouldBe expected
         }
 
-        "xmlDocument should support indentation" {
+        "writeXmlDocument should support indentation" {
             val output = ByteArrayOutputStream()
             val namespaces = mapOf("ns" to "http://example.com")
 
-            xmlDocument(output, "ns:root", namespaces, indent = "    ") {
+            writeXmlDocument(output, "ns:root", namespaces, indent = "    ") {
                 "ns:metadata" {
                     attribute("version", "1.0")
                 }
                 "ns:data" {
                     "ns:item" {
-                        -"value"
+                        +"value"
                     }
                 }
             }
@@ -280,7 +280,7 @@ class XmlTest :
             writeSequence(output, "list", items = items, indent = "  ") { item: String ->
                 "item" {
                     attribute("value", item)
-                    -item.lowercase()
+                    +item.lowercase()
                 }
             }
 
@@ -302,8 +302,8 @@ class XmlTest :
             writeFlow(output, "numbers", flow = flow, indent = "  ") { num: Int ->
                 "number" {
                     attribute("id", num.toString())
-                    "value" { -num.toString() }
-                    "squared" { -(num * num).toString() }
+                    "value" { +num.toString() }
+                    "squared" { +(num * num).toString() }
                 }
             }
 
@@ -329,7 +329,7 @@ class XmlTest :
 
         "Path-based functions should support indentation" {
             writeSequence(tempFile, "test", items = sequenceOf("x", "y"), indent = "  ") { item: String ->
-                "element" { -item }
+                "element" { +item }
             }
 
             val content = tempFile.readText()
@@ -340,5 +340,32 @@ class XmlTest :
 </test>
 """
             content shouldBe expected
+        }
+
+        "should write returned text" {
+            val output = ByteArrayOutputStream()
+
+            writeXmlStream(output) {
+                "root" {
+                    "child" {
+                        "text content"
+                    }
+                }
+            }
+
+            val xml = output.toString("UTF-8")
+            xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child></root>"""
+        }
+
+        "can writeXmlStream from non-suspend function" {
+            fun blockingWriteXml(output: ByteArrayOutputStream) {
+                writeXmlStream(output) {
+                    "root" {
+                        "child" {
+                            +"text content"
+                        }
+                    }
+                }
+            }
         }
     })
