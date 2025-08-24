@@ -59,6 +59,8 @@ class XmlStreamDslTest :
                 mapOf(
                     "gml" to "http://www.opengis.net/gml/3.2.1",
                     "test" to "http://example.com/test",
+                    "xmlns:xsi" to "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:schemaLocation" to "http://example.com/test test.xsd",
                 )
 
             writeXmlDocument(output, "gml:Root", namespaces) {
@@ -70,7 +72,7 @@ class XmlStreamDslTest :
 
             val xml = output.toString("UTF-8")
             xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test"><test:element gml:id="test-1">content</test:element></gml:Root>"""
+                """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://example.com/test test.xsd"><test:element gml:id="test-1">content</test:element></gml:Root>"""
         }
 
         "writeXmlDocument Path should delegate to OutputStream version" {

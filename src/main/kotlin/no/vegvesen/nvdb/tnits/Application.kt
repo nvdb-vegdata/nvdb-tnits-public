@@ -44,18 +44,19 @@ suspend fun main() {
 
     println("Oppdateringer fullført!")
 
-    println("Trykk:")
-    println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
-    println(" 2 for å generere delta snapshot")
-    println(" 3 for å avslutte")
-
-    var input: String
     do {
-        input = readln().trim()
+        println("Trykk:")
+        println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
+        println(" 2 for å generere delta snapshot")
+        println(" 3 for å avslutte")
+
+        val input: String = readln().trim()
+
         when (input) {
             "1" -> {
                 println("Genererer fullt snapshot av TN-ITS fartsgrenser...")
                 generateSpeedLimitsFullSnapshot()
+                println("Fullt snapshot generert.")
             }
 
             "2" -> {

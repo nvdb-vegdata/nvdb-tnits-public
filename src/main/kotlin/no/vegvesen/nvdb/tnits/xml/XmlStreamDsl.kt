@@ -49,10 +49,10 @@ class XmlStreamDsl(
         }
     }
 
-    suspend inline fun element(
+    inline fun element(
         qName: String,
         namespaceDeclarations: Map<String, String> = emptyMap(),
-        crossinline block: suspend XmlStreamDsl.() -> Any?,
+        block: XmlStreamDsl.() -> Any?,
     ) {
         writeIndent()
         hasChildElements = true // Mark that this element exists, so parent knows it has child elements
@@ -93,7 +93,7 @@ class XmlStreamDsl(
         }
     }
 
-    suspend inline operator fun String.invoke(crossinline block: suspend XmlStreamDsl.() -> Any?) = element(this, block = block)
+    inline operator fun String.invoke(block: XmlStreamDsl.() -> Any?) = element(this, block = block)
 
     fun attribute(
         qName: String,
@@ -129,11 +129,11 @@ class XmlStreamDsl(
 }
 
 /** Generic entry point over an OutputStream. */
-suspend inline fun writeXmlStream(
+inline fun writeXmlStream(
     outputStream: OutputStream,
     encoding: String = "UTF-8",
     indent: String? = null,
-    block: suspend XmlStreamDsl.() -> Unit,
+    block: XmlStreamDsl.() -> Unit,
 ) {
     val writer = xmlOutputFactory.createXMLStreamWriter(outputStream, encoding)
     val xml = XmlStreamDsl(writer, indent)
@@ -148,12 +148,12 @@ suspend inline fun writeXmlStream(
 }
 
 /** Overload writing directly to a Path. */
-suspend inline fun writeXmlStream(
+inline fun writeXmlStream(
     path: Path,
     encoding: String = "UTF-8",
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    crossinline block: suspend XmlStreamDsl.() -> Unit,
+    block: XmlStreamDsl.() -> Unit,
 ) {
     BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
         writeXmlStream(os, encoding, indent) { block() }
@@ -161,47 +161,75 @@ suspend inline fun writeXmlStream(
 }
 
 /** Convenience wrapper: write a document with a single root and declared namespaces. */
-suspend inline fun writeXmlDocument(
+inline fun writeXmlDocument(
     outputStream: OutputStream,
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
     indent: String? = null,
-    crossinline writeChildren: suspend XmlStreamDsl.() -> Unit,
+    writeChildren: XmlStreamDsl.() -> Unit,
 ) = writeXmlStream(outputStream, encoding, indent) {
-    element(rootQName, namespaces) {
+    // Separate different types of namespace map entries:
+    // 1. xmlns: declarations -> namespace mappings
+    // 2. prefixed entries (like xsi:schemaLocation) -> root attributes
+    // 3. plain keys -> namespace mappings (traditional style)
+    val nsDeclarations = mutableMapOf<String, String>()
+    val prefixedAttributes = mutableListOf<Pair<String, String>>()
+
+    namespaces.forEach { (key, value) ->
+        when {
+            key.startsWith("xmlns:") -> {
+                // xmlns:prefix -> namespace mapping
+                nsDeclarations[key.removePrefix("xmlns:")] = value
+            }
+            key.contains(":") -> {
+                // prefixed attribute (like xsi:schemaLocation)
+                prefixedAttributes.add(key to value)
+            }
+            else -> {
+                // traditional namespace mapping
+                nsDeclarations[key] = value
+            }
+        }
+    }
+
+    element(rootQName, nsDeclarations) {
+        // Add any prefixed attributes to the root element
+        prefixedAttributes.forEach { (key, value) ->
+            attribute(key, value)
+        }
         writeChildren()
     }
 }
 
 /** Path overload of xmlDocument. */
-suspend inline fun writeXmlDocument(
+inline fun writeXmlDocument(
     path: Path,
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    crossinline writeChildren: suspend XmlStreamDsl.() -> Unit,
+    writeChildren: XmlStreamDsl.() -> Unit,
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
     writeXmlDocument(os, rootQName, namespaces, encoding, indent, writeChildren)
 }
 
 /** Stream a Sequence<T> under a root element to OutputStream. */
-suspend inline fun <T> writeSequence(
+inline fun <T> writeSequence(
     outputStream: OutputStream,
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     items: Sequence<T>,
     encoding: String = "UTF-8",
     indent: String? = null,
-    crossinline writeItem: suspend XmlStreamDsl.(T) -> Unit,
+    writeItem: XmlStreamDsl.(T) -> Unit,
 ) = writeXmlDocument(outputStream, rootQName, namespaces, encoding, indent) {
     for (item in items) writeItem(item)
 }
 
 /** Stream a Sequence<T> under a root element to Path. */
-suspend inline fun <T> writeSequence(
+inline fun <T> writeSequence(
     path: Path,
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
@@ -209,7 +237,7 @@ suspend inline fun <T> writeSequence(
     encoding: String = "UTF-8",
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    crossinline writeItem: suspend XmlStreamDsl.(T) -> Unit,
+    writeItem: XmlStreamDsl.(T) -> Unit,
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
     writeSequence(os, rootQName, namespaces, items, encoding, indent, writeItem)
 }
@@ -222,7 +250,7 @@ suspend inline fun <T> writeFlow(
     flow: Flow<T>,
     encoding: String = "UTF-8",
     indent: String? = null,
-    crossinline writeItem: suspend XmlStreamDsl.(T) -> Unit,
+    crossinline writeItem: XmlStreamDsl.(T) -> Unit,
 ) {
     val writer = xmlOutputFactory.createXMLStreamWriter(outputStream, encoding)
     val xml = XmlStreamDsl(writer, indent)
@@ -247,7 +275,7 @@ suspend inline fun <T> writeFlow(
     encoding: String = "UTF-8",
     indent: String? = null,
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    crossinline writeItem: suspend XmlStreamDsl.(T) -> Unit,
+    crossinline writeItem: XmlStreamDsl.(T) -> Unit,
 ) = withContext(Dispatchers.IO) {
     BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
         writeFlow(os, rootQName, namespaces, flow, encoding, indent, writeItem)

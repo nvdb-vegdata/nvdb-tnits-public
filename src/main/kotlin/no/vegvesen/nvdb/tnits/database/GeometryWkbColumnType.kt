@@ -1,5 +1,7 @@
 package no.vegvesen.nvdb.tnits.database
 
+import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.geometry.geometryFactories
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.Table
@@ -14,9 +16,9 @@ import java.sql.Blob
  * Reads/writes JTS Geometry.
  */
 class GeometryWkbColumnType : ColumnType<Geometry>() {
-    private val reader = WKBReader()
+    private val reader = WKBReader(geometryFactories[SRID.UTM33])
 
-    private val writer = WKBWriter(3, false)
+    private val writer = WKBWriter(2, false)
 
     override fun sqlType(): String = "BYTEA"
 
