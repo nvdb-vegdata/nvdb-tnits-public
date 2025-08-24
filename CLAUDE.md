@@ -4,8 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Kotlin console application prototype for synchronizing road network data (veglenker) from the Norwegian Road
-Database (NVDB) to a local database. The application performs:
+This is a Kotlin console application prototype for synchronizing road network data (veglenker) from the Norwegian Road Database (NVDB) to a local database. The application performs:
 
 1. Initial backfill of all road network data from NVDB
 2. Incremental updates by processing change events from NVDB's event stream
@@ -16,9 +15,12 @@ Database (NVDB) to a local database. The application performs:
 
 The application follows a console-based architecture with Exposed ORM for database operations:
 
-- **Application.kt**: Main entry point with suspend main() function that orchestrates data synchronization
+- **Application.kt**: Main entry point with suspend main() function and interactive menu for data synchronization and TN-ITS export
 - **config/**: Configuration modules for database setup and application settings
 - **database/**: Exposed ORM table definitions and entity classes for road network data
+- **geometry/**: Spatial geometry processing utilities for coordinate transformation and intersection calculations
+- **extensions/**: Utility extension functions for common operations
+- **model/**: Domain models including road segments and positioning
 - **vegnett/**: Core business logic for road network data backfilling and incremental updates
 - **services/**: API client services for communicating with NVDB's Uberiket API and Datakatalogen
 
@@ -38,7 +40,7 @@ All tables include timestamp fields for change tracking.
 1. **Startup**: Check if initial backfill has been completed
 2. **Backfill**: If first run, download all road network data from NVDB
 3. **Incremental Updates**: Process change events from NVDB's event stream
-4. **Future**: Extend to handle speed limits and other road objects (types 105, 821)
+4. **TN-ITS Export**: Interactive menu for generating speed limit exports in TN-ITS compliant XML format
 
 ## Development Commands
 
@@ -52,8 +54,7 @@ All tables include timestamp fields for change tracking.
 
 ### Database Configuration
 
-The application supports both H2 (development) and PostgreSQL (production) databases. Configuration is handled through
-environment variables:
+The application supports both H2 (development) and PostgreSQL (production) databases. Configuration is handled through environment variables:
 
 - `DATABASE_URL`: JDBC connection string
 - `DATABASE_USER`: Database username
@@ -71,8 +72,7 @@ The project includes OpenAPI client generation from several API specifications:
 
 ### Testing
 
-Tests use Kotest 6.0 framework and can be run individually or as a suite. The application includes unit tests for the
-console application logic.
+Tests use Kotest 6.0 framework and can be run individually or as a suite. The application includes unit tests for the console application logic.
 
 #### Running Tests
 
@@ -85,23 +85,22 @@ console application logic.
 **Run specific test classes:**
 
 ```bash
-./gradlew test --tests='XmlTest'                               # Run by class name pattern
-./gradlew test --tests='no.vegvesen.nvdb.tnits.xml.XmlTest'    # Run by full qualified class name
-./gradlew test --tests='no.vegvesen.nvdb.tnits.geometry.*'     # Run all tests in package
+./gradlew test --tests='XmlStreamDslTest'                               # Run by class name pattern
+./gradlew test --tests='no.vegvesen.nvdb.tnits.xml.XmlStreamDslTest'    # Run by full qualified class name
+./gradlew test --tests='no.vegvesen.nvdb.tnits.geometry.*'             # Run all tests in package
 ```
 
 #### Test Structure
 
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlTest.kt` - XML streaming DSL tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/ProjectToTest.kt` - Geometry projection tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlStreamDslTest.kt` - XML streaming DSL tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/GeometryHelpersTest.kt` - Geometry projection and transformation tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/CalculateIntersectingGeometryTest.kt` - Geometry intersection calculation tests
 
-The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific
-filtering.
+The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
 
 ### Code Style and Formatting
 
-The project uses ktlint for code formatting and style checking. After cloning the repository, new team members should
-run:
+The project uses ktlint for code formatting and style checking. After cloning the repository, new team members should run:
 
 ```bash
 ./gradlew installGitHooks    # Install pre-commit hook for automatic formatting
@@ -123,11 +122,11 @@ You can also run ktlint manually:
 ## Important Implementation Notes
 
 - **Exposed ORM Version**: Uses beta version 1.0.0-beta-5 for latest features
-- **OpenLR Integration**: Currently uses placeholder OpenLR encoding - real implementation would require an OpenLR
-  library
+- **TN-ITS Speed Limits**: Implemented with full XML export functionality including WGS84 coordinate transformation
+- **Geometry Processing**: Advanced spatial calculations for road segment intersections and coordinate projections
+- **OpenLR Integration**: Currently uses placeholder OpenLR encoding - real implementation would require an OpenLR library
 - **Change Detection**: Uses NVDB's native event stream (veglenkesekvens hendelser) for incremental updates
 - **Data Processing**: Implements backfill and incremental update patterns for large-scale data synchronization
 - **State Management**: Tracks processing state using KeyValue table to support resumable operations
 
-The console application is designed to be extended with additional road object types like speed limits (105) and traffic
-signs (821).
+The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
