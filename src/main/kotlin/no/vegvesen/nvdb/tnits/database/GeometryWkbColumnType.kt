@@ -5,6 +5,8 @@ import no.vegvesen.nvdb.tnits.geometry.geometryFactories
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.vendors.OracleDialect
+import org.jetbrains.exposed.v1.core.vendors.currentDialect
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKBReader
 import org.locationtech.jts.io.WKBWriter
@@ -12,7 +14,8 @@ import java.nio.ByteBuffer
 import java.sql.Blob
 
 /**
- * BYTEA column storing pure WKB (no SRID).
+ * Binary column storing pure WKB geometry data (no SRID).
+ * Uses BYTEA for PostgreSQL/H2 and BLOB for Oracle.
  * Reads/writes JTS Geometry.
  */
 class GeometryWkbColumnType : ColumnType<Geometry>() {
@@ -20,7 +23,11 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
 
     private val writer = WKBWriter(2, false)
 
-    override fun sqlType(): String = "BYTEA"
+    override fun sqlType(): String =
+        when (currentDialect) {
+            is OracleDialect -> "BLOB"
+            else -> "BYTEA" // PostgreSQL, H2, and others
+        }
 
     override fun valueFromDB(value: Any): Geometry =
         when (value) {

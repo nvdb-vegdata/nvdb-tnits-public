@@ -47,6 +47,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:1.0.0-beta-5")
     implementation("org.jetbrains.exposed:exposed-json:1.0.0-beta-5")
     implementation("org.postgresql:postgresql:42.7.4")
+    implementation("com.oracle.database.jdbc:ojdbc11:23.5.0.24.07")
     implementation("com.h2database:h2:2.3.232")
     implementation("com.zaxxer:HikariCP:6.0.0")
 
