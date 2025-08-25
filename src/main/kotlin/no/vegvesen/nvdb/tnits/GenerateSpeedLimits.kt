@@ -148,81 +148,94 @@ suspend fun generateSpeedLimits(): Sequence<SpeedLimit> {
     val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
     return newSuspendedTransaction {
         sequence {
-// TODO: Paginate
             var paginationId = 0L
+            var totalCount = 0
+            while (true) {
+                val vegobjekter =
+                    Vegobjekter
+                        .select(Vegobjekter.data)
+                        .where {
+                            (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
+                                (Vegobjekter.vegobjektId greater paginationId)
+                        }.orderBy(Vegobjekter.vegobjektId)
+                        .limit(FETCH_SIZE)
+                        .map {
+                            it[Vegobjekter.data]
+                        }
 
-            val vegobjekter =
-                Vegobjekter
-                    .select(Vegobjekter.data)
-                    .where {
-                        (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-                            (Vegobjekter.vegobjektId greater paginationId)
-                    }.orderBy(Vegobjekter.vegobjektId)
-                    .limit(FETCH_SIZE)
-                    .map {
-                        it[Vegobjekter.data]
+                if (vegobjekter.isEmpty()) {
+                    break
+                }
+
+                totalCount += vegobjekter.size
+
+                paginationId = vegobjekter.last().id
+
+                val stedfestingerByVegobjektId =
+                    vegobjekter.associate {
+                        it.id to it.getStedfestingLinjer()
                     }
 
-            val stedfestingerByVegobjektId =
-                vegobjekter.associate {
-                    it.id to it.getStedfestingLinjer()
-                }
+                val veglenkesekvensIds =
+                    stedfestingerByVegobjektId.flatMapTo(mutableSetOf()) {
+                        it.value.map { stedfesting -> stedfesting.veglenkesekvensId }
+                    }
 
-            val veglenkesekvensIds =
-                stedfestingerByVegobjektId.flatMapTo(mutableSetOf()) {
-                    it.value.map { stedfesting -> stedfesting.veglenkesekvensId }
-                }
+                val overlappendeVeglenker =
+                    Veglenker
+                        .selectAll()
+                        .where {
+                            Veglenker.veglenkesekvensId inList veglenkesekvensIds and
+                                (Veglenker.sluttdato greater today())
+                        }.map {
+                            it.toVeglenke()
+                        }.groupBy { it.veglenkesekvensId }
 
-            val overlappendeVeglenker =
-                Veglenker
-                    .selectAll()
-                    .where {
-                        Veglenker.veglenkesekvensId inList veglenkesekvensIds and
-                            (Veglenker.sluttdato greater today())
-                    }.map {
-                        it.toVeglenke()
-                    }.groupBy { it.veglenkesekvensId }
+                for (vegobjekt in vegobjekter) {
+                    val kmh =
+                        vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
+                            when (egenskap) {
+                                is EnumEgenskap ->
+                                    kmhByEgenskapVerdi[egenskap.verdi]
+                                        ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
 
-            for (vegobjekt in vegobjekter) {
-                val kmh =
-                    vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
-                        when (egenskap) {
-                            is EnumEgenskap ->
-                                kmhByEgenskapVerdi[egenskap.verdi]
-                                    ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
-
-                            else -> error("Expected HeltallEgenskap, got ${egenskap::class.simpleName}")
-                        }
-                    } ?: continue
-
-                val lineStrings =
-                    stedfestingerByVegobjektId[vegobjekt.id]
-                        .orEmpty()
-                        .flatMap { stedfesting ->
-                            overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
-                                calculateIntersectingGeometry(
-                                    veglenke.geometri,
-                                    veglenke.utstrekning,
-                                    stedfesting.utstrekning,
-                                )
+                                else -> error("Expected HeltallEgenskap, got ${egenskap::class.simpleName}")
                             }
-                        }
+                        } ?: continue
 
-                val geometry =
-                    mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
-                        ?: error("Kunne ikke lage geometri for fartsgrense ${vegobjekt.id}")
+                    val lineStrings =
+                        stedfestingerByVegobjektId[vegobjekt.id]
+                            .orEmpty()
+                            .flatMap { stedfesting ->
+                                overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
+                                    calculateIntersectingGeometry(
+                                        veglenke.geometri,
+                                        veglenke.utstrekning,
+                                        stedfesting.utstrekning,
+                                    )
+                                }
+                            }
 
-                val speedLimit =
-                    SpeedLimit(
-                        id = vegobjekt.id,
-                        kmh = kmh,
-                        locationReferences = emptyList(),
-                        validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
-                        validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
-                        geometry = geometry,
-                    )
+                    val geometry =
+                        mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
+                            ?: error("Kunne ikke lage geometri for fartsgrense ${vegobjekt.id}")
 
-                yield(speedLimit)
+                    val speedLimit =
+                        SpeedLimit(
+                            id = vegobjekt.id,
+                            kmh = kmh,
+                            locationReferences = emptyList(),
+                            validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
+                            validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
+                            geometry = geometry,
+                        )
+
+                    yield(speedLimit)
+                }
+
+                if (totalCount % 10000 == 0) {
+                    println("Generert $totalCount fartsgrenser så langt...")
+                }
             }
         }
     }
