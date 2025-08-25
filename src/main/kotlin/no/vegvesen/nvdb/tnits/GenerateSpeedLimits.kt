@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits
 
-import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +18,7 @@ import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.model.Utstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
+import no.vegvesen.nvdb.tnits.serialization.kryo
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
@@ -351,12 +351,6 @@ val VegobjektStedfesting.utstrekning
 const val FartsgrenseEgenskapTypeId = 2021
 
 const val FartsgrenseEgenskapTypeIdString = FartsgrenseEgenskapTypeId.toString()
-
-private val kryo =
-    Kryo().apply {
-        isRegistrationRequired = false
-        instantiatorStrategy = org.objenesis.strategy.StdInstantiatorStrategy()
-    }
 
 suspend fun getCacheFileTimestamp(): Long? =
     newSuspendedTransaction {

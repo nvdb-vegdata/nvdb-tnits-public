@@ -52,9 +52,10 @@ dependencies {
     implementation("com.zaxxer:HikariCP:6.0.0")
 
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    implementation("com.esotericsoftware:kryo:5.6.2")
-    implementation("org.objenesis:objenesis:3.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
+
+    // Key-Value Store
+    implementation("org.rocksdb:rocksdbjni:10.2.1")
 
     // Logging
     implementation("ch.qos.logback:logback-classic:1.5.18")

@@ -95,4 +95,61 @@ class VeglenkerCacheTest :
             val result = loadVeglenkerFromCache(corruptedFile)
             result shouldBe null
         }
+
+        "should demonstrate improved serialization performance with pre-registration" {
+            val geometryFactory = GeometryFactory()
+            val testGeometry =
+                geometryFactory
+                    .createLineString(
+                        arrayOf(
+                            Coordinate(10.0, 60.0),
+                            Coordinate(10.1, 60.1),
+                        ),
+                    ).also { it.srid = SRID.UTM33 }
+
+            // Create a larger dataset to measure performance difference
+            val largeTestVeglenker = mutableMapOf<Long, List<Veglenke>>()
+
+            repeat(1000) { i ->
+                largeTestVeglenker[i.toLong()] =
+                    listOf(
+                        Veglenke(
+                            veglenkesekvensId = i.toLong(),
+                            veglenkenummer = 1,
+                            startposisjon = 0.0,
+                            sluttposisjon = 100.0,
+                            geometri = testGeometry,
+                            typeVeg = if (i % 2 == 0) TypeVeg.KANALISERT_VEG else TypeVeg.ENKEL_BILVEG,
+                            detaljniva = Detaljniva.VEGTRASE,
+                            superstedfesting = null,
+                        ),
+                    )
+            }
+
+            val tempCacheFile = File.createTempFile("benchmark-cache", ".kryo")
+            tempCacheFile.deleteOnExit()
+
+            // Measure serialization performance
+            val serializeTime =
+                kotlin.time.measureTime {
+                    saveVeglenkerToCache(largeTestVeglenker, tempCacheFile)
+                }
+
+            // Measure deserialization performance
+            val deserializeTime =
+                kotlin.time.measureTime {
+                    loadVeglenkerFromCache(tempCacheFile)
+                }
+
+            println("Serialization time: $serializeTime")
+            println("Deserialization time: $deserializeTime")
+            println("File size: ${tempCacheFile.length()} bytes")
+            println("Records per second (serialize): ${1000 / serializeTime.inWholeSeconds}")
+            println("Records per second (deserialize): ${1000 / deserializeTime.inWholeSeconds}")
+
+            // Verify data integrity
+            val loaded = loadVeglenkerFromCache(tempCacheFile)
+            loaded shouldNotBe null
+            loaded!!.size shouldBe 1000
+        }
     })
