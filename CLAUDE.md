@@ -95,6 +95,7 @@ Tests use Kotest 6.0 framework and can be run individually or as a suite. The ap
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlStreamDslTest.kt` - XML streaming DSL tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/GeometryHelpersTest.kt` - Geometry projection and transformation tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/CalculateIntersectingGeometryTest.kt` - Geometry intersection calculation tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/VeglenkerCacheTest.kt` - Kryo binary cache serialization and deserialization tests
 
 The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
 
@@ -119,6 +120,39 @@ You can also run ktlint manually:
 ./gradlew ktlintFormat       # Format code automatically
 ```
 
+## Performance Optimization
+
+### Parallel Speed Limit Processing
+
+The application implements high-performance parallel processing for speed limit generation:
+
+- **ParallelSpeedLimitProcessor**: Multi-threaded processor using worker pool architecture
+- **Steplock Orchestration**: Single orchestrator fetches ID batches and distributes work ranges to workers
+- **Worker Count**: Automatically scales to CPU cores (`Runtime.getRuntime().availableProcessors()`)
+- **Ordered Output**: Results are sorted by ID before streaming to maintain consistent output
+
+### Kryo Caching System
+
+Fast binary caching for veglenker data provides 5-15x performance improvement:
+
+- **Cache Location**: `veglenker-cache.kryo` in project root
+- **Smart Invalidation**: Compares cache file timestamp with database `sistEndret` timestamps
+- **Automatic Fallback**: Falls back to database loading if cache fails or is stale
+- **Binary Serialization**: Uses Kryo with Objenesis for efficient data class serialization
+- **Performance Measurement**: Integrated timing functions track cache operations
+
+#### Cache Functions:
+- `loadVeglenkerWithCache()`: Main entry point with fallback logic
+- `saveVeglenkerToCache()`: Binary serialization to disk
+- `loadVeglenkerFromCache()`: Binary deserialization with error handling
+- `getCacheFileTimestamp()`: Database timestamp checking for cache validation
+
+### Thread Safety
+
+- **Geometry Processing**: Uses per-operation WKBReader/WKBWriter instances for thread safety
+- **Database Access**: Each worker performs independent database queries within transaction scope
+- **Coroutines**: Leverages Kotlin coroutines for non-blocking parallel processing
+
 ## Important Implementation Notes
 
 - **Exposed ORM Version**: Uses beta version 1.0.0-beta-5 for latest features
@@ -128,5 +162,6 @@ You can also run ktlint manually:
 - **Change Detection**: Uses NVDB's native event stream (veglenkesekvens hendelser) for incremental updates
 - **Data Processing**: Implements backfill and incremental update patterns for large-scale data synchronization
 - **State Management**: Tracks processing state using KeyValue table to support resumable operations
+- **Binary Caching**: Kryo-based serialization with Objenesis instantiation for data classes without no-arg constructors
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
