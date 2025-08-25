@@ -19,9 +19,10 @@ import java.sql.Blob
  * Reads/writes JTS Geometry.
  */
 class GeometryWkbColumnType : ColumnType<Geometry>() {
-    private val reader = WKBReader(geometryFactories[SRID.UTM33])
+    // Create new instances for each operation - fully coroutine-safe
+    private fun createReader() = WKBReader(geometryFactories[SRID.UTM33])
 
-    private val writer = WKBWriter(2, false)
+    private fun createWriter() = WKBWriter(2, false)
 
     override fun sqlType(): String =
         when (currentDialect) {
@@ -32,14 +33,18 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
     override fun valueFromDB(value: Any): Geometry =
         when (value) {
             is Geometry -> value
-            is ByteArray -> reader.read(value)
+            is ByteArray -> createReader().read(value)
             is ByteBuffer -> {
                 val arr = ByteArray(value.remaining())
                 value.get(arr)
-                reader.read(arr)
+                createReader().read(arr)
             }
 
-            is Blob -> value.getBytes(1, value.length().toInt()).also { value.free() }.let(reader::read)
+            is Blob ->
+                value.getBytes(1, value.length().toInt()).also { value.free() }.let {
+                    createReader().read(it)
+                }
+
             else -> error("Unsupported DB value for Geometry WKB: ${value::class} ($value)")
         }
 
@@ -48,7 +53,7 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
     // Prepared statements use this binding; string form not needed.
     override fun nonNullValueToString(value: Geometry): String = "?"
 
-    private fun writeWkb(g: Geometry): ByteArray = writer.write(g)
+    private fun writeWkb(g: Geometry): ByteArray = createWriter().write(g)
 
     companion object {
         /** Table helper */

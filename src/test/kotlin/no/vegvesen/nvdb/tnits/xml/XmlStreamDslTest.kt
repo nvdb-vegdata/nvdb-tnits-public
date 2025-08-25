@@ -2,7 +2,6 @@ package no.vegvesen.nvdb.tnits.xml
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.flow.flowOf
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -87,65 +86,6 @@ class XmlStreamDslTest :
             val content = tempFile.readText()
             content shouldBe
                 """<?xml version="1.0" encoding="UTF-8"?><ns:root xmlns:ns="http://example.com"><ns:child>test</ns:child></ns:root>"""
-        }
-
-        "writeSequence should process items with OutputStream" {
-            val output = ByteArrayOutputStream()
-            val items = sequenceOf("first", "second", "third")
-
-            writeSequence(output, "list", items = items) { item: String ->
-                "item" {
-                    attribute("value", item)
-                    +item
-                }
-            }
-
-            val xml = output.toString("UTF-8")
-            xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><list><item value="first">first</item><item value="second">second</item><item value="third">third</item></list>"""
-        }
-
-        "writeSequence should work with Path" {
-            val items = sequenceOf(1, 2, 3)
-
-            writeSequence(tempFile, "numbers", items = items) { num: Int ->
-                "number" {
-                    +num.toString()
-                }
-            }
-
-            val content = tempFile.readText()
-            content shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><numbers><number>1</number><number>2</number><number>3</number></numbers>"""
-        }
-
-        "writeFlow should process flow items with OutputStream" {
-            val output = ByteArrayOutputStream()
-            val flow = flowOf("a", "b", "c")
-
-            writeFlow(output, "flow-root", flow = flow) { item: String ->
-                "flow-item" {
-                    +item.uppercase()
-                }
-            }
-
-            val xml = output.toString("UTF-8")
-            xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><flow-root><flow-item>A</flow-item><flow-item>B</flow-item><flow-item>C</flow-item></flow-root>"""
-        }
-
-        "writeFlow should work with Path" {
-            val flow = flowOf("x", "y", "z")
-
-            writeFlow(tempFile, "async-root", flow = flow) { item: String ->
-                "async-item" {
-                    attribute("letter", item)
-                }
-            }
-
-            val content = tempFile.readText()
-            content shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><async-root><async-item letter="x"></async-item><async-item letter="y"></async-item><async-item letter="z"></async-item></async-root>"""
         }
 
         "namespace handling should work correctly" {
@@ -275,75 +215,6 @@ class XmlStreamDslTest :
             xml shouldBe expected
         }
 
-        "writeSequence should support indentation" {
-            val output = ByteArrayOutputStream()
-            val items = sequenceOf("A", "B", "C")
-
-            writeSequence(output, "list", items = items, indent = "  ") { item: String ->
-                "item" {
-                    attribute("value", item)
-                    +item.lowercase()
-                }
-            }
-
-            val xml = output.toString("UTF-8")
-            val expected = """<?xml version="1.0" encoding="UTF-8"?>
-<list>
-  <item value="A">a</item>
-  <item value="B">b</item>
-  <item value="C">c</item>
-</list>
-"""
-            xml shouldBe expected
-        }
-
-        "writeFlow should support indentation" {
-            val output = ByteArrayOutputStream()
-            val flow = flowOf(1, 2, 3)
-
-            writeFlow(output, "numbers", flow = flow, indent = "  ") { num: Int ->
-                "number" {
-                    attribute("id", num.toString())
-                    "value" { +num.toString() }
-                    "squared" { +(num * num).toString() }
-                }
-            }
-
-            val xml = output.toString("UTF-8")
-            val expected = """<?xml version="1.0" encoding="UTF-8"?>
-<numbers>
-  <number id="1">
-    <value>1</value>
-    <squared>1</squared>
-  </number>
-  <number id="2">
-    <value>2</value>
-    <squared>4</squared>
-  </number>
-  <number id="3">
-    <value>3</value>
-    <squared>9</squared>
-  </number>
-</numbers>
-"""
-            xml shouldBe expected
-        }
-
-        "Path-based functions should support indentation" {
-            writeSequence(tempFile, "test", items = sequenceOf("x", "y"), indent = "  ") { item: String ->
-                "element" { +item }
-            }
-
-            val content = tempFile.readText()
-            val expected = """<?xml version="1.0" encoding="UTF-8"?>
-<test>
-  <element>x</element>
-  <element>y</element>
-</test>
-"""
-            content shouldBe expected
-        }
-
         "should write returned text" {
             val output = ByteArrayOutputStream()
 
@@ -369,5 +240,10 @@ class XmlStreamDslTest :
                     }
                 }
             }
+
+            val output = ByteArrayOutputStream()
+            blockingWriteXml(output)
+            val xml = output.toString("UTF-8")
+            xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child></root>"""
         }
     })

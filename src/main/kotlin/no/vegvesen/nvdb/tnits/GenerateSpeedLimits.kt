@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toKotlinLocalDate
@@ -52,7 +53,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
         Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_complete", ".xml")
     println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
-    val speedLimits = generateSpeedLimits()
+    val speedLimitsFlow = generateSpeedLimits()
 
     writeXmlDocument(
         path,
@@ -76,7 +77,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
         }
         "type" { "Complete" }
         "roadFeatures" {
-            speedLimits.forEach { speedLimit ->
+            speedLimitsFlow.collect { speedLimit ->
                 "RoadFeature" {
                     "id" {
                         "RoadFeatureId" {
@@ -144,7 +145,13 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-suspend fun generateSpeedLimits(): Sequence<SpeedLimit> {
+fun generateSpeedLimits(): Flow<SpeedLimit> = ParallelSpeedLimitProcessor().generateSpeedLimits()
+
+@Deprecated(
+    "Use ParallelSpeedLimitProcessor.generateSpeedLimits() for better performance",
+    ReplaceWith("ParallelSpeedLimitProcessor().generateSpeedLimits()"),
+)
+suspend fun generateSpeedLimitsSequential(): Sequence<SpeedLimit> {
     val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
     return newSuspendedTransaction {
         sequence {
@@ -299,10 +306,6 @@ val Veglenke.utstrekning
 
 val VegobjektStedfesting.utstrekning
     get(): Utstrekning = Utstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
-
-object EgenskapsTyper {
-    const val FARTSGRENSE = 2021
-}
 
 const val FartsgrenseEgenskapTypeId = 2021
 

@@ -1,8 +1,5 @@
 package no.vegvesen.nvdb.tnits.xml
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
@@ -182,10 +179,12 @@ inline fun writeXmlDocument(
                 // xmlns:prefix -> namespace mapping
                 nsDeclarations[key.removePrefix("xmlns:")] = value
             }
+
             key.contains(":") -> {
                 // prefixed attribute (like xsi:schemaLocation)
                 prefixedAttributes.add(key to value)
             }
+
             else -> {
                 // traditional namespace mapping
                 nsDeclarations[key] = value
@@ -214,99 +213,3 @@ inline fun writeXmlDocument(
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
     writeXmlDocument(os, rootQName, namespaces, encoding, indent, writeChildren)
 }
-
-/** Stream a Sequence<T> under a root element to OutputStream. */
-inline fun <T> writeSequence(
-    outputStream: OutputStream,
-    rootQName: String,
-    namespaces: Map<String, String> = emptyMap(),
-    items: Sequence<T>,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    writeItem: XmlStreamDsl.(T) -> Unit,
-) = writeXmlDocument(outputStream, rootQName, namespaces, encoding, indent) {
-    for (item in items) writeItem(item)
-}
-
-/** Stream a Sequence<T> under a root element to Path. */
-inline fun <T> writeSequence(
-    path: Path,
-    rootQName: String,
-    namespaces: Map<String, String> = emptyMap(),
-    items: Sequence<T>,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    writeItem: XmlStreamDsl.(T) -> Unit,
-) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-    writeSequence(os, rootQName, namespaces, items, encoding, indent, writeItem)
-}
-
-/** Stream a Flow<T> under a root element to OutputStream. */
-suspend inline fun <T> writeFlow(
-    outputStream: OutputStream,
-    rootQName: String,
-    namespaces: Map<String, String> = emptyMap(),
-    flow: Flow<T>,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    crossinline writeItem: XmlStreamDsl.(T) -> Unit,
-) {
-    val writer = xmlOutputFactory.createXMLStreamWriter(outputStream, encoding)
-    val xml = XmlStreamDsl(writer, indent)
-    try {
-        xml.startDocument(encoding)
-        xml.element(rootQName, namespaces) {
-            flow.collect { item -> writeItem(item) }
-        }
-        xml.endDocument()
-        indent?.let { xml.writer.writeCharacters("\n") }
-    } finally {
-        xml.flushAndClose()
-    }
-}
-
-/** Stream a Flow<T> under a root element to Path. */
-suspend inline fun <T> writeFlow(
-    path: Path,
-    rootQName: String,
-    namespaces: Map<String, String> = emptyMap(),
-    flow: Flow<T>,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    crossinline writeItem: XmlStreamDsl.(T) -> Unit,
-) = withContext(Dispatchers.IO) {
-    BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-        writeFlow(os, rootQName, namespaces, flow, encoding, indent, writeItem)
-    }
-}
-
-/* ---------- Minimal example usage ----------
-val NS = mapOf(
-    "tnits" to "http://spec.tn-its.eu/tnits",
-    "gml"   to "http://www.opengis.net/gml/3.2.1",
-    "xlink" to "http://www.w3.org/1999/xlink"
-)
-
-data class Point(val lon: Double, val lat: Double)
-
-fun example(path: Path, items: Sequence<List<Point>>) {
-    writeSequence(path, "tnits:RoadFeatureList", NS, items) { line ->
-        "tnits:RoadFeature" {
-            attribute("gml:id", "doc-1")
-            "tnits:location" {
-                "tnits:locationReference" {
-                    "tnits:GeometryLocationReference" {
-                        "gml:LineString" {
-                            attribute("srsName", "urn:ogc:def:crs:EPSG::4326")
-                            attribute("srsDimension", "2")
-                            "gml:posList" { -line.joinToString(" ") { "${it.lon} ${it.lat}" } }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-*/
