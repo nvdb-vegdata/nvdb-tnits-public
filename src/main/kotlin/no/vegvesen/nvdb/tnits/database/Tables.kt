@@ -6,12 +6,12 @@ import no.vegvesen.nvdb.tnits.database.JacksonJsonbColumnType.Companion.jacksonJ
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.date
-import org.jetbrains.exposed.v1.datetime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 
 object Veglenker : Table("veglenker") {
     val veglenkesekvensId = long("veglenkesekvens_id")
     val veglenkenummer = integer("veglenkenummer")
-    val sistEndret = timestamp("sist_endret")
+    val sistEndret = timestampWithTimeZone("sist_endret")
     val startdato = date("startdato")
     val sluttdato = date("sluttdato")
     val startposisjon = decimal("startposisjon", precision = 9, scale = 8)
@@ -42,7 +42,7 @@ object Vegobjekter : Table("vegobjekter") {
     val vegobjektVersjon = integer("vegobjekt_versjon")
     val vegobjektType = integer("vegobjekt_type")
     val data = jacksonJsonb<Vegobjekt>("data")
-    val sistEndret = timestamp("sist_endret")
+    val sistEndret = timestampWithTimeZone("sist_endret")
 //    val startdato = date("startdato")
 //    val sluttdato = date("sluttdato")
 
@@ -86,7 +86,7 @@ object KeyValue : Table("key_value") {
 
 object DirtyVeglenkesekvenser : Table("dirty_veglenkesekvenser") {
     val veglenkesekvensId = long("veglenkesekvens_id")
-    val sistEndret = timestamp("sist_endret")
+    val sistEndret = timestampWithTimeZone("sist_endret")
 
     init {
         index(isUnique = false, sistEndret)

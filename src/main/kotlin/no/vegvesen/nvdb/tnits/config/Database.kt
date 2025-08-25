@@ -2,10 +2,7 @@ package no.vegvesen.nvdb.tnits.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import no.vegvesen.nvdb.tnits.database.KeyValue
-import no.vegvesen.nvdb.tnits.database.Stedfestinger
-import no.vegvesen.nvdb.tnits.database.Veglenker
-import no.vegvesen.nvdb.tnits.database.Vegobjekter
+import no.vegvesen.nvdb.tnits.database.*
 import org.jetbrains.exposed.v1.core.DatabaseConfig
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -21,6 +18,11 @@ fun configureDatabase(config: AppConfig) {
             jdbcUrl = databaseConfig.url
             username = databaseConfig.user
             password = databaseConfig.password
+
+            // Fix for Oracle JDBC JSON handling - ORA-18722 error
+            if (jdbcUrl.contains("oracle")) {
+                addDataSourceProperty("oracle.jdbc.jsonDefaultGetObjectType", "java.lang.String")
+            }
         }
 
     val dataSource = HikariDataSource(hikariConfig)
@@ -33,6 +35,6 @@ fun configureDatabase(config: AppConfig) {
     )
 
     transaction {
-        SchemaUtils.create(Veglenker, Vegobjekter, KeyValue, Stedfestinger)
+        SchemaUtils.create(Veglenker, Vegobjekter, KeyValue, Stedfestinger, DirtyVeglenkesekvenser)
     }
 }

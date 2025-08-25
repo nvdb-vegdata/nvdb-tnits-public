@@ -7,10 +7,7 @@ import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
 import no.vegvesen.nvdb.tnits.database.DirtyVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Veglenker
-import no.vegvesen.nvdb.tnits.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
-import no.vegvesen.nvdb.tnits.extensions.putSync
+import no.vegvesen.nvdb.tnits.extensions.*
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
@@ -69,7 +66,8 @@ suspend fun updateVeglenker() {
 fun publishChangedVeglenkesekvensIds(changedIds: Collection<Long>) {
     DirtyVeglenkesekvenser.batchInsert(changedIds) {
         this[DirtyVeglenkesekvenser.veglenkesekvensId] = it
-        this[DirtyVeglenkesekvenser.sistEndret] = Clock.System.now()
+        this[DirtyVeglenkesekvenser.sistEndret] =
+            Clock.System.nowOffsetDateTime()
     }
 }
 
@@ -109,7 +107,7 @@ private fun insertVeglenker(veglenker: List<VeglenkeMedId>) {
     Veglenker.batchInsert(veglenker, shouldReturnGeneratedValues = false) { veglenke ->
         this[Veglenker.veglenkesekvensId] = veglenke.veglenkesekvensId
         this[Veglenker.veglenkenummer] = veglenke.veglenkenummer
-        this[Veglenker.sistEndret] = Clock.System.now()
+        this[Veglenker.sistEndret] = Clock.System.nowOffsetDateTime()
         this[Veglenker.startdato] = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate()
         this[Veglenker.sluttdato] = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate()
             ?: MAX_DATE

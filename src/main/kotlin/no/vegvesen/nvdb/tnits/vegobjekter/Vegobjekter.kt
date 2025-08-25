@@ -10,10 +10,7 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
-import no.vegvesen.nvdb.tnits.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
-import no.vegvesen.nvdb.tnits.extensions.putSync
+import no.vegvesen.nvdb.tnits.extensions.*
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
@@ -124,7 +121,7 @@ private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
         this[Vegobjekter.vegobjektVersjon] = vegobjekt.versjon
         this[Vegobjekter.vegobjektType] = vegobjekt.typeId
         this[Vegobjekter.data] = vegobjekt
-        this[Vegobjekter.sistEndret] = Clock.System.now()
+        this[Vegobjekter.sistEndret] = Clock.System.nowOffsetDateTime()
     }
     val stedfestinger =
         vegobjekter.flatMap { vegobjekt ->
