@@ -80,3 +80,5 @@ data/
 
 # Application specific
 nvdb-api.json.bak
+
+*.kryo

@@ -53,6 +53,8 @@ dependencies {
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("com.esotericsoftware:kryo:5.6.2")
+    implementation("org.objenesis:objenesis:3.4")
 
     // Logging
     implementation("ch.qos.logback:logback-classic:1.5.18")

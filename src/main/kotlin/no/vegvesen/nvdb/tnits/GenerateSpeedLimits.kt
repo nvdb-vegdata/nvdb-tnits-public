@@ -1,5 +1,8 @@
 package no.vegvesen.nvdb.tnits
 
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -24,6 +27,9 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.nio.file.Files
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -85,84 +91,85 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
     val speedLimitsFlow = generateSpeedLimits()
-
-    writeXmlDocument(
-        path,
-        rootQName = "RoadFeatureDataset",
-        namespaces =
-            mapOf(
-                "" to "http://spec.tn-its.eu/schemas/",
-                "xlink" to "http://www.w3.org/1999/xlink",
-                "gml" to "http://www.opengis.net/gml/3.2.1",
-                "xsi" to "http://www.w3.org/2001/XMLSchema-instance",
-                "xsi:schemaLocation" to
-                    "http://spec.tn-its.eu/schemas/ TNITS.xsd",
-            ),
-        indent = "\t",
-    ) {
-        "metadata" {
-            "Metadata" {
-                "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
-                "datasetCreationTime" { now }
+    measure("Generating full snapshot", logStart = true) {
+        writeXmlDocument(
+            path,
+            rootQName = "RoadFeatureDataset",
+            namespaces =
+                mapOf(
+                    "" to "http://spec.tn-its.eu/schemas/",
+                    "xlink" to "http://www.w3.org/1999/xlink",
+                    "gml" to "http://www.opengis.net/gml/3.2.1",
+                    "xsi" to "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:schemaLocation" to
+                        "http://spec.tn-its.eu/schemas/ TNITS.xsd",
+                ),
+            indent = "\t",
+        ) {
+            "metadata" {
+                "Metadata" {
+                    "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
+                    "datasetCreationTime" { now }
+                }
             }
-        }
-        "type" { "Complete" }
-        "roadFeatures" {
-            speedLimitsFlow.collect { speedLimit ->
-                "RoadFeature" {
-                    "id" {
-                        "RoadFeatureId" {
-                            "id" { speedLimit.id }
-                            "providerId" { "nvdb.no" }
-                        }
-                    }
-                    "validFrom" { speedLimit.validFrom }
-                    speedLimit.validTo?.let {
-                        "validTo" { it }
-                    }
-                    "beginLifespanVersion" {
-                        speedLimit.validFrom.atStartOfDayIn(OsloZone)
-                    }
-                    speedLimit.validTo?.let {
-                        "endLifespanVersion" {
-                            it.atStartOfDayIn(OsloZone)
-                        }
-                    }
-                    "updateInfo" {
-                        "UpdateInfo" {
-                            "type" { "Add" }
-                        }
-                    }
-                    "source" {
-                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation")
-                    }
-                    "type" {
-                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#speedLimit")
-                    }
-                    "properties" {
-                        "GenericRoadFeatureProperty" {
-                            "type" {
-                                attribute(
-                                    "xlink:href",
-                                    "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#maximumSpeedLimit",
-                                )
+            "type" { "Complete" }
+            "roadFeatures" {
+                speedLimitsFlow.collect { speedLimit ->
+                    "RoadFeature" {
+                        "id" {
+                            "RoadFeatureId" {
+                                "id" { speedLimit.id }
+                                "providerId" { "nvdb.no" }
                             }
-                            "value" { speedLimit.kmh }
                         }
-                    }
-                    // TODO: OpenLR location reference
-                    "locationReference" {
-                        "GeometryLocationReference" {
-                            "encodedGeometry" {
-                                "gml:LineString" {
-                                    attribute("srsDimension", "2")
-                                    attribute("srsName", "EPSG::4326")
-                                    "gml:posList" {
-                                        val coordinates = speedLimit.geometry.coordinates
-                                        for (i in coordinates.indices) {
-                                            +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
-                                            if (i < coordinates.size - 1) {
-                                                +" "
+                        "validFrom" { speedLimit.validFrom }
+                        speedLimit.validTo?.let {
+                            "validTo" { it }
+                        }
+                        "beginLifespanVersion" {
+                            speedLimit.validFrom.atStartOfDayIn(OsloZone)
+                        }
+                        speedLimit.validTo?.let {
+                            "endLifespanVersion" {
+                                it.atStartOfDayIn(OsloZone)
+                            }
+                        }
+                        "updateInfo" {
+                            "UpdateInfo" {
+                                "type" { "Add" }
+                            }
+                        }
+                        "source" {
+                            attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation")
+                        }
+                        "type" {
+                            attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#speedLimit")
+                        }
+                        "properties" {
+                            "GenericRoadFeatureProperty" {
+                                "type" {
+                                    attribute(
+                                        "xlink:href",
+                                        "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#maximumSpeedLimit",
+                                    )
+                                }
+                                "value" { speedLimit.kmh }
+                            }
+                        }
+                        // TODO: OpenLR location reference
+                        "locationReference" {
+                            "GeometryLocationReference" {
+                                "encodedGeometry" {
+                                    "gml:LineString" {
+                                        attribute("srsDimension", "2")
+                                        attribute("srsName", "EPSG::4326")
+                                        "gml:posList" {
+                                            val coordinates = speedLimit.geometry.coordinates
+                                            for (i in coordinates.indices) {
+                                                +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
+                                                if (i < coordinates.size - 1) {
+                                                    +" "
+                                                }
                                             }
                                         }
                                     }
@@ -176,11 +183,10 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-suspend fun generateSpeedLimits(): Flow<SpeedLimit> =
-    measure("Total speed limits generation", logStart = true) {
-        val veglenkerLookup = loadAllActiveVeglenker()
-        ParallelSpeedLimitProcessor(veglenkerLookup).generateSpeedLimits()
-    }
+suspend fun generateSpeedLimits(): Flow<SpeedLimit> {
+    val veglenkerLookup = loadVeglenkerWithCache()
+    return ParallelSpeedLimitProcessor(veglenkerLookup).generateSpeedLimits()
+}
 
 @Deprecated(
     "Use ParallelSpeedLimitProcessor.generateSpeedLimits() for better performance",
@@ -345,3 +351,70 @@ val VegobjektStedfesting.utstrekning
 const val FartsgrenseEgenskapTypeId = 2021
 
 const val FartsgrenseEgenskapTypeIdString = FartsgrenseEgenskapTypeId.toString()
+
+private val kryo =
+    Kryo().apply {
+        isRegistrationRequired = false
+        instantiatorStrategy = org.objenesis.strategy.StdInstantiatorStrategy()
+    }
+
+suspend fun getCacheFileTimestamp(): Long? =
+    newSuspendedTransaction {
+        Veglenker
+            .selectAll()
+            .maxByOrNull { it[Veglenker.sistEndret] }
+            ?.get(Veglenker.sistEndret)
+            ?.toInstant()
+            ?.toEpochMilli()
+    }
+
+fun saveVeglenkerToCache(
+    veglenker: Map<Long, List<Veglenke>>,
+    cacheFile: File,
+) {
+    measure("Saving veglenker to cache") {
+        cacheFile.parentFile?.mkdirs()
+        FileOutputStream(cacheFile).use { fos ->
+            Output(fos).use { output ->
+                kryo.writeObject(output, veglenker)
+            }
+        }
+        println("Veglenker cachet til ${cacheFile.absolutePath}")
+    }
+}
+
+fun loadVeglenkerFromCache(cacheFile: File): Map<Long, List<Veglenke>>? =
+    try {
+        measure("Loading veglenker from cache") {
+            FileInputStream(cacheFile).use { fis ->
+                Input(fis).use { input ->
+                    @Suppress("UNCHECKED_CAST")
+                    kryo.readObject(input, HashMap::class.java) as Map<Long, List<Veglenke>>
+                }
+            }
+        }
+    } catch (e: Exception) {
+        println("Kunne ikke laste veglenker fra cache: ${e.message}")
+        null
+    }
+
+suspend fun loadVeglenkerWithCache(): Map<Long, List<Veglenke>> {
+    val cacheFile = File("veglenker-cache.kryo")
+    val cacheTimestamp = if (cacheFile.exists()) cacheFile.lastModified() else null
+    val dbTimestamp = getCacheFileTimestamp()
+
+    return if (cacheFile.exists() && cacheTimestamp != null && dbTimestamp != null && cacheTimestamp >= dbTimestamp) {
+        println("Laster veglenker fra cache...")
+        loadVeglenkerFromCache(cacheFile) ?: run {
+            println("Cache feilet, laster fra database...")
+            val veglenker = loadAllActiveVeglenker()
+            saveVeglenkerToCache(veglenker, cacheFile)
+            veglenker
+        }
+    } else {
+        println("Cache er utdatert eller eksisterer ikke, laster fra database...")
+        val veglenker = loadAllActiveVeglenker()
+        saveVeglenkerToCache(veglenker, cacheFile)
+        veglenker
+    }
+}
