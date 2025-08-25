@@ -27,6 +27,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTrans
 import java.nio.file.Files
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.time.measureTime
 
 val OsloZone = TimeZone.of("Europe/Oslo")
 
@@ -36,6 +37,21 @@ object VegobjektTyper {
 
 fun today() = Clock.System.todayIn(OsloZone)
 
+inline fun <T> measure(
+    label: String,
+    logStart: Boolean = false,
+    block: () -> T,
+): T {
+    if (logStart) {
+        println("Start: $label")
+    }
+
+    var result: T
+    val time = measureTime { result = block() }
+    println("${if (logStart) "End: " else "Timed: "}$label, time: $time")
+    return result
+}
+
 suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
     datakatalogApi
         .getVegobjekttype(VegobjektTyper.FARTSGRENSE)
@@ -44,6 +60,21 @@ suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
         .single { it.id == FartsgrenseEgenskapTypeId }
         .tillatteVerdier
         .associate { it.id to it.verdi!! }
+
+suspend fun loadAllActiveVeglenker(): Map<Long, List<Veglenke>> =
+    measure("Loading all active veglenker into memory", logStart = true) {
+        newSuspendedTransaction {
+            val veglenker =
+                Veglenker
+                    .selectAll()
+                    .where { Veglenker.sluttdato greater today() }
+                    .map { it.toVeglenke() }
+                    .groupBy { it.veglenkesekvensId }
+
+            println("Lastet ${veglenker.values.sumOf { it.size }} aktive veglenker for ${veglenker.size} veglenkesekvenser")
+            veglenker
+        }
+    }
 
 fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
 
@@ -145,7 +176,11 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-fun generateSpeedLimits(): Flow<SpeedLimit> = ParallelSpeedLimitProcessor().generateSpeedLimits()
+suspend fun generateSpeedLimits(): Flow<SpeedLimit> =
+    measure("Total speed limits generation", logStart = true) {
+        val veglenkerLookup = loadAllActiveVeglenker()
+        ParallelSpeedLimitProcessor(veglenkerLookup).generateSpeedLimits()
+    }
 
 @Deprecated(
     "Use ParallelSpeedLimitProcessor.generateSpeedLimits() for better performance",

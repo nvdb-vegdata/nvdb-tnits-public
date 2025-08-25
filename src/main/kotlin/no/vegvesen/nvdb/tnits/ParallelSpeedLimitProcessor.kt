@@ -6,15 +6,15 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.tnits.config.FETCH_SIZE
-import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.geometry.*
+import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import kotlin.time.measureTime
 
 data class SpeedLimitWorkItem(
     val id: Long,
@@ -30,6 +30,7 @@ data class IdRange(
 )
 
 class ParallelSpeedLimitProcessor(
+    private val veglenkerLookup: Map<Long, List<Veglenke>>,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
 ) {
     private val superBatchSize = workerCount * FETCH_SIZE
@@ -55,14 +56,18 @@ class ParallelSpeedLimitProcessor(
                 val idRanges = createIdRanges(ids)
 
                 // Process ranges in parallel - each worker fetches and processes its range
-                val speedLimits = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
+                val speedLimits: List<SpeedLimit>
+                val processingTime =
+                    measureTime {
+                        speedLimits = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
+                    }
 
                 totalCount += speedLimits.size
                 speedLimits.sortedBy { it.id }.forEach { speedLimit ->
                     emit(speedLimit)
                 }
 
-                println("Behandlet superbatch: ${speedLimits.size} fartsgrenser (totalt: $totalCount)")
+                println("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
             }
         }
 
@@ -195,15 +200,10 @@ class ParallelSpeedLimitProcessor(
     private suspend fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit? {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
+        // Use in-memory lookup instead of database query - massive performance improvement!
         val overlappendeVeglenker =
-            newSuspendedTransaction {
-                Veglenker
-                    .selectAll()
-                    .where {
-                        Veglenker.veglenkesekvensId inList veglenkesekvensIds and
-                            (Veglenker.sluttdato greater today())
-                    }.map { it.toVeglenke() }
-                    .groupBy { it.veglenkesekvensId }
+            veglenkesekvensIds.associateWith { sekvensId ->
+                veglenkerLookup[sekvensId] ?: emptyList()
             }
 
         val lineStrings =
