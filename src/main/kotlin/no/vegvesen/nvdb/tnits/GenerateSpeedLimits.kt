@@ -18,7 +18,6 @@ import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Utstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
-import no.vegvesen.nvdb.tnits.veglenkerStore
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument

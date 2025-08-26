@@ -6,9 +6,7 @@ import no.vegvesen.nvdb.tnits.config.configureDatabase
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenker
 import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenkesekvenser
-import no.vegvesen.nvdb.tnits.vegnett.updateVeglenker
 import no.vegvesen.nvdb.tnits.vegnett.updateVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegobjekter.backfillVegobjekter
 import no.vegvesen.nvdb.tnits.vegobjekter.updateVegobjekter
@@ -30,15 +28,6 @@ suspend fun main() {
                 backfillVeglenkesekvenser()
             }
             updateVeglenkesekvenser()
-        }
-
-        launch {
-            println("Oppdaterer veglenker...")
-            val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")
-            if (veglenkerBackfillCompleted == null) {
-                backfillVeglenker()
-            }
-            updateVeglenker()
         }
 
         vegobjektTyper.forEach { typeId ->

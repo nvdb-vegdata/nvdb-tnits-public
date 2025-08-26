@@ -26,8 +26,8 @@ object SRID {
 
 val geometryFactories =
     mapOf(
-        SRID.UTM33 to GeometryFactory(PrecisionModel(1.0), SRID.UTM33),
-        SRID.WGS84 to GeometryFactory(PrecisionModel(100_000.0), SRID.WGS84),
+        SRID.UTM33 to GeometryFactory(PrecisionModel(), SRID.UTM33),
+        SRID.WGS84 to GeometryFactory(PrecisionModel(), SRID.WGS84),
     )
 
 val wktReaders =
@@ -65,13 +65,15 @@ fun Geometry.projectTo(srid: Int): Geometry =
     }
 
 fun Geometry.simplify(distanceTolerance: Double): Geometry =
-    DouglasPeuckerSimplifier.simplify(this, distanceTolerance).let {
-        if (it.isEmpty) {
-            TopologyPreservingSimplifier.simplify(this, distanceTolerance)
-        } else {
-            it
-        }
-    }
+    DouglasPeuckerSimplifier
+        .simplify(this, distanceTolerance)
+        .let {
+            if (it.isEmpty) {
+                TopologyPreservingSimplifier.simplify(this, distanceTolerance)
+            } else {
+                it
+            }
+        }.also { it.srid = this.srid }
 
 data class UtstrekningGeometri(
     val utstrekning: Utstrekning,
@@ -128,8 +130,12 @@ fun mergeGeometries(geometries: List<Geometry>): Geometry? {
     if (geometries.isEmpty()) {
         return null
     }
-    require(geometries.map { it.srid }.toSet().size == 1) {
+    val srid = geometries.map { it.srid }.toSet().singleOrNull()
+    require(srid != null) {
         "All geometries must have the same SRID to be merged"
+    }
+    require(srid != 0) {
+        "Geometries must have a valid SRID to be merged"
     }
 
     if (geometries.all { it.length == 0.0 } || geometries.distinct().size == 1) {
@@ -157,6 +163,10 @@ fun mergeGeometries(geometries: List<Geometry>): Geometry? {
                     )
             }
         }
+
+    check(merged?.srid != 0) {
+        "Merged geometry must have a valid SRID"
+    }
 
     return merged
 }

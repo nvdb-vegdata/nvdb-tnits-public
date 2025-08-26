@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.geometry.SRID
@@ -28,6 +27,7 @@ class JtsGeometrySerializerTest :
             deserialized.coordinate.x shouldBe 10.5
             deserialized.coordinate.y shouldBe 20.3
             deserialized.srid shouldBe SRID.UTM33
+            deserialized.factory.srid shouldBe SRID.UTM33
         }
 
         "should serialize and deserialize LineString geometry" {

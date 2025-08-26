@@ -122,10 +122,7 @@ class ParallelSpeedLimitProcessor(
             idRanges
                 .map { idRange ->
                     async {
-                        println("Starter behandling av ID-range: ${idRange.startId} - ${idRange.endId}")
-                        processIdRange(idRange, kmhByEgenskapVerdi).also {
-                            println("Fullførte behandling av ID-range: ${idRange.startId} - ${idRange.endId}, fant ${it.size} fartsgrenser")
-                        }
+                        processIdRange(idRange, kmhByEgenskapVerdi)
                     }
                 }.awaitAll()
                 .flatten()

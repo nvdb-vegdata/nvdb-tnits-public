@@ -12,16 +12,19 @@
       crossorigin=""
     />
     <style>
-      /* Set the map height so it is visible */
-      #map {
-        height: 600px;
-        width: 100%;
-        margin-top: 1rem;
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
       }
       body {
-        font-family: Arial, sans-serif;
-        margin: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .content {
         padding: 1rem;
+        flex-shrink: 0;
       }
       header {
         font-size: 1.2rem;
@@ -31,15 +34,22 @@
       input[type='file'] {
         margin-top: 0.5rem;
       }
+      #map {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+      }
     </style>
   </head>
   <body>
-    <header>TN-ITS Speed Limit Map Viewer</header>
-    <p>
-      Select a TN-ITS XML file (speed limits) to visualize the road segments on
-      a map.
-    </p>
-    <input type="file" id="fileInput" accept=".xml" />
+    <div class="content">
+      <header>TN-ITS Speed Limit Map Viewer</header>
+      <p>
+        Select a TN-ITS XML file (speed limits) to visualize the road segments on
+        a map.
+      </p>
+      <input type="file" id="fileInput" accept=".xml" />
+    </div>
     <div id="map"></div>
 
     <!-- Leaflet JS -->

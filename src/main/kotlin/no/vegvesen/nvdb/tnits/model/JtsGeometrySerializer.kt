@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.geometry.geometryFactories
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKBReader
 import org.locationtech.jts.io.WKBWriter
@@ -15,7 +17,7 @@ import org.locationtech.jts.io.WKBWriter
 object JtsGeometrySerializer : KSerializer<Geometry> {
     fun createWriter(): WKBWriter = WKBWriter(2, true)
 
-    fun createReader(): WKBReader = WKBReader()
+    fun createReader(): WKBReader = WKBReader(geometryFactories[SRID.UTM33])
 
     private val byteArraySerializer = ByteArraySerializer()
 
