@@ -1,8 +1,7 @@
 package no.vegvesen.nvdb.tnits
 
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toKotlinLocalDate
@@ -15,10 +14,11 @@ import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Utstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
-import no.vegvesen.nvdb.tnits.serialization.kryo
+import no.vegvesen.nvdb.tnits.veglenkerStore
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
@@ -27,9 +27,6 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.file.Files
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -183,23 +180,25 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-suspend fun generateSpeedLimits(): Flow<SpeedLimit> {
-    val veglenkerLookup = loadVeglenkerWithCache()
-    return ParallelSpeedLimitProcessor(veglenkerLookup).generateSpeedLimits()
-}
+suspend fun generateSpeedLimits(): Flow<SpeedLimit> =
+    ParallelSpeedLimitProcessor(
+        veglenkerLookup = veglenkerStore::get,
+        veglenkerBatchLookup = { ids -> veglenkerStore.batchGet(ids) },
+    ).generateSpeedLimits()
 
 @Deprecated(
     "Use ParallelSpeedLimitProcessor.generateSpeedLimits() for better performance",
     ReplaceWith("ParallelSpeedLimitProcessor().generateSpeedLimits()"),
 )
-suspend fun generateSpeedLimitsSequential(): Sequence<SpeedLimit> {
-    val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
-    return newSuspendedTransaction {
-        sequence {
-            var paginationId = 0L
-            var totalCount = 0
-            while (true) {
-                val vegobjekter =
+fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
+    flow {
+        val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
+
+        var paginationId = 0L
+        var totalCount = 0
+        while (true) {
+            val vegobjekter =
+                newSuspendedTransaction {
                     Vegobjekter
                         .select(Vegobjekter.data)
                         .where {
@@ -210,84 +209,71 @@ suspend fun generateSpeedLimitsSequential(): Sequence<SpeedLimit> {
                         .map {
                             it[Vegobjekter.data]
                         }
-
-                if (vegobjekter.isEmpty()) {
-                    break
                 }
 
-                totalCount += vegobjekter.size
+            if (vegobjekter.isEmpty()) {
+                break
+            }
 
-                paginationId = vegobjekter.last().id
+            totalCount += vegobjekter.size
+            paginationId = vegobjekter.last().id
 
-                val stedfestingerByVegobjektId =
-                    vegobjekter.associate {
-                        it.id to it.getStedfestingLinjer()
+            val stedfestingerByVegobjektId =
+                vegobjekter.associate {
+                    it.id to it.getStedfestingLinjer()
+                }
+
+            for (vegobjekt in vegobjekter) {
+                val kmh =
+                    vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
+                        when (egenskap) {
+                            is EnumEgenskap ->
+                                kmhByEgenskapVerdi[egenskap.verdi]
+                                    ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
+
+                            else -> error("Expected EnumEgenskap, got ${egenskap::class.simpleName}")
+                        }
+                    } ?: continue
+
+                val stedfestingLinjer = stedfestingerByVegobjektId[vegobjekt.id].orEmpty()
+                val veglenkesekvensIds = stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
+
+                // Batch fetch veglenker from RocksDB for better performance
+                val overlappendeVeglenker = veglenkerStore.batchGet(veglenkesekvensIds)
+
+                val lineStrings =
+                    stedfestingLinjer.flatMap { stedfesting ->
+                        overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
+                            calculateIntersectingGeometry(
+                                veglenke.geometri,
+                                veglenke.utstrekning,
+                                stedfesting.utstrekning,
+                            )
+                        }
                     }
 
-                val veglenkesekvensIds =
-                    stedfestingerByVegobjektId.flatMapTo(mutableSetOf()) {
-                        it.value.map { stedfesting -> stedfesting.veglenkesekvensId }
-                    }
+                val geometry =
+                    mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
+                        ?: continue // Skip if we can't create geometry
 
-                val overlappendeVeglenker =
-                    Veglenker
-                        .selectAll()
-                        .where {
-                            Veglenker.veglenkesekvensId inList veglenkesekvensIds and
-                                (Veglenker.sluttdato greater today())
-                        }.map {
-                            it.toVeglenke()
-                        }.groupBy { it.veglenkesekvensId }
+                val speedLimit =
+                    SpeedLimit(
+                        id = vegobjekt.id,
+                        kmh = kmh,
+                        locationReferences = emptyList(),
+                        validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
+                        validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
+                        geometry = geometry,
+                    )
 
-                for (vegobjekt in vegobjekter) {
-                    val kmh =
-                        vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
-                            when (egenskap) {
-                                is EnumEgenskap ->
-                                    kmhByEgenskapVerdi[egenskap.verdi]
-                                        ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
+                emit(speedLimit)
+            }
 
-                                else -> error("Expected HeltallEgenskap, got ${egenskap::class.simpleName}")
-                            }
-                        } ?: continue
-
-                    val lineStrings =
-                        stedfestingerByVegobjektId[vegobjekt.id]
-                            .orEmpty()
-                            .flatMap { stedfesting ->
-                                overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
-                                    calculateIntersectingGeometry(
-                                        veglenke.geometri,
-                                        veglenke.utstrekning,
-                                        stedfesting.utstrekning,
-                                    )
-                                }
-                            }
-
-                    val geometry =
-                        mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
-                            ?: error("Kunne ikke lage geometri for fartsgrense ${vegobjekt.id}")
-
-                    val speedLimit =
-                        SpeedLimit(
-                            id = vegobjekt.id,
-                            kmh = kmh,
-                            locationReferences = emptyList(),
-                            validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
-                            validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
-                            geometry = geometry,
-                        )
-
-                    yield(speedLimit)
-                }
-
-                if (totalCount % 10000 == 0) {
-                    println("Generert $totalCount fartsgrenser så langt...")
-                }
+            if (totalCount % 10000 == 0) {
+                println("Generert $totalCount fartsgrenser så langt...")
             }
         }
     }
-}
 
 fun ResultRow.toVeglenke(): Veglenke =
     Veglenke(
@@ -300,12 +286,12 @@ fun ResultRow.toVeglenke(): Veglenke =
         detaljniva = this[Veglenker.detaljniva],
         superstedfesting =
             this[Veglenker.superstedfestingId]?.let { superstedfestingId ->
-                StedfestingLinje().apply {
-                    id = superstedfestingId
-                    startposisjon = get(Veglenker.superstedfestingStartposisjon)?.toDouble() ?: 0.0
-                    sluttposisjon = get(Veglenker.superstedfestingSluttposisjon)?.toDouble() ?: 0.0
-                    kjorefelt = get(Veglenker.superstedfestingKjorefelt) ?: emptyList()
-                }
+                Superstedfesting(
+                    veglenksekvensId = superstedfestingId,
+                    startposisjon = get(Veglenker.superstedfestingStartposisjon)?.toDouble() ?: 0.0,
+                    sluttposisjon = get(Veglenker.superstedfestingSluttposisjon)?.toDouble() ?: 0.0,
+                    kjorefelt = get(Veglenker.superstedfestingKjorefelt) ?: emptyList(),
+                )
             },
     )
 
@@ -361,54 +347,3 @@ suspend fun getCacheFileTimestamp(): Long? =
             ?.toInstant()
             ?.toEpochMilli()
     }
-
-fun saveVeglenkerToCache(
-    veglenker: Map<Long, List<Veglenke>>,
-    cacheFile: File,
-) {
-    measure("Saving veglenker to cache") {
-        cacheFile.parentFile?.mkdirs()
-        FileOutputStream(cacheFile).use { fos ->
-            Output(fos).use { output ->
-                kryo.writeObject(output, veglenker)
-            }
-        }
-        println("Veglenker cachet til ${cacheFile.absolutePath}")
-    }
-}
-
-fun loadVeglenkerFromCache(cacheFile: File): Map<Long, List<Veglenke>>? =
-    try {
-        measure("Loading veglenker from cache") {
-            FileInputStream(cacheFile).use { fis ->
-                Input(fis).use { input ->
-                    @Suppress("UNCHECKED_CAST")
-                    kryo.readObject(input, HashMap::class.java) as Map<Long, List<Veglenke>>
-                }
-            }
-        }
-    } catch (e: Exception) {
-        println("Kunne ikke laste veglenker fra cache: ${e.message}")
-        null
-    }
-
-suspend fun loadVeglenkerWithCache(): Map<Long, List<Veglenke>> {
-    val cacheFile = File("veglenker-cache.kryo")
-    val cacheTimestamp = if (cacheFile.exists()) cacheFile.lastModified() else null
-    val dbTimestamp = getCacheFileTimestamp()
-
-    return if (cacheFile.exists() && cacheTimestamp != null && dbTimestamp != null && cacheTimestamp >= dbTimestamp) {
-        println("Laster veglenker fra cache...")
-        loadVeglenkerFromCache(cacheFile) ?: run {
-            println("Cache feilet, laster fra database...")
-            val veglenker = loadAllActiveVeglenker()
-            saveVeglenkerToCache(veglenker, cacheFile)
-            veglenker
-        }
-    } else {
-        println("Cache er utdatert eller eksisterer ikke, laster fra database...")
-        val veglenker = loadAllActiveVeglenker()
-        saveVeglenkerToCache(veglenker, cacheFile)
-        veglenker
-    }
-}

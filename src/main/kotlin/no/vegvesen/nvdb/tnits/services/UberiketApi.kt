@@ -30,6 +30,16 @@ class UberiketApi(
                 parameter("antall", antall)
             }.executeAsNdjsonFlow<VeglenkeMedId>()
 
+    suspend fun streamVeglenkesekvenser(
+        start: Long? = null,
+        antall: Int = VEGLENKER_PAGE_SIZE,
+    ): Flow<Veglenkesekvens> =
+        httpClient
+            .prepareGet("vegnett/veglenkesekvenser/stream") {
+                parameter("start", start?.toString())
+                parameter("antall", antall)
+            }.executeAsNdjsonFlow<Veglenkesekvens>()
+
     suspend fun getLatestHendelseId(tidspunkt: Instant): Long =
         httpClient
             .get("hendelser/veglenkesekvenser/siste") {

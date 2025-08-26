@@ -5,6 +5,8 @@ import no.vegvesen.nvdb.tnits.model.Veglenke
 interface VeglenkerStore : AutoCloseable {
     suspend fun get(veglenkesekvensId: Long): List<Veglenke>?
 
+    suspend fun batchGet(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>>
+
     suspend fun getAll(): Map<Long, List<Veglenke>>
 
     suspend fun upsert(

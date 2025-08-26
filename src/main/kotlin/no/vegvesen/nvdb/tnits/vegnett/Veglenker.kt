@@ -22,6 +22,38 @@ import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTrans
 import kotlin.time.Clock
 import kotlin.time.Instant
 
+suspend fun backfillVeglenker() {
+    var lastId = KeyValue.get<VeglenkeId>("veglenker_backfill_last_id")
+
+    if (lastId == null) {
+        println("Ingen backfill har blitt startet ennå. Starter backfill...")
+        val now = Clock.System.now()
+        KeyValue.put("veglenker_backfill_started", now)
+    } else {
+        println("Backfill pågår. Gjenopptar fra siste ID: $lastId")
+    }
+
+    var totalCount = 0
+
+    do {
+        val veglenker = uberiketApi.streamVeglenker(start = lastId).toList()
+        lastId = veglenker.lastOrNull()?.veglenkeId
+
+        if (veglenker.isEmpty()) {
+            println("Ingen veglenker å sette inn, backfill fullført.")
+            KeyValue.put("veglenker_backfill_completed", Clock.System.now())
+        } else {
+            newSuspendedTransaction(Dispatchers.IO) {
+                insertVeglenkerSql(veglenker)
+                // Keep progress update atomic within the same transaction
+                KeyValue.putSync("veglenker_backfill_last_id", lastId!!)
+            }
+            totalCount += veglenker.size
+            println("Satt inn ${veglenker.size} veglenker, totalt antall: $totalCount")
+        }
+    } while (veglenker.isNotEmpty())
+}
+
 suspend fun updateVeglenker() {
     var lastHendelseId =
         KeyValue.get<Long>("veglenker_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
@@ -53,7 +85,7 @@ suspend fun updateVeglenker() {
 
             newSuspendedTransaction(Dispatchers.IO) {
                 Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
-                insertVeglenker(veglenker)
+                insertVeglenkerSql(veglenker)
                 publishChangedVeglenkesekvensIds(changedIds)
                 KeyValue.putSync("veglenker_last_hendelse_id", lastHendelseId)
             }
@@ -71,39 +103,10 @@ fun publishChangedVeglenkesekvensIds(changedIds: Collection<Long>) {
     }
 }
 
-suspend fun backfillVeglenker() {
-    var lastId = KeyValue.get<VeglenkeId>("veglenker_backfill_last_id")
-
-    if (lastId == null) {
-        println("Ingen backfill har blitt startet ennå. Starter backfill...")
-        val now = Clock.System.now()
-        KeyValue.put("veglenker_backfill_started", now)
-    } else {
-        println("Backfill pågår. Gjenopptar fra siste ID: $lastId")
-    }
-
-    var totalCount = 0
-
-    do {
-        val veglenker = uberiketApi.streamVeglenker(start = lastId).toList()
-        lastId = veglenker.lastOrNull()?.veglenkeId
-
-        if (veglenker.isEmpty()) {
-            println("Ingen veglenker å sette inn, backfill fullført.")
-            KeyValue.put("veglenker_backfill_completed", Clock.System.now())
-        } else {
-            newSuspendedTransaction(Dispatchers.IO) {
-                insertVeglenker(veglenker)
-                // Keep progress update atomic within the same transaction
-                KeyValue.putSync("veglenker_backfill_last_id", lastId!!)
-            }
-            totalCount += veglenker.size
-            println("Satt inn ${veglenker.size} veglenker, totalt antall: $totalCount")
-        }
-    } while (veglenker.isNotEmpty())
+private fun insertVeglenkerRocksDb(veglenker: List<VeglenkeMedId>) {
 }
 
-private fun insertVeglenker(veglenker: List<VeglenkeMedId>) {
+private fun insertVeglenkerSql(veglenker: List<VeglenkeMedId>) {
     Veglenker.batchInsert(veglenker, shouldReturnGeneratedValues = false) { veglenke ->
         this[Veglenker.veglenkesekvensId] = veglenke.veglenkesekvensId
         this[Veglenker.veglenkenummer] = veglenke.veglenkenummer

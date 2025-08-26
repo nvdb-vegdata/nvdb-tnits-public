@@ -11,6 +11,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
+import no.vegvesen.nvdb.tnits.storage.RocksDbVeglenkerStore
 import org.openlr.encoder.EncoderFactory
 import org.openlr.location.LocationFactory
 
@@ -58,6 +59,8 @@ val datakatalogHttpClient =
     }
 
 val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
+
+val veglenkerStore = RocksDbVeglenkerStore()
 
 val openLrEncoder = EncoderFactory().create()
 

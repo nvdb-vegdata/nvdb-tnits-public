@@ -7,7 +7,9 @@ import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenker
+import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegnett.updateVeglenker
+import no.vegvesen.nvdb.tnits.vegnett.updateVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegobjekter.backfillVegobjekter
 import no.vegvesen.nvdb.tnits.vegobjekter.updateVegobjekter
 import kotlin.time.Instant
@@ -21,6 +23,15 @@ suspend fun main() {
     val vegobjektTyper = listOf(105, 821)
 
     coroutineScope {
+        launch {
+            println("Oppdaterer veglenkesekvenser...")
+            val veglenkesekvenserBackfillCompleted = KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
+            if (veglenkesekvenserBackfillCompleted == null) {
+                backfillVeglenkesekvenser()
+            }
+            updateVeglenkesekvenser()
+        }
+
         launch {
             println("Oppdaterer veglenker...")
             val veglenkerBackfillCompleted = KeyValue.get<Instant>("veglenker_backfill_completed")

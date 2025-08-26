@@ -1,16 +1,15 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
-import no.vegvesen.nvdb.tnits.serialization.kryo
 import org.rocksdb.*
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 
+@OptIn(ExperimentalSerializationApi::class)
 class RocksDbVeglenkerStore(
     private val dbPath: String = "veglenker.db",
     private val enableCompression: Boolean = true,
@@ -40,21 +39,21 @@ class RocksDbVeglenkerStore(
 
     init {
         loadLibraryOnce()
+        initialize()
     }
 
-    suspend fun initialize() =
-        withContext(Dispatchers.IO) {
+    fun initialize() =
+        try {
             options =
                 Options().apply {
+                    prepareForBulkLoad()
                     setCreateIfMissing(true)
-                    setWriteBufferSize(64 * 1024 * 1024) // 64MB
-                    setMaxWriteBufferNumber(3)
-                    setMaxBackgroundCompactions(10)
                     setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
-                    setLevelCompactionDynamicLevelBytes(true)
                 }
 
             db = RocksDB.open(options, dbPath)
+        } catch (e: RocksDBException) {
+            throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
         }
 
     override suspend fun get(veglenkesekvensId: Long): List<Veglenke>? =
@@ -63,6 +62,25 @@ class RocksDbVeglenkerStore(
             val value = db.get(key)
 
             value?.let { deserializeVeglenker(it) }
+        }
+
+    override suspend fun batchGet(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>> =
+        withContext(Dispatchers.IO) {
+            if (veglenkesekvensIds.isEmpty()) {
+                return@withContext emptyMap()
+            }
+
+            val keys = veglenkesekvensIds.map { it.toByteArray() }
+            val values = db.multiGetAsList(keys)
+
+            val result = mutableMapOf<Long, List<Veglenke>>()
+            veglenkesekvensIds.zip(values).forEach { (id, value) ->
+                if (value != null) {
+                    result[id] = deserializeVeglenker(value)
+                }
+            }
+
+            result
         }
 
     override suspend fun getAll(): Map<Long, List<Veglenke>> =
@@ -152,21 +170,11 @@ class RocksDbVeglenkerStore(
         }
     }
 
-    private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray {
-        val baos = ByteArrayOutputStream()
-        Output(baos).use { output ->
-            kryo.writeObject(output, veglenker)
-        }
-        return baos.toByteArray()
-    }
+    private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray =
+        ProtoBuf.encodeToByteArray(ListSerializer(Veglenke.serializer()), veglenker)
 
-    private fun deserializeVeglenker(data: ByteArray): List<Veglenke> {
-        val bais = ByteArrayInputStream(data)
-        Input(bais).use { input ->
-            @Suppress("UNCHECKED_CAST")
-            return kryo.readObject(input, ArrayList::class.java) as List<Veglenke>
-        }
-    }
+    private fun deserializeVeglenker(data: ByteArray): List<Veglenke> =
+        ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)
 
     private fun Long.toByteArray(): ByteArray {
         val bytes = ByteArray(8)

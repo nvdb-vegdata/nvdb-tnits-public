@@ -16,6 +16,9 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import kotlin.time.measureTime
 
+typealias VeglenkerLookup = suspend (Long) -> List<Veglenke>?
+typealias VeglenkerBatchLookup = suspend (Collection<Long>) -> Map<Long, List<Veglenke>>
+
 data class SpeedLimitWorkItem(
     val id: Long,
     val kmh: Int,
@@ -30,7 +33,8 @@ data class IdRange(
 )
 
 class ParallelSpeedLimitProcessor(
-    private val veglenkerLookup: Map<Long, List<Veglenke>>,
+    private val veglenkerLookup: VeglenkerLookup,
+    private val veglenkerBatchLookup: VeglenkerBatchLookup? = null,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
 ) {
     private val superBatchSize = workerCount * FETCH_SIZE
@@ -200,10 +204,15 @@ class ParallelSpeedLimitProcessor(
     private suspend fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit? {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
-        // Use in-memory lookup instead of database query - massive performance improvement!
+        // Use batch lookup if available for better performance, otherwise fall back to individual lookups
         val overlappendeVeglenker =
-            veglenkesekvensIds.associateWith { sekvensId ->
-                veglenkerLookup[sekvensId] ?: emptyList()
+            if (veglenkerBatchLookup != null) {
+                veglenkerBatchLookup.invoke(veglenkesekvensIds)
+            } else {
+                veglenkesekvensIds
+                    .associateWith { sekvensId ->
+                        veglenkerLookup(sekvensId) ?: emptyList()
+                    }.filterValues { it.isNotEmpty() }
             }
 
         val lineStrings =
