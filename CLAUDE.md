@@ -8,8 +8,9 @@ This is a Kotlin console application prototype for synchronizing road network da
 
 1. Initial backfill of all road network data from NVDB
 2. Incremental updates by processing change events from NVDB's event stream
-3. Data storage using Exposed ORM with support for H2 and PostgreSQL databases
-4. Exporting speed limits and other road objects for TN-ITS compliance
+3. Data storage using Exposed ORM with support for H2, PostgreSQL, and Oracle Database Free
+4. High-performance veglenker caching using RocksDB with Protocol Buffers serialization
+5. Exporting speed limits and other road objects for TN-ITS compliance
 
 ## Architecture
 
@@ -23,6 +24,7 @@ The application follows a console-based architecture with Exposed ORM for databa
 - **model/**: Domain models including road segments and positioning
 - **vegnett/**: Core business logic for road network data backfilling and incremental updates
 - **services/**: API client services for communicating with NVDB's Uberiket API and Datakatalogen
+- **storage/**: High-performance storage layer with RocksDB-based veglenker caching
 
 ### Database Schema
 
@@ -54,7 +56,7 @@ All tables include timestamp fields for change tracking.
 
 ### Database Configuration
 
-The application supports both H2 (development) and PostgreSQL (production) databases. Configuration is handled through environment variables:
+The application supports H2 (development), PostgreSQL, and Oracle Database Free (production) databases. Configuration is handled through environment variables:
 
 - `DATABASE_URL`: JDBC connection string
 - `DATABASE_USER`: Database username
@@ -95,7 +97,8 @@ Tests use Kotest 6.0 framework and can be run individually or as a suite. The ap
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlStreamDslTest.kt` - XML streaming DSL tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/GeometryHelpersTest.kt` - Geometry projection and transformation tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/CalculateIntersectingGeometryTest.kt` - Geometry intersection calculation tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/VeglenkerCacheTest.kt` - Kryo binary cache serialization and deserialization tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/RocksDbVeglenkerStoreTest.kt` - RocksDB storage layer tests with Protocol Buffers serialization
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/model/JtsGeometrySerializerTest.kt` - JTS geometry serialization tests
 
 The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
 
@@ -131,21 +134,24 @@ The application implements high-performance parallel processing for speed limit 
 - **Worker Count**: Automatically scales to CPU cores (`Runtime.getRuntime().availableProcessors()`)
 - **Ordered Output**: Results are sorted by ID before streaming to maintain consistent output
 
-### Kryo Caching System
+### RocksDB Storage System
 
-Fast binary caching for veglenker data provides 5-15x performance improvement:
+High-performance embedded storage for veglenker data using RocksDB with Protocol Buffers serialization:
 
-- **Cache Location**: `veglenker-cache.kryo` in project root
-- **Smart Invalidation**: Compares cache file timestamp with database `sistEndret` timestamps
-- **Automatic Fallback**: Falls back to database loading if cache fails or is stale
-- **Binary Serialization**: Uses Kryo with Objenesis for efficient data class serialization
-- **Performance Measurement**: Integrated timing functions track cache operations
+- **Storage Location**: `veglenker.db/` directory in project root
+- **Compression**: LZ4 compression enabled by default for optimal storage efficiency
+- **Serialization**: Protocol Buffers (protobuf) for compact and efficient binary serialization
+- **Batch Operations**: Optimized batch read/write operations for handling large datasets
+- **Bulk Loading**: Configured for high-throughput bulk data loading operations
+- **Thread Safety**: Safe for concurrent read operations across multiple threads
 
-#### Cache Functions:
-- `loadVeglenkerWithCache()`: Main entry point with fallback logic
-- `saveVeglenkerToCache()`: Binary serialization to disk
-- `loadVeglenkerFromCache()`: Binary deserialization with error handling
-- `getCacheFileTimestamp()`: Database timestamp checking for cache validation
+#### Storage Interface:
+- `RocksDbVeglenkerStore`: Main storage implementation with embedded RocksDB
+- `get(veglenkesekvensId)`: Retrieve veglenker list for a specific sequence ID
+- `batchGet(ids)`: Efficient batch retrieval for multiple sequence IDs
+- `upsert(id, veglenker)`: Insert or update veglenker data
+- `batchUpdate(updates)`: Atomic batch updates with WriteBatch optimization
+- `clear()`: Complete database reset and reinitialization
 
 ### Thread Safety
 
@@ -156,12 +162,15 @@ Fast binary caching for veglenker data provides 5-15x performance improvement:
 ## Important Implementation Notes
 
 - **Exposed ORM Version**: Uses beta version 1.0.0-beta-5 for latest features
+- **Database Support**: Supports Oracle Database Free (production), PostgreSQL, and H2 (development)
 - **TN-ITS Speed Limits**: Implemented with full XML export functionality including WGS84 coordinate transformation
-- **Geometry Processing**: Advanced spatial calculations for road segment intersections and coordinate projections
+- **Geometry Processing**: Advanced spatial calculations for road segment intersections and coordinate projections using JTS
 - **OpenLR Integration**: Currently uses placeholder OpenLR encoding - real implementation would require an OpenLR library
 - **Change Detection**: Uses NVDB's native event stream (veglenkesekvens hendelser) for incremental updates
 - **Data Processing**: Implements backfill and incremental update patterns for large-scale data synchronization
 - **State Management**: Tracks processing state using KeyValue table to support resumable operations
-- **Binary Caching**: Kryo-based serialization with Objenesis instantiation for data classes without no-arg constructors
+- **Embedded Storage**: RocksDB-based storage with LZ4 compression for optimal performance and data density
+- **Serialization**: Uses kotlinx.serialization with Protocol Buffers for type-safe, efficient binary serialization
+- **Storage Architecture**: Separates ephemeral road network data (RocksDB) from persistent application state (SQL database)
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.

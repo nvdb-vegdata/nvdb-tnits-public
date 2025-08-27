@@ -6,12 +6,10 @@ import no.vegvesen.nvdb.tnits.config.configureDatabase
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.clearVeglenkesekvensSettings
-import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegnett.updateVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegobjekter.backfillVegobjekter
 import no.vegvesen.nvdb.tnits.vegobjekter.updateVegobjekter
-import kotlin.time.Instant
 
 suspend fun main() {
     println("Starter NVDB TN-ITS konsollapplikasjon...")
@@ -31,20 +29,14 @@ suspend fun main() {
     coroutineScope {
         launch {
             println("Oppdaterer veglenkesekvenser...")
-            val veglenkesekvenserBackfillCompleted = KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
-            if (veglenkesekvenserBackfillCompleted == null) {
-                backfillVeglenkesekvenser()
-            }
+            backfillVeglenkesekvenser()
             updateVeglenkesekvenser()
         }
 
         vegobjektTyper.forEach { typeId ->
-            println("Oppdaterer vegobjekter for type $typeId...")
             launch {
-                val backfillCompleted = KeyValue.get<Instant>("vegobjekter_${typeId}_backfill_completed")
-                if (backfillCompleted == null) {
-                    backfillVegobjekter(typeId)
-                }
+                println("Oppdaterer vegobjekter for type $typeId...")
+                backfillVegobjekter(typeId)
                 updateVegobjekter(typeId)
             }
         }

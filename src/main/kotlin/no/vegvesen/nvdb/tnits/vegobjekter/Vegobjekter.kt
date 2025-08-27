@@ -10,7 +10,10 @@ import no.vegvesen.nvdb.tnits.VegobjektTyper
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
-import no.vegvesen.nvdb.tnits.extensions.*
+import no.vegvesen.nvdb.tnits.extensions.forEachChunked
+import no.vegvesen.nvdb.tnits.extensions.get
+import no.vegvesen.nvdb.tnits.extensions.nowOffsetDateTime
+import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
@@ -80,7 +83,7 @@ suspend fun updateVegobjekter(typeId: Int) {
                     Vegobjekter.vegobjektId inList changedIds
                 }
                 insertVegobjekter(vegobjekter)
-                KeyValue.putSync("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
+                KeyValue.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
         }
@@ -89,6 +92,13 @@ suspend fun updateVegobjekter(typeId: Int) {
 }
 
 suspend fun backfillVegobjekter(typeId: Int) {
+    val backfillCompleted = KeyValue.get<Instant>("vegobjekter_${typeId}_backfill_completed")
+
+    if (backfillCompleted != null) {
+        println("Backfill for type $typeId er allerede fullført den $backfillCompleted")
+        return
+    }
+
     var lastId = KeyValue.get<Long>("vegobjekter_${typeId}_backfill_last_id")
 
     if (lastId == null) {
@@ -112,7 +122,7 @@ suspend fun backfillVegobjekter(typeId: Int) {
             transaction {
                 insertVegobjekter(vegobjekter)
                 // Keep progress update atomic within the same transaction
-                KeyValue.putSync("vegobjekter_${typeId}_backfill_last_id", lastId!!)
+                KeyValue.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
             }
             totalCount += vegobjekter.size
             println("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")

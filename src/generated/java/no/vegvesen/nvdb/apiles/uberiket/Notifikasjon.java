@@ -32,9 +32,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Notifikasjon
  */
 @JsonPropertyOrder({
+  Notifikasjon.JSON_PROPERTY_NOTIFIKASJONSTYPE,
   Notifikasjon.JSON_PROPERTY_HENDELSE_ID,
-  Notifikasjon.JSON_PROPERTY_TIDSPUNKT,
-  Notifikasjon.JSON_PROPERTY_NOTIFIKASJONSTYPE
+  Notifikasjon.JSON_PROPERTY_TIDSPUNKT
 })
 @jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.14.0")
 @JsonIgnoreProperties(
@@ -48,6 +48,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 })
 
 public class Notifikasjon {
+  public static final String JSON_PROPERTY_NOTIFIKASJONSTYPE = "notifikasjonstype";
+  @jakarta.annotation.Nonnull
+  protected Notifikasjonstype notifikasjonstype;
+
   public static final String JSON_PROPERTY_HENDELSE_ID = "hendelseId";
   @jakarta.annotation.Nonnull
   protected Long hendelseId;
@@ -56,11 +60,32 @@ public class Notifikasjon {
   @jakarta.annotation.Nonnull
   protected OffsetDateTime tidspunkt;
 
-  public static final String JSON_PROPERTY_NOTIFIKASJONSTYPE = "notifikasjonstype";
-  @jakarta.annotation.Nonnull
-  protected Notifikasjonstype notifikasjonstype;
-
   public Notifikasjon() {
+  }
+
+  public Notifikasjon notifikasjonstype(@jakarta.annotation.Nonnull Notifikasjonstype notifikasjonstype) {
+    
+    this.notifikasjonstype = notifikasjonstype;
+    return this;
+  }
+
+  /**
+   * Get notifikasjonstype
+   * @return notifikasjonstype
+   */
+  @jakarta.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_NOTIFIKASJONSTYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Notifikasjonstype getNotifikasjonstype() {
+    return notifikasjonstype;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NOTIFIKASJONSTYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNotifikasjonstype(@jakarta.annotation.Nonnull Notifikasjonstype notifikasjonstype) {
+    this.notifikasjonstype = notifikasjonstype;
   }
 
   public Notifikasjon hendelseId(@jakarta.annotation.Nonnull Long hendelseId) {
@@ -113,31 +138,6 @@ public class Notifikasjon {
     this.tidspunkt = tidspunkt;
   }
 
-  public Notifikasjon notifikasjonstype(@jakarta.annotation.Nonnull Notifikasjonstype notifikasjonstype) {
-    
-    this.notifikasjonstype = notifikasjonstype;
-    return this;
-  }
-
-  /**
-   * Get notifikasjonstype
-   * @return notifikasjonstype
-   */
-  @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_NOTIFIKASJONSTYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Notifikasjonstype getNotifikasjonstype() {
-    return notifikasjonstype;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NOTIFIKASJONSTYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNotifikasjonstype(@jakarta.annotation.Nonnull Notifikasjonstype notifikasjonstype) {
-    this.notifikasjonstype = notifikasjonstype;
-  }
-
 
   @Override
   public boolean equals(Object o) {
@@ -148,23 +148,23 @@ public class Notifikasjon {
       return false;
     }
     Notifikasjon notifikasjon = (Notifikasjon) o;
-    return Objects.equals(this.hendelseId, notifikasjon.hendelseId) &&
-        Objects.equals(this.tidspunkt, notifikasjon.tidspunkt) &&
-        Objects.equals(this.notifikasjonstype, notifikasjon.notifikasjonstype);
+    return Objects.equals(this.notifikasjonstype, notifikasjon.notifikasjonstype) &&
+        Objects.equals(this.hendelseId, notifikasjon.hendelseId) &&
+        Objects.equals(this.tidspunkt, notifikasjon.tidspunkt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hendelseId, tidspunkt, notifikasjonstype);
+    return Objects.hash(notifikasjonstype, hendelseId, tidspunkt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Notifikasjon {\n");
+    sb.append("    notifikasjonstype: ").append(toIndentedString(notifikasjonstype)).append("\n");
     sb.append("    hendelseId: ").append(toIndentedString(hendelseId)).append("\n");
     sb.append("    tidspunkt: ").append(toIndentedString(tidspunkt)).append("\n");
-    sb.append("    notifikasjonstype: ").append(toIndentedString(notifikasjonstype)).append("\n");
     sb.append("}");
     return sb.toString();
   }
