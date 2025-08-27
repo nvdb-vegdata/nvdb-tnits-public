@@ -91,3 +91,23 @@ inline fun <reified T : Any> KeyValue.putSync(
     key: String,
     value: T,
 ) = putSync(key, value, serializer())
+
+suspend fun KeyValue.clearVeglenkesekvensSettings() {
+    newSuspendedTransaction {
+        clearVeglenkesekvensSettingsSync()
+    }
+}
+
+fun KeyValue.clearVeglenkesekvensSettingsSync() {
+    val veglenkesekvensKeys =
+        listOf(
+            "veglenkesekvenser_backfill_completed",
+            "veglenkesekvenser_backfill_last_id",
+            "veglenkesekvenser_last_hendelse_id",
+            "veglenkesekvenser_backfill_started",
+        )
+
+    veglenkesekvensKeys.forEach { key ->
+        KeyValue.deleteWhere { KeyValue.key eq key }
+    }
+}

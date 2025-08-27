@@ -7,24 +7,18 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toKotlinLocalDate
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
-import no.vegvesen.nvdb.apiles.uberiket.*
+import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.tnits.config.FETCH_SIZE
-import no.vegvesen.nvdb.tnits.database.Veglenker
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.geometry.*
-import no.vegvesen.nvdb.tnits.geometry.SRID
-import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Utstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
-import no.vegvesen.nvdb.tnits.model.overlaps
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
-import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import java.nio.file.Files
 import kotlin.time.Clock
@@ -35,6 +29,7 @@ val OsloZone = TimeZone.of("Europe/Oslo")
 
 object VegobjektTyper {
     const val FARTSGRENSE = 105
+    const val FUNKSJONELL_VEGKLASSE = 821
 }
 
 fun today() = Clock.System.todayIn(OsloZone)
@@ -78,7 +73,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
         Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_snapshot", ".xml")
     println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
-    val speedLimitsFlow = generateSpeedLimits()
+    val speedLimitsFlow = generateSpeedLimitsSnapshot()
     measure("Generating full snapshot", logStart = true) {
         writeXmlDocument(
             path,
@@ -124,7 +119,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
                         }
                         "updateInfo" {
                             "UpdateInfo" {
-                                "type" { "Add" }
+                                "type" { speedLimit.updateType }
                             }
                         }
                         "source" {
@@ -171,10 +166,10 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-fun generateSpeedLimits(): Flow<SpeedLimit> =
+fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> =
     ParallelSpeedLimitProcessor(
         veglenkerBatchLookup = { ids -> veglenkerStore.batchGet(ids) },
-    ).generateSpeedLimits()
+    ).generateSpeedLimitsSnapshot()
 
 @Deprecated(
     "Use ParallelSpeedLimitProcessor.generateSpeedLimits() for better performance",
@@ -254,6 +249,7 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
                         validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
                         validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
                         geometry = geometry,
+                        updateType = UpdateType.Add,
                     )
 
                 emit(speedLimit)
@@ -265,59 +261,6 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
         }
     }
 
-fun ResultRow.toVeglenke(): Veglenke =
-    Veglenke(
-        veglenkesekvensId = this[Veglenker.veglenkesekvensId],
-        veglenkenummer = this[Veglenker.veglenkenummer],
-        startposisjon = this[Veglenker.startposisjon].toDouble(),
-        sluttposisjon = this[Veglenker.sluttposisjon].toDouble(),
-        geometri = this[Veglenker.geometri].also { it.srid = SRID.UTM33 },
-        typeVeg = this[Veglenker.typeVeg],
-        detaljniva = this[Veglenker.detaljniva],
-        superstedfesting =
-            this[Veglenker.superstedfestingId]?.let { superstedfestingId ->
-                Superstedfesting(
-                    veglenksekvensId = superstedfestingId,
-                    startposisjon = get(Veglenker.superstedfestingStartposisjon)?.toDouble() ?: 0.0,
-                    sluttposisjon = get(Veglenker.superstedfestingSluttposisjon)?.toDouble() ?: 0.0,
-                    kjorefelt = get(Veglenker.superstedfestingKjorefelt) ?: emptyList(),
-                )
-            },
-    )
-
-fun Stedfesting.toStedfestingLinjer(): List<StedfestingLinje> =
-    when (this) {
-        is StedfestingLinjer -> linjer
-        else -> TODO("Stedfesting type ${this::class.simpleName} not supported yet")
-    }
-
-fun Stedfesting.toVegobjektStedfestinger(
-    vegobjektId: Long,
-    vegobjektType: Int,
-): List<VegobjektStedfesting> =
-    when (this) {
-        is StedfestingLinjer ->
-            linjer.map {
-                VegobjektStedfesting(
-                    vegobjektId = vegobjektId,
-                    vegobjektType = vegobjektType,
-                    veglenkesekvensId = it.id,
-                    startposisjon = it.startposisjon,
-                    sluttposisjon = it.sluttposisjon,
-                    retning = it.retning,
-                    sideposisjon = it.sideposisjon,
-                    kjorefelt = it.kjorefelt,
-                )
-            }
-
-        else -> error("Forventet StedfestingLinjer, fikk ${this::class.simpleName}")
-    }
-
-fun Veglenke.overlaps(stedfesting: VegobjektStedfesting) = utstrekning.overlaps(stedfesting.utstrekning)
-
-val VeglenkeMedId.utstrekning
-    get(): Utstrekning = Utstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
-
 val Veglenke.utstrekning
     get(): Utstrekning = Utstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
 
@@ -327,13 +270,3 @@ val VegobjektStedfesting.utstrekning
 const val FartsgrenseEgenskapTypeId = 2021
 
 const val FartsgrenseEgenskapTypeIdString = FartsgrenseEgenskapTypeId.toString()
-
-suspend fun getCacheFileTimestamp(): Long? =
-    newSuspendedTransaction {
-        Veglenker
-            .selectAll()
-            .maxByOrNull { it[Veglenker.sistEndret] }
-            ?.get(Veglenker.sistEndret)
-            ?.toInstant()
-            ?.toEpochMilli()
-    }

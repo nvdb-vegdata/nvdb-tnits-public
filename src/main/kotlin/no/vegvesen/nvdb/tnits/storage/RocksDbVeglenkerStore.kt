@@ -139,6 +139,13 @@ class RocksDbVeglenkerStore(
 
     override fun size(): Long = db.getProperty("rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
 
+    fun existsAndHasData(): Boolean =
+        try {
+            File(dbPath).exists() && size() > 0
+        } catch (e: Exception) {
+            false
+        }
+
     override fun clear() {
         // Close existing database
         close()

@@ -6,6 +6,7 @@ import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
+import no.vegvesen.nvdb.tnits.VegobjektTyper
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
@@ -19,6 +20,11 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Instant
+
+private val dirtyCheckForTypes =
+    setOf(
+        VegobjektTyper.FUNKSJONELL_VEGKLASSE,
+    )
 
 suspend fun updateVegobjekter(typeId: Int) {
     var lastHendelseId =
@@ -55,23 +61,25 @@ suspend fun updateVegobjekter(typeId: Int) {
             }
 
             transaction {
-                val existingStedfestedeVeglenkesekvensIds =
-                    Stedfestinger
-                        .select(Stedfestinger.veglenkesekvensId)
-                        .where { Stedfestinger.vegobjektId inList changedIds }
-                        .withDistinct(true)
-                        .map { it[Stedfestinger.veglenkesekvensId] }
-                        .toSet()
-                val updatedStedfestedeVeglenkesekvensIds =
-                    vegobjekter
-                        .flatMap { it.getStedfestingLinjer() }
-                        .map { it.veglenkesekvensId }
-                        .toSet()
+                if (typeId in dirtyCheckForTypes) {
+                    val existingStedfestedeVeglenkesekvensIds =
+                        Stedfestinger
+                            .select(Stedfestinger.veglenkesekvensId)
+                            .where { Stedfestinger.vegobjektId inList changedIds }
+                            .withDistinct(true)
+                            .map { it[Stedfestinger.veglenkesekvensId] }
+                            .toSet()
+                    val updatedStedfestedeVeglenkesekvensIds =
+                        vegobjekter
+                            .flatMap { it.getStedfestingLinjer() }
+                            .map { it.veglenkesekvensId }
+                            .toSet()
+                    publishChangedVeglenkesekvensIds(existingStedfestedeVeglenkesekvensIds + updatedStedfestedeVeglenkesekvensIds)
+                }
                 Vegobjekter.deleteWhere {
                     Vegobjekter.vegobjektId inList changedIds
                 }
                 insertVegobjekter(vegobjekter)
-                publishChangedVeglenkesekvensIds(existingStedfestedeVeglenkesekvensIds + updatedStedfestedeVeglenkesekvensIds)
                 KeyValue.putSync("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")

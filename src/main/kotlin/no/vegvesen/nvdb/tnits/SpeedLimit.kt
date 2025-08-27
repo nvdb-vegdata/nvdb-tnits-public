@@ -11,4 +11,5 @@ data class SpeedLimit(
     val locationReferences: List<LineLocationReference>,
     val validFrom: LocalDate,
     val validTo: LocalDate? = null,
+    val updateType: UpdateType,
 )

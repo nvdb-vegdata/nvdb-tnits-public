@@ -2,7 +2,10 @@ package no.vegvesen.nvdb.tnits.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import no.vegvesen.nvdb.tnits.database.*
+import no.vegvesen.nvdb.tnits.database.DirtyVeglenkesekvenser
+import no.vegvesen.nvdb.tnits.database.KeyValue
+import no.vegvesen.nvdb.tnits.database.Stedfestinger
+import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import org.jetbrains.exposed.v1.core.DatabaseConfig
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -35,6 +38,6 @@ fun configureDatabase(config: AppConfig) {
     )
 
     transaction {
-        SchemaUtils.create(Veglenker, Vegobjekter, KeyValue, Stedfestinger, DirtyVeglenkesekvenser)
+        SchemaUtils.create(Vegobjekter, KeyValue, Stedfestinger, DirtyVeglenkesekvenser)
     }
 }
