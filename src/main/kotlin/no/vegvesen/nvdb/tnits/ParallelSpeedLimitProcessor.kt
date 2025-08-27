@@ -14,10 +14,10 @@ import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.measureTime
 
-typealias VeglenkerLookup = suspend (Long) -> List<Veglenke>?
-typealias VeglenkerBatchLookup = suspend (Collection<Long>) -> Map<Long, List<Veglenke>>
+typealias VeglenkerBatchLookup = (Collection<Long>) -> Map<Long, List<Veglenke>>
 
 data class SpeedLimitWorkItem(
     val id: Long,
@@ -33,8 +33,7 @@ data class IdRange(
 )
 
 class ParallelSpeedLimitProcessor(
-    private val veglenkerLookup: VeglenkerLookup,
-    private val veglenkerBatchLookup: VeglenkerBatchLookup? = null,
+    private val veglenkerBatchLookup: VeglenkerBatchLookup,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
 ) {
     private val superBatchSize = workerCount * FETCH_SIZE
@@ -75,21 +74,19 @@ class ParallelSpeedLimitProcessor(
             }
         }
 
-    private suspend fun fetchNextSpeedLimitIds(
+    private fun fetchNextSpeedLimitIds(
         paginationId: Long,
         batchSize: Int,
     ): List<Long> =
-        withContext(Dispatchers.IO) {
-            newSuspendedTransaction {
-                Vegobjekter
-                    .select(Vegobjekter.vegobjektId)
-                    .where {
-                        (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-                            (Vegobjekter.vegobjektId greater paginationId)
-                    }.orderBy(Vegobjekter.vegobjektId)
-                    .limit(batchSize)
-                    .map { it[Vegobjekter.vegobjektId] }
-            }
+        transaction {
+            Vegobjekter
+                .select(Vegobjekter.vegobjektId)
+                .where {
+                    (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
+                        (Vegobjekter.vegobjektId greater paginationId)
+                }.orderBy(Vegobjekter.vegobjektId)
+                .limit(batchSize)
+                .map { it[Vegobjekter.vegobjektId] }
         }
 
     private fun createIdRanges(ids: List<Long>): List<IdRange> {
@@ -201,16 +198,7 @@ class ParallelSpeedLimitProcessor(
     private suspend fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit? {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
-        // Use batch lookup if available for better performance, otherwise fall back to individual lookups
-        val overlappendeVeglenker =
-            if (veglenkerBatchLookup != null) {
-                veglenkerBatchLookup.invoke(veglenkesekvensIds)
-            } else {
-                veglenkesekvensIds
-                    .associateWith { sekvensId ->
-                        veglenkerLookup(sekvensId) ?: emptyList()
-                    }.filterValues { it.isNotEmpty() }
-            }
+        val overlappendeVeglenker = veglenkerBatchLookup(veglenkesekvensIds)
 
         val lineStrings =
             workItem.stedfestingLinjer.flatMap { stedfesting ->

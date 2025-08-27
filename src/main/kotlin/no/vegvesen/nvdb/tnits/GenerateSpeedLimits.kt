@@ -63,27 +63,19 @@ suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
         .tillatteVerdier
         .associate { it.id to it.verdi!! }
 
-suspend fun loadAllActiveVeglenker(): Map<Long, List<Veglenke>> =
-    measure("Loading all active veglenker into memory", logStart = true) {
-        newSuspendedTransaction {
-            val veglenker =
-                Veglenker
-                    .selectAll()
-                    .where { Veglenker.sluttdato greater today() }
-                    .map { it.toVeglenke() }
-                    .groupBy { it.veglenkesekvensId }
-
-            println("Lastet ${veglenker.values.sumOf { it.size }} aktive veglenker for ${veglenker.size} veglenkesekvenser")
-            veglenker
-        }
-    }
-
 fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
+
+suspend fun generateSpeedLimitsDeltaUpdate() {
+    val now = Clock.System.now().truncateToSeconds()
+    val path =
+        Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_update", ".xml")
+    println("Lagrer endringsdata for fartsgrenser til ${path.toAbsolutePath()}")
+}
 
 suspend fun generateSpeedLimitsFullSnapshot() {
     val now = Clock.System.now().truncateToSeconds()
     val path =
-        Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_complete", ".xml")
+        Files.createTempFile("TNITS_SpeedLimits_${now.toString().replace(":", "-")}_snapshot", ".xml")
     println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
     val speedLimitsFlow = generateSpeedLimits()
@@ -108,7 +100,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
                     "datasetCreationTime" { now }
                 }
             }
-            "type" { "Complete" }
+            "type" { "Snapshot" }
             "roadFeatures" {
                 speedLimitsFlow.collect { speedLimit ->
                     "RoadFeature" {
@@ -179,9 +171,8 @@ suspend fun generateSpeedLimitsFullSnapshot() {
     }
 }
 
-suspend fun generateSpeedLimits(): Flow<SpeedLimit> =
+fun generateSpeedLimits(): Flow<SpeedLimit> =
     ParallelSpeedLimitProcessor(
-        veglenkerLookup = veglenkerStore::get,
         veglenkerBatchLookup = { ids -> veglenkerStore.batchGet(ids) },
     ).generateSpeedLimits()
 

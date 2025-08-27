@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
@@ -18,7 +17,7 @@ import no.vegvesen.nvdb.tnits.vegobjekter.MAX_DATE
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -43,7 +42,7 @@ suspend fun backfillVeglenker() {
             println("Ingen veglenker å sette inn, backfill fullført.")
             KeyValue.put("veglenker_backfill_completed", Clock.System.now())
         } else {
-            newSuspendedTransaction(Dispatchers.IO) {
+            transaction {
                 insertVeglenkerSql(veglenker)
                 // Keep progress update atomic within the same transaction
                 KeyValue.putSync("veglenker_backfill_last_id", lastId!!)
@@ -83,7 +82,7 @@ suspend fun updateVeglenker() {
                 } while (batch.isNotEmpty())
             }
 
-            newSuspendedTransaction(Dispatchers.IO) {
+            transaction {
                 Veglenker.deleteWhere { Veglenker.veglenkesekvensId inList changedIds }
                 insertVeglenkerSql(veglenker)
                 publishChangedVeglenkesekvensIds(changedIds)

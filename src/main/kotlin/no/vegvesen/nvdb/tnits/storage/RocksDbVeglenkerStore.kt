@@ -1,7 +1,5 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -56,110 +54,100 @@ class RocksDbVeglenkerStore(
             throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
         }
 
-    override suspend fun get(veglenkesekvensId: Long): List<Veglenke>? =
-        withContext(Dispatchers.IO) {
-            val key = veglenkesekvensId.toByteArray()
-            val value = db.get(key)
+    override fun get(veglenkesekvensId: Long): List<Veglenke>? {
+        val key = veglenkesekvensId.toByteArray()
+        val value = db.get(key)
 
-            value?.let { deserializeVeglenker(it) }
+        return value?.let { deserializeVeglenker(it) }
+    }
+
+    override fun batchGet(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>> {
+        if (veglenkesekvensIds.isEmpty()) {
+            return emptyMap()
         }
 
-    override suspend fun batchGet(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>> =
-        withContext(Dispatchers.IO) {
-            if (veglenkesekvensIds.isEmpty()) {
-                return@withContext emptyMap()
+        val keys = veglenkesekvensIds.map { it.toByteArray() }
+        val values = db.multiGetAsList(keys)
+
+        val result = mutableMapOf<Long, List<Veglenke>>()
+        veglenkesekvensIds.zip(values).forEach { (id, value) ->
+            if (value != null) {
+                result[id] = deserializeVeglenker(value)
             }
-
-            val keys = veglenkesekvensIds.map { it.toByteArray() }
-            val values = db.multiGetAsList(keys)
-
-            val result = mutableMapOf<Long, List<Veglenke>>()
-            veglenkesekvensIds.zip(values).forEach { (id, value) ->
-                if (value != null) {
-                    result[id] = deserializeVeglenker(value)
-                }
-            }
-
-            result
         }
 
-    override suspend fun getAll(): Map<Long, List<Veglenke>> =
-        withContext(Dispatchers.IO) {
-            val result = mutableMapOf<Long, List<Veglenke>>()
+        return result
+    }
 
-            db.newIterator().use { iterator ->
-                iterator.seekToFirst()
-                while (iterator.isValid) {
-                    val key =
-                        ByteArray(8).let {
-                            iterator.key().copyInto(it)
-                            it.toLong()
-                        }
-                    val veglenker = deserializeVeglenker(iterator.value())
-                    result[key] = veglenker
-                    iterator.next()
-                }
+    override fun getAll(): Map<Long, List<Veglenke>> {
+        val result = mutableMapOf<Long, List<Veglenke>>()
+
+        db.newIterator().use { iterator ->
+            iterator.seekToFirst()
+            while (iterator.isValid) {
+                val key =
+                    ByteArray(8).let {
+                        iterator.key().copyInto(it)
+                        it.toLong()
+                    }
+                val veglenker = deserializeVeglenker(iterator.value())
+                result[key] = veglenker
+                iterator.next()
             }
-
-            result
         }
 
-    override suspend fun upsert(
+        return result
+    }
+
+    override fun upsert(
         veglenkesekvensId: Long,
         veglenker: List<Veglenke>,
-    ): Unit =
-        withContext(Dispatchers.IO) {
-            val key = veglenkesekvensId.toByteArray()
-            val value = serializeVeglenker(veglenker)
+    ) {
+        val key = veglenkesekvensId.toByteArray()
+        val value = serializeVeglenker(veglenker)
 
-            db.put(key, value)
-        }
+        db.put(key, value)
+    }
 
-    override suspend fun delete(veglenkesekvensId: Long): Unit =
-        withContext(Dispatchers.IO) {
-            val key = veglenkesekvensId.toByteArray()
-            db.delete(key)
-        }
+    override fun delete(veglenkesekvensId: Long) {
+        val key = veglenkesekvensId.toByteArray()
+        db.delete(key)
+    }
 
-    override suspend fun batchUpdate(updates: Map<Long, List<Veglenke>?>): Unit =
-        withContext(Dispatchers.IO) {
-            val writeBatch = WriteBatch()
+    override fun batchUpdate(updates: Map<Long, List<Veglenke>?>) {
+        val writeBatch = WriteBatch()
 
-            try {
-                for ((id, veglenker) in updates) {
-                    val key = id.toByteArray()
-                    if (veglenker == null) {
-                        writeBatch.delete(key)
-                    } else {
-                        val value = serializeVeglenker(veglenker)
-                        writeBatch.put(key, value)
-                    }
+        try {
+            for ((id, veglenker) in updates) {
+                val key = id.toByteArray()
+                if (veglenker == null) {
+                    writeBatch.delete(key)
+                } else {
+                    val value = serializeVeglenker(veglenker)
+                    writeBatch.put(key, value)
                 }
-
-                WriteOptions().use { writeOpts ->
-                    db.write(writeOpts, writeBatch)
-                }
-            } finally {
-                writeBatch.close()
             }
+
+            WriteOptions().use { writeOpts ->
+                db.write(writeOpts, writeBatch)
+            }
+        } finally {
+            writeBatch.close()
         }
+    }
 
-    override suspend fun size(): Long =
-        withContext(Dispatchers.IO) {
-            db.getProperty("rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
-        }
+    override fun size(): Long = db.getProperty("rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
 
-    override suspend fun clear(): Unit =
-        withContext(Dispatchers.IO) {
-            // Close existing database
-            close()
+    override fun clear() {
+        // Close existing database
+        close()
 
-            // Delete database directory
-            File(dbPath).deleteRecursively()
+        // Delete database directory
+        File(dbPath).deleteRecursively()
 
-            // Reinitialize
-            initialize()
-        }
+        // Reinitialize
+        initialize()
+    }
 
     override fun close() {
         if (::db.isInitialized) {

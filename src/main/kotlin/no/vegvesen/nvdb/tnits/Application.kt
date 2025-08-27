@@ -61,7 +61,7 @@ suspend fun main() {
 
             "2" -> {
                 println("Genererer delta snapshot av TN-ITS fartsgrenser...")
-                TODO()
+                generateSpeedLimitsDeltaUpdate()
             }
 
             "3" -> {

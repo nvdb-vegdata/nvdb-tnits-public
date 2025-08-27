@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.extensions
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -19,7 +18,7 @@ suspend fun <T : Any> KeyValue.get(
     key: String,
     serializer: KSerializer<T>,
 ): T? =
-    newSuspendedTransaction(Dispatchers.IO) {
+    newSuspendedTransaction {
         KeyValue
             .selectAll()
             .where { KeyValue.key eq key }
@@ -33,19 +32,19 @@ suspend fun <T : Any> KeyValue.put(
     value: T,
     serializer: KSerializer<T>,
 ) {
-    newSuspendedTransaction(Dispatchers.IO) {
+    newSuspendedTransaction {
         putSync(key, value, serializer)
     }
 }
 
 suspend fun KeyValue.remove(key: String) {
-    newSuspendedTransaction(Dispatchers.IO) {
+    newSuspendedTransaction {
         KeyValue.deleteWhere { KeyValue.key eq key }
     }
 }
 
 suspend fun KeyValue.deleteAll() {
-    newSuspendedTransaction(Dispatchers.IO) {
+    newSuspendedTransaction {
         KeyValue.deleteAll()
     }
 }

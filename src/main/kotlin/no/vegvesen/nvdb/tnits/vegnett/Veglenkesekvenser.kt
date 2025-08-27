@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.database.KeyValue
@@ -14,7 +13,7 @@ import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.veglenkerStore
-import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 
 suspend fun backfillVeglenkesekvenser() {
@@ -37,7 +36,7 @@ suspend fun backfillVeglenkesekvenser() {
 
         if (veglenkesekvenser.isEmpty()) {
             println("Ingen veglenkesekvenser å sette inn, backfill fullført.")
-            newSuspendedTransaction(Dispatchers.IO) {
+            transaction {
                 KeyValue.putSync("veglenkesekvenser_backfill_completed", Clock.System.now())
             }
         } else {
@@ -53,7 +52,7 @@ suspend fun backfillVeglenkesekvenser() {
                 updates.clear()
 
                 // Update progress in SQL (outside RocksDB transaction)
-                newSuspendedTransaction(Dispatchers.IO) {
+                transaction {
                     KeyValue.putSync("veglenkesekvenser_backfill_last_id", lastId!!)
                 }
             }
@@ -137,7 +136,7 @@ suspend fun updateVeglenkesekvenser() {
             // Apply all updates to RocksDB and mark dirty records in SQL
             veglenkerStore.batchUpdate(updates)
 
-            newSuspendedTransaction(Dispatchers.IO) {
+            transaction {
                 publishChangedVeglenkesekvensIds(changedIds)
                 KeyValue.putSync("veglenkesekvenser_last_hendelse_id", lastHendelseId)
             }
