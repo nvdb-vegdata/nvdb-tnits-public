@@ -6,6 +6,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.*
 import java.io.File
+import java.nio.ByteBuffer
 
 @OptIn(ExperimentalSerializationApi::class)
 class RocksDbVeglenkerStore(
@@ -164,28 +165,10 @@ class RocksDbVeglenkerStore(
     private fun deserializeVeglenker(data: ByteArray): List<Veglenke> =
         ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)
 
-    private fun Long.toByteArray(): ByteArray {
-        val bytes = ByteArray(8)
-        bytes[0] = (this shr 56).toByte()
-        bytes[1] = (this shr 48).toByte()
-        bytes[2] = (this shr 40).toByte()
-        bytes[3] = (this shr 32).toByte()
-        bytes[4] = (this shr 24).toByte()
-        bytes[5] = (this shr 16).toByte()
-        bytes[6] = (this shr 8).toByte()
-        bytes[7] = this.toByte()
-        return bytes
-    }
+    private fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(8).putLong(this).array()
 
     private fun ByteArray.toLong(): Long {
         require(size >= 8) { "ByteArray must be at least 8 bytes long" }
-        return (this[0].toLong() and 0xFF shl 56) or
-            (this[1].toLong() and 0xFF shl 48) or
-            (this[2].toLong() and 0xFF shl 40) or
-            (this[3].toLong() and 0xFF shl 32) or
-            (this[4].toLong() and 0xFF shl 24) or
-            (this[5].toLong() and 0xFF shl 16) or
-            (this[6].toLong() and 0xFF shl 8) or
-            (this[7].toLong() and 0xFF)
+        return ByteBuffer.wrap(this).getLong()
     }
 }

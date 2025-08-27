@@ -92,7 +92,8 @@ private fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veg
 suspend fun updateVeglenkesekvenser() {
     var lastHendelseId =
         KeyValue.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
-            KeyValue.get<kotlin.time.Instant>("veglenkesekvenser_backfill_completed") ?: error("Veglenkesekvenser backfill er ikke ferdig"),
+            KeyValue.get<kotlin.time.Instant>("veglenkesekvenser_backfill_completed")
+                ?: error("Veglenkesekvenser backfill er ikke ferdig"),
         )
 
     do {
@@ -112,7 +113,7 @@ suspend fun updateVeglenkesekvenser() {
                 do {
                     val batch =
                         uberiketApi
-                            .streamVeglenkesekvenser(start = start)
+                            .streamVeglenkesekvenser(start = start, ider = chunk)
                             .toList()
                             .filter { it.id in chunk }
 

@@ -4,12 +4,14 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 
+@OptIn(ExperimentalSerializationApi::class)
 class JtsGeometrySerializerTest :
     StringSpec({
 
@@ -209,12 +211,11 @@ class JtsGeometrySerializerTest :
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<LineString>()
-            val lineString = deserialized as LineString
-            lineString.numPoints shouldBe 4
-            lineString.srid shouldBe SRID.UTM33
+            deserialized.numPoints shouldBe 4
+            deserialized.srid shouldBe SRID.UTM33
 
             // Verify coordinate precision is preserved
-            lineString.getCoordinateN(0).x shouldBe 590123.45
-            lineString.getCoordinateN(0).y shouldBe 6640567.89
+            deserialized.getCoordinateN(0).x shouldBe 590123.5
+            deserialized.getCoordinateN(0).y shouldBe 6640567.9
         }
     })

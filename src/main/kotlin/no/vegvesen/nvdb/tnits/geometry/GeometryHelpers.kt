@@ -26,8 +26,8 @@ object SRID {
 
 val geometryFactories =
     mapOf(
-        SRID.UTM33 to GeometryFactory(PrecisionModel(), SRID.UTM33),
-        SRID.WGS84 to GeometryFactory(PrecisionModel(), SRID.WGS84),
+        SRID.UTM33 to GeometryFactory(PrecisionModel(10.0), SRID.UTM33),
+        SRID.WGS84 to GeometryFactory(PrecisionModel(100_000.0), SRID.WGS84),
     )
 
 val wktReaders =

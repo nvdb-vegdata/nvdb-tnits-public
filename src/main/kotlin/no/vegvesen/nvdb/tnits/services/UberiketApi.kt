@@ -32,11 +32,13 @@ class UberiketApi(
 
     suspend fun streamVeglenkesekvenser(
         start: Long? = null,
+        ider: Collection<Long>? = null,
         antall: Int = VEGLENKER_PAGE_SIZE,
     ): Flow<Veglenkesekvens> =
         httpClient
             .prepareGet("vegnett/veglenkesekvenser/stream") {
                 parameter("start", start?.toString())
+                parameter("ider", ider?.joinToString(","))
                 parameter("antall", antall)
             }.executeAsNdjsonFlow<Veglenkesekvens>()
 
