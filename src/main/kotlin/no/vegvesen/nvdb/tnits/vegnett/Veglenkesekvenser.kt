@@ -9,6 +9,7 @@ import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.putSync
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
+import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.uberiketApi
@@ -40,9 +41,9 @@ suspend fun backfillVeglenkesekvenser() {
                 KeyValue.putSync("veglenkesekvenser_backfill_completed", Clock.System.now())
             }
         } else {
-            // Process veglenkesekvenser in batches for RocksDB storage
-            veglenkesekvenser.forEachChunked(100) { batch ->
-                batch.forEach { veglenkesekvens ->
+            measure("Behandler ${veglenkesekvenser.size} veglenkesekvenser") {
+                // Process veglenkesekvenser in batches for RocksDB storage
+                veglenkesekvenser.forEach { veglenkesekvens ->
                     val domainVeglenker = convertToDomainVeglenker(veglenkesekvens)
                     updates[veglenkesekvens.id] = domainVeglenker
                 }
@@ -115,7 +116,6 @@ suspend fun updateVeglenkesekvenser() {
                         uberiketApi
                             .streamVeglenkesekvenser(start = start, ider = chunk)
                             .toList()
-                            .filter { it.id in chunk }
 
                     if (batch.isNotEmpty()) {
                         batch.forEach { veglenkesekvens ->

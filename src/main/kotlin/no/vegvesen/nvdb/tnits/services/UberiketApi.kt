@@ -6,7 +6,6 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.flow.Flow
 import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.extensions.executeAsNdjsonFlow
-import no.vegvesen.nvdb.tnits.model.VeglenkeId
 import kotlin.time.Instant
 
 const val VEGLENKER_PAGE_SIZE = 1000
@@ -18,18 +17,6 @@ const val VEGOBJEKTER_PAGE_SIZE = 1000
 class UberiketApi(
     private val httpClient: HttpClient,
 ) {
-    suspend fun streamVeglenker(
-        start: VeglenkeId? = null,
-        ider: Collection<Long>? = null,
-        antall: Int = VEGLENKER_PAGE_SIZE,
-    ): Flow<VeglenkeMedId> =
-        httpClient
-            .prepareGet("vegnett/veglenker/stream") {
-                parameter("start", start?.toString())
-                parameter("ider", ider?.joinToString(","))
-                parameter("antall", antall)
-            }.executeAsNdjsonFlow<VeglenkeMedId>()
-
     suspend fun streamVeglenkesekvenser(
         start: Long? = null,
         ider: Collection<Long>? = null,
