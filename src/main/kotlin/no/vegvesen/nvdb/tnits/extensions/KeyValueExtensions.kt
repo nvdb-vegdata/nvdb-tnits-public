@@ -57,3 +57,18 @@ fun KeyValue.getWorkerLastIdCount(): Int =
             .count()
             .toInt()
     }
+
+fun KeyValue.getRangeWorkerCount(): Int =
+    transaction {
+        selectAll()
+            .where { KeyValue.key like "veglenkesekvenser_backfill_range_%_completed" }
+            .count()
+            .toInt()
+    }
+
+fun KeyValue.isRangeCompleted(workerIndex: Int): Boolean =
+    get<Boolean>("veglenkesekvenser_backfill_range_${workerIndex}_completed") ?: false
+
+fun KeyValue.markRangeCompleted(workerIndex: Int) {
+    put("veglenkesekvenser_backfill_range_${workerIndex}_completed", true)
+}

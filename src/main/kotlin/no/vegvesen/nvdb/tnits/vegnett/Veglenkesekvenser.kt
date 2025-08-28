@@ -34,10 +34,11 @@ suspend fun backfillVeglenkesekvenser() {
     }
 
     val workerCount = 4
-    val partitionSize = 10_000L // Larger partitions to handle ID gaps better
+    val rangeSize = 100_000L // Each worker processes a contiguous range of 100k IDs
+    val maxEstimatedId = 2_000_000L // Conservative estimate for total veglenkesekvens IDs
 
-    // Check if worker count has changed since last run
-    val existingWorkerCount = KeyValue.getWorkerLastIdCount()
+    // Check if configuration has changed since last run
+    val existingWorkerCount = KeyValue.getRangeWorkerCount()
     if (existingWorkerCount > 0 && existingWorkerCount != workerCount) {
         println("Worker count har endret seg fra $existingWorkerCount til $workerCount. Nullstiller backfill...")
         transaction {
@@ -47,12 +48,12 @@ suspend fun backfillVeglenkesekvenser() {
         KeyValue.put("veglenkesekvenser_backfill_started", Clock.System.now())
     }
 
-    println("Starter parallel backfill med $workerCount workers og partitionsstørrelse $partitionSize (fetcher 1000 om gangen)")
+    println("Starter parallel backfill med $workerCount workers og range-størrelse $rangeSize")
 
     coroutineScope {
         (0 until workerCount).forEach { workerIndex ->
             launch {
-                runBackfillWorker(workerIndex, workerCount, partitionSize)
+                runRangeBackfillWorker(workerIndex, workerCount, rangeSize, maxEstimatedId)
             }
         }
     }
@@ -65,154 +66,80 @@ suspend fun backfillVeglenkesekvenser() {
     println("Veglenkesekvenser backfill fullført! Total veglenkesekvenser i database: $finalTotalCount")
 }
 
-private fun flushWorkerBatch(
-    workerIndex: Int,
-    workerUpdates: MutableMap<Long, List<Veglenke>>,
-    batchSize: Int,
-    totalProcessed: Int,
-    currentId: Long,
-    flushReason: String,
-): Int {
-    if (workerUpdates.isEmpty()) return totalProcessed
-
-    veglenkerStore.batchUpdate(workerUpdates)
-    val newTotalProcessed = totalProcessed + batchSize
-    val currentTotalInDb = veglenkerStore.size()
-    println(
-        "Worker $workerIndex: Behandlet $batchSize veglenkesekvenser ($flushReason), worker totalt: $newTotalProcessed, DB totalt: $currentTotalInDb",
-    )
-
-    // Update progress
-    transaction {
-        KeyValue.put("veglenkesekvenser_backfill_last_id_$workerIndex", currentId - 1)
-    }
-
-    workerUpdates.clear()
-    return newTotalProcessed
-}
-
-private suspend fun runBackfillWorker(
+private suspend fun runRangeBackfillWorker(
     workerIndex: Int,
     workerCount: Int,
-    partitionSize: Long,
+    rangeSize: Long,
+    maxEstimatedId: Long,
 ) {
-    println("Worker $workerIndex startet")
+    println("Worker $workerIndex startet med range-basert backfill")
+    var currentRangeIndex = workerIndex
     var totalProcessed = 0
-    var currentPartition = workerIndex
 
-    var done = false
+    while (currentRangeIndex * rangeSize < maxEstimatedId) {
+        val rangeStart = currentRangeIndex * rangeSize + 1
+        val rangeEnd = minOf((currentRangeIndex + 1) * rangeSize, maxEstimatedId)
 
-    while (!done) {
-        val partitionStart = currentPartition * partitionSize + 1
-        val partitionEnd = (currentPartition + 1) * partitionSize
-
-        // Get last processed ID for this worker, defaulting to partition start
-        val lastId =
-            KeyValue.get<Long>("veglenkesekvenser_backfill_last_id_$workerIndex")
-                ?: partitionStart
-
-        // Skip to next partition if we've already processed this one
-        if (lastId > partitionEnd) {
-            currentPartition += workerCount
+        // Skip if this range is already completed
+        if (KeyValue.isRangeCompleted(currentRangeIndex)) {
+            println("Worker $workerIndex: Range $currentRangeIndex (ID $rangeStart-$rangeEnd) allerede ferdig, hopper over")
+            currentRangeIndex += workerCount
             continue
         }
 
-        // Each worker needs its own update map to avoid concurrency issues
-        val workerUpdates = mutableMapOf<Long, List<Veglenke>>()
-        var batchSize = 0
-        var currentId = maxOf(lastId, partitionStart)
+        println("Worker $workerIndex: Behandler range $currentRangeIndex (ID $rangeStart-$rangeEnd)")
 
         try {
-            println(
-                "Worker $workerIndex: Behandler partisjon $currentPartition (ID $partitionStart-$partitionEnd), starter fra ID $currentId",
-            )
+            val workerUpdates = mutableMapOf<Long, List<Veglenke>>()
+            var batchSize = 0
 
-            do {
-                // Fetch up to 1000 records at a time, but process all that fall within partition
-                val veglenkesekvenser =
-                    try {
-                        uberiketApi.streamVeglenkesekvenser(start = currentId).toList()
-                    } catch (e: Exception) {
-                        println("Worker $workerIndex: API-feil ved lasting av data fra ID $currentId: ${e.message}")
-                        throw e // Let HttpRequestRetry plugin and outer catch handle it
-                    }
+            // Use the slutt parameter to get exactly the range we need
+            val veglenkesekvenser =
+                uberiketApi
+                    .streamVeglenkesekvenser(
+                        start = rangeStart,
+                        slutt = rangeEnd,
+                    ).toList()
 
-                if (veglenkesekvenser.isEmpty()) {
-                    println("Worker $workerIndex: Ingen flere veglenkesekvenser i partisjon $currentPartition")
-                    done = true
-                    break
-                }
+            println("Worker $workerIndex: Hentet ${veglenkesekvenser.size} veglenkesekvenser fra range $currentRangeIndex")
 
-                // Filter to only process veglenkesekvenser within current partition
-                val partitionVeglenkesekvenser = veglenkesekvenser.filter { it.id <= partitionEnd }
+            // Process all veglenkesekvenser in this range
+            veglenkesekvenser.forEach { veglenkesekvens ->
+                val domainVeglenker = convertToDomainVeglenker(veglenkesekvens)
+                workerUpdates[veglenkesekvens.id] = domainVeglenker
+                batchSize++
 
-                if (partitionVeglenkesekvenser.isEmpty()) {
-                    println("Worker $workerIndex: Passerte slutten av partisjon $currentPartition")
-                    // Force flush any accumulated data before breaking
-                    totalProcessed =
-                        flushWorkerBatch(
-                            workerIndex,
-                            workerUpdates,
-                            batchSize,
-                            totalProcessed,
-                            currentId,
-                            "partition-end-flush",
-                        )
+                // Flush in batches of 2000 for memory management
+                if (batchSize >= 2000) {
+                    veglenkerStore.batchUpdate(workerUpdates)
+                    totalProcessed += batchSize
+                    println("Worker $workerIndex: Behandlet $batchSize veglenkesekvenser, worker totalt: $totalProcessed")
+                    workerUpdates.clear()
                     batchSize = 0
-                    break
-                }
-
-                // Process the batch
-                partitionVeglenkesekvenser.forEach { veglenkesekvens ->
-                    val domainVeglenker = convertToDomainVeglenker(veglenkesekvens)
-                    workerUpdates[veglenkesekvens.id] = domainVeglenker
-                    batchSize++
-                }
-
-                // Update currentId to the last processed ID + 1
-                currentId = partitionVeglenkesekvenser.maxOf { it.id } + 1
-
-                // Flush batch when we reach 2000 records or partition end
-                if (batchSize >= 2000 || currentId > partitionEnd) {
-                    val flushReason = if (batchSize >= 2000) "2k-batch" else "partition-end"
-                    totalProcessed =
-                        flushWorkerBatch(workerIndex, workerUpdates, batchSize, totalProcessed, currentId, flushReason)
-                    batchSize = 0
-                }
-            } while (currentId <= partitionEnd)
-
-            // Final flush for any remaining data in this partition
-            totalProcessed =
-                flushWorkerBatch(
-                    workerIndex,
-                    workerUpdates,
-                    batchSize,
-                    totalProcessed,
-                    currentId,
-                    "final-partition-flush",
-                )
-            batchSize = 0
-        } catch (e: Exception) {
-            println("Worker $workerIndex: Feil ved behandling av partisjon $currentPartition: ${e.message}")
-
-            // Save progress before potentially retrying
-            if (workerUpdates.isNotEmpty()) {
-                try {
-                    totalProcessed =
-                        flushWorkerBatch(workerIndex, workerUpdates, batchSize, totalProcessed, currentId, "error-save")
-                    // batchSize reset not needed here since we're potentially exiting or continuing to next partition
-                } catch (saveError: Exception) {
-                    println("Worker $workerIndex: ADVARSEL - Kunne ikke lagre fremgang: ${saveError.message}")
                 }
             }
 
-            // For timeout/network errors, continue to next partition instead of failing completely
+            // Final batch flush
+            if (workerUpdates.isNotEmpty()) {
+                veglenkerStore.batchUpdate(workerUpdates)
+                totalProcessed += batchSize
+                println("Worker $workerIndex: Behandlet siste $batchSize veglenkesekvenser, worker totalt: $totalProcessed")
+            }
+
+            // Mark this range as completed
+            KeyValue.markRangeCompleted(currentRangeIndex)
+
+            val currentTotalInDb = veglenkerStore.size()
+            println("Worker $workerIndex: Fullførte range $currentRangeIndex. DB totalt: $currentTotalInDb")
+        } catch (e: Exception) {
+            println("Worker $workerIndex: Feil ved behandling av range $currentRangeIndex: ${e.message}")
+
+            // For timeout/network errors, continue to next range instead of failing completely
             if (e.message?.contains("timeout", ignoreCase = true) == true ||
                 e.message?.contains("connection", ignoreCase = true) == true ||
                 e.javaClass.simpleName.contains("Timeout")
             ) {
-                println("Worker $workerIndex: Nettverksfeil oppdaget. Hopper til neste partisjon.")
-                // Don't rethrow - continue to next partition
+                println("Worker $workerIndex: Nettverksfeil oppdaget. Hopper til neste range.")
             } else {
                 println("Worker $workerIndex: Kritisk feil, avslutter worker")
                 e.printStackTrace()
@@ -220,27 +147,8 @@ private suspend fun runBackfillWorker(
             }
         }
 
-        // Move to next partition for this worker (skip workerCount partitions)
-        currentPartition += workerCount
-        val totalKeysInDb = veglenkerStore.size()
-        println(
-            "Worker $workerIndex: Fullførte partisjon ${currentPartition - workerCount}, hopper til partisjon $currentPartition. Total veglenkesekvenser i DB: $totalKeysInDb",
-        )
-
-        // If we've moved beyond reasonable partition range, check if there's more data
-        if (currentPartition > 100000) { // Reasonable upper limit to avoid infinite loops
-            try {
-                val testVeglenkesekvenser =
-                    uberiketApi.streamVeglenkesekvenser(start = currentPartition * partitionSize + 1).toList()
-                if (testVeglenkesekvenser.isEmpty()) {
-                    println("Worker $workerIndex: Ingen flere veglenkesekvenser funnet, avslutter")
-                    break
-                }
-            } catch (e: Exception) {
-                println("Worker $workerIndex: Kunne ikke teste for flere data: ${e.message}. Avslutter.")
-                break
-            }
-        }
+        // Move to next range for this worker (skip workerCount ranges)
+        currentRangeIndex += workerCount
     }
 
     val finalTotalKeys = veglenkerStore.size()
