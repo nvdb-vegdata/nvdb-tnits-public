@@ -1,20 +1,52 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-# Run ktlint check and format
-echo "Running ktlint check and format..."
+set -euo pipefail
 
-# Run ktlint format to fix issues
+if [ -n "${SKIP_PRECOMMIT+x}" ]; then
+    echo "Skipping pre-commit checks..."
+    exit 0
+fi
+
+# Stash unstaged changes but keep the index intact so we only stage formatter changes
+STASH_NAME="pre-commit-$(date +%s)"
+STASH_REF=""
+if ! git diff --quiet; then
+    # There are unstaged changes to stash
+    git stash push --keep-index -u -q -m "$STASH_NAME"
+    STASH_REF=$(git rev-parse "stash@{0}")
+    echo "Stashed unstaged changes: $STASH_REF"
+fi
+
+# Run ktlint format to fix any formatting issues
+echo "Running ktlint format..."
 ./gradlew ktlintFormat
 
-# Check if ktlint made any changes
-if ! git diff --quiet; then
-    echo "ktlint made formatting changes. Staging them..."
-    # Stage any changes made by ktlint
-    git add -A
+# Stage only files that were modified by the formatter (relative to the current index)
+changed_count=$(git diff --name-only | wc -l | tr -d ' ')
+if [ "$changed_count" -gt 0 ]; then
+    echo "Staging files modified by ktlint formatter:"
+    git diff -z --name-only | while IFS= read -r -d '' f; do
+        echo "  $f"
+        git add -- "$f"
+    done
+else
+    echo "No formatting changes needed."
+fi
+
+# Restore any previously stashed unstaged changes
+if [ -n "$STASH_REF" ]; then
+    echo "Re-applying unstaged changes from stash $STASH_REF..."
+    if ! git stash pop "stash@{0}" -q; then
+        echo "pre-commit: Failed to re-apply unstaged changes after formatting. Please resolve conflicts and try again." >&2
+        exit 1
+    fi
+else
+    echo "No unstaged changes to restore."
 fi
 
 # Run ktlint check to ensure everything passes
+echo "Running ktlint check..."
 ./gradlew ktlintCheck
 
 # Exit with ktlint check result
-exit $?
+exit
