@@ -23,8 +23,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import no.vegvesen.nvdb.apiles.uberiket.Notifikasjon;
 import no.vegvesen.nvdb.apiles.uberiket.SideMetadata;
+import no.vegvesen.nvdb.apiles.uberiket.VegnettNotifikasjon;
+import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -32,14 +33,19 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * EndringssettHendelserSide
  */
 @JsonPropertyOrder({
-  EndringssettHendelserSide.JSON_PROPERTY_HENDELSER,
+  EndringssettHendelserSide.JSON_PROPERTY_VEGOBJEKT_HENDELSER,
+  EndringssettHendelserSide.JSON_PROPERTY_VEGNETT_HENDELSER,
   EndringssettHendelserSide.JSON_PROPERTY_METADATA
 })
 @jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.14.0")
 public class EndringssettHendelserSide {
-  public static final String JSON_PROPERTY_HENDELSER = "hendelser";
+  public static final String JSON_PROPERTY_VEGOBJEKT_HENDELSER = "vegobjektHendelser";
   @jakarta.annotation.Nonnull
-  private List<Notifikasjon> hendelser = new ArrayList<>();
+  private List<VegobjektNotifikasjon> vegobjektHendelser = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_VEGNETT_HENDELSER = "vegnettHendelser";
+  @jakarta.annotation.Nonnull
+  private List<VegnettNotifikasjon> vegnettHendelser = new ArrayList<>();
 
   public static final String JSON_PROPERTY_METADATA = "metadata";
   @jakarta.annotation.Nonnull
@@ -48,37 +54,70 @@ public class EndringssettHendelserSide {
   public EndringssettHendelserSide() {
   }
 
-  public EndringssettHendelserSide hendelser(@jakarta.annotation.Nonnull List<Notifikasjon> hendelser) {
+  public EndringssettHendelserSide vegobjektHendelser(@jakarta.annotation.Nonnull List<VegobjektNotifikasjon> vegobjektHendelser) {
     
-    this.hendelser = hendelser;
+    this.vegobjektHendelser = vegobjektHendelser;
     return this;
   }
 
-  public EndringssettHendelserSide addHendelserItem(Notifikasjon hendelserItem) {
-    if (this.hendelser == null) {
-      this.hendelser = new ArrayList<>();
+  public EndringssettHendelserSide addVegobjektHendelserItem(VegobjektNotifikasjon vegobjektHendelserItem) {
+    if (this.vegobjektHendelser == null) {
+      this.vegobjektHendelser = new ArrayList<>();
     }
-    this.hendelser.add(hendelserItem);
+    this.vegobjektHendelser.add(vegobjektHendelserItem);
     return this;
   }
 
   /**
-   * Get hendelser
-   * @return hendelser
+   * Get vegobjektHendelser
+   * @return vegobjektHendelser
    */
   @jakarta.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_HENDELSER)
+  @JsonProperty(JSON_PROPERTY_VEGOBJEKT_HENDELSER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Notifikasjon> getHendelser() {
-    return hendelser;
+  public List<VegobjektNotifikasjon> getVegobjektHendelser() {
+    return vegobjektHendelser;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_HENDELSER)
+  @JsonProperty(JSON_PROPERTY_VEGOBJEKT_HENDELSER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHendelser(@jakarta.annotation.Nonnull List<Notifikasjon> hendelser) {
-    this.hendelser = hendelser;
+  public void setVegobjektHendelser(@jakarta.annotation.Nonnull List<VegobjektNotifikasjon> vegobjektHendelser) {
+    this.vegobjektHendelser = vegobjektHendelser;
+  }
+
+  public EndringssettHendelserSide vegnettHendelser(@jakarta.annotation.Nonnull List<VegnettNotifikasjon> vegnettHendelser) {
+    
+    this.vegnettHendelser = vegnettHendelser;
+    return this;
+  }
+
+  public EndringssettHendelserSide addVegnettHendelserItem(VegnettNotifikasjon vegnettHendelserItem) {
+    if (this.vegnettHendelser == null) {
+      this.vegnettHendelser = new ArrayList<>();
+    }
+    this.vegnettHendelser.add(vegnettHendelserItem);
+    return this;
+  }
+
+  /**
+   * Get vegnettHendelser
+   * @return vegnettHendelser
+   */
+  @jakarta.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_VEGNETT_HENDELSER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<VegnettNotifikasjon> getVegnettHendelser() {
+    return vegnettHendelser;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VEGNETT_HENDELSER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVegnettHendelser(@jakarta.annotation.Nonnull List<VegnettNotifikasjon> vegnettHendelser) {
+    this.vegnettHendelser = vegnettHendelser;
   }
 
   public EndringssettHendelserSide metadata(@jakarta.annotation.Nonnull SideMetadata metadata) {
@@ -116,20 +155,22 @@ public class EndringssettHendelserSide {
       return false;
     }
     EndringssettHendelserSide endringssettHendelserSide = (EndringssettHendelserSide) o;
-    return Objects.equals(this.hendelser, endringssettHendelserSide.hendelser) &&
+    return Objects.equals(this.vegobjektHendelser, endringssettHendelserSide.vegobjektHendelser) &&
+        Objects.equals(this.vegnettHendelser, endringssettHendelserSide.vegnettHendelser) &&
         Objects.equals(this.metadata, endringssettHendelserSide.metadata);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hendelser, metadata);
+    return Objects.hash(vegobjektHendelser, vegnettHendelser, metadata);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EndringssettHendelserSide {\n");
-    sb.append("    hendelser: ").append(toIndentedString(hendelser)).append("\n");
+    sb.append("    vegobjektHendelser: ").append(toIndentedString(vegobjektHendelser)).append("\n");
+    sb.append("    vegnettHendelser: ").append(toIndentedString(vegnettHendelser)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("}");
     return sb.toString();
