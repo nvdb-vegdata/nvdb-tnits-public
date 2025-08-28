@@ -1,0 +1,427 @@
+{
+  "noder": [
+    {
+      "id": 95513,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 73587,
+          "veglenkesekvensPortNummer": 2
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 73111,
+          "veglenkesekvensPortNummer": 2
+        },
+        {
+          "nummer": 3,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 3
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273292 7041529 54.335)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95522,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 72747,
+          "veglenkesekvensPortNummer": 7
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41428,
+          "veglenkesekvensPortNummer": 7
+        },
+        {
+          "nummer": 3,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 1
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273299.1 7041553.5 53.335)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95685,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41437,
+          "veglenkesekvensPortNummer": 2
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 4
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273544.888183594 7041231.30000305 59.136)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95697,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 73116,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 5
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273562.2 7041211.9 59.936)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95701,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41438,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 6
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273566.2 7041207.7 60.136)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95706,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 73592,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 7
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273570 7041203.3 60.236)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95750,
+      "porter": [
+        {
+          "nummer": 3,
+          "veglenkesekvensId": 3938395,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 42904,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 8
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273650.296 7041111.8 62.24)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95800,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 42663,
+          "veglenkesekvensPortNummer": 3
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 9
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273730.7 7041016.7 67.837)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95873,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 73588,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 73112,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 3,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 10
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273823.905334473 7040905.21899414 73.837)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 95888,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41427,
+          "veglenkesekvensPortNummer": 4
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 2
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273846.117675781 7040876.13903809 74.937)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T12:58:53.456667Z"
+    },
+    {
+      "id": 1994302,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 14
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 1994277,
+          "veglenkesekvensPortNummer": 3
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273553.111572266 7041223.10142517 59.896)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:11:56.662373Z"
+    },
+    {
+      "id": 1994308,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 13
+        },
+        {
+          "nummer": 3,
+          "veglenkesekvensId": 1994267,
+          "veglenkesekvensPortNummer": 4
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273294.907989502 7041537.63308716 53.3384929479731)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:11:56.662373Z"
+    },
+    {
+      "id": 2852826,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 11
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273465 7041300.1 55.236)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:17:27.844420Z"
+    },
+    {
+      "id": 2852827,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 12
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273635.638 7041129.558 61.777)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:17:27.844420Z"
+    },
+    {
+      "id": 3305834,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 15
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273298.05540337 7041548.97373572 53.5671073991623)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:21:40.858092Z"
+    },
+    {
+      "id": 3815217,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 16
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 3815428,
+          "veglenkesekvensPortNummer": 3
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273738.591 7041005.679 67.36)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:24:52.396962Z"
+    },
+    {
+      "id": 3839836,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 3839840,
+          "veglenkesekvensPortNummer": 1
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 17
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273443.891 7041316.782 55.18)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:24:59.565698Z"
+    },
+    {
+      "id": 3945452,
+      "porter": [
+        {
+          "nummer": 1,
+          "veglenkesekvensId": 41423,
+          "veglenkesekvensPortNummer": 18
+        },
+        {
+          "nummer": 2,
+          "veglenkesekvensId": 3945600,
+          "veglenkesekvensPortNummer": 15
+        }
+      ],
+      "gyldighetsperiode": {
+        "startdato": "1950-01-01"
+      },
+      "geometri": {
+        "wkt": "POINT Z(273837.182037354 7040888.76605988 74.2655585915255)",
+        "srid": 5973
+      },
+      "sistEndret": "2025-05-02T13:25:37.649582Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 18,
+    "sidestorrelse": 500
+  }
+}

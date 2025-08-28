@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.geometry
 
-import no.vegvesen.nvdb.tnits.model.Utstrekning
+import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.intersect
 import no.vegvesen.nvdb.tnits.model.overlaps
 import org.geotools.api.referencing.FactoryException
@@ -76,13 +76,13 @@ fun Geometry.simplify(distanceTolerance: Double): Geometry =
         }.also { it.srid = this.srid }
 
 data class UtstrekningGeometri(
-    val utstrekning: Utstrekning,
+    val utstrekning: StedfestingUtstrekning,
     val geometri: Geometry,
 )
 
 fun calculateIntersectingGeometry(
     utstrekningGeometri: UtstrekningGeometri,
-    stedfestingUtstrekning: Utstrekning,
+    stedfestingUtstrekning: StedfestingUtstrekning,
 ): UtstrekningGeometri? {
     val veglenkeUtstrekning = utstrekningGeometri.utstrekning
     val veglenkeGeometri = utstrekningGeometri.geometri
@@ -118,8 +118,8 @@ fun calculateIntersectingGeometry(
 
 fun calculateIntersectingGeometry(
     veglenkeGeometri: Geometry,
-    veglenkeUtstrekning: Utstrekning,
-    stedfestingUtstrekning: Utstrekning,
+    veglenkeUtstrekning: StedfestingUtstrekning,
+    stedfestingUtstrekning: StedfestingUtstrekning,
 ): Geometry? =
     calculateIntersectingGeometry(
         UtstrekningGeometri(veglenkeUtstrekning, veglenkeGeometri),

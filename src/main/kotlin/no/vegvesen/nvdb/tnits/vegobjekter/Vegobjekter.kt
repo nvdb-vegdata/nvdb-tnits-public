@@ -185,3 +185,5 @@ data class VegobjektStedfesting(
     val sideposisjon: Sideposisjon? = null,
     val kjorefelt: List<String> = emptyList(),
 )
+
+interface Stedfesting

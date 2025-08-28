@@ -3,30 +3,49 @@ package no.vegvesen.nvdb.tnits.storage
 import no.vegvesen.nvdb.tnits.model.Veglenke
 
 interface VeglenkerStore : AutoCloseable {
-    fun get(veglenkesekvensId: Long): List<Veglenke>?
+    fun getVeglenker(veglenkesekvensId: Long): List<Veglenke>?
 
-    fun batchGet(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>>
+    fun batchGetVeglenker(veglenkesekvensIds: Collection<Long>): Map<Long, List<Veglenke>>
 
-    fun getAll(): Map<Long, List<Veglenke>>
+    fun getAllVeglenker(): Map<Long, List<Veglenke>>
 
-    fun upsert(
+    fun upsertVeglenker(
         veglenkesekvensId: Long,
         veglenker: List<Veglenke>,
     )
 
-    fun delete(veglenkesekvensId: Long)
+    fun deleteVeglenker(veglenkesekvensId: Long)
 
-    fun batchUpdate(updates: Map<Long, List<Veglenke>?>) {
+    fun batchUpdateVeglenker(updates: Map<Long, List<Veglenke>?>) {
         for ((id, veglenker) in updates) {
             if (veglenker == null) {
-                delete(id)
+                deleteVeglenker(id)
             } else {
-                upsert(id, veglenker)
+                upsertVeglenker(id, veglenker)
             }
         }
     }
 
-    fun exists(veglenkesekvensId: Long): Boolean = get(veglenkesekvensId) != null
+    fun getNodePortCount(nodeId: Long): Int?
+
+    fun batchGetNodePortCounts(nodeIds: Collection<Long>): Map<Long, Int>
+
+    fun upsertNodePortCount(
+        nodeId: Long,
+        portCount: Int,
+    )
+
+    fun deleteNodePortCount(nodeId: Long)
+
+    fun batchUpdateNodePortCounts(updates: Map<Long, Int?>) {
+        for ((id, portCount) in updates) {
+            if (portCount == null) {
+                deleteNodePortCount(id)
+            } else {
+                upsertNodePortCount(id, portCount)
+            }
+        }
+    }
 
     fun size(): Long
 

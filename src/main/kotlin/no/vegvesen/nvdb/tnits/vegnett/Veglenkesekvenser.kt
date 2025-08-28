@@ -1,6 +1,7 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
 import kotlinx.coroutines.flow.toList
+import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
@@ -47,7 +48,7 @@ suspend fun backfillVeglenkesekvenser() {
                 }
 
                 // Batch update to RocksDB
-                veglenkerStore.batchUpdate(updates)
+                veglenkerStore.batchUpdateVeglenker(updates)
                 updates.clear()
 
                 // Update progress in SQL (outside RocksDB transaction)
@@ -60,20 +61,31 @@ suspend fun backfillVeglenkesekvenser() {
     } while (veglenkesekvenser.isNotEmpty())
 }
 
-private fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> =
-    veglenkesekvens.veglenker.map { veglenke ->
+fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
+    val portLookup = veglenkesekvens.porter.associateBy { it.nummer }
 
-        val startPosition = resolvePortPosition(veglenkesekvens, veglenke.startport)
-        val endPosition = resolvePortPosition(veglenkesekvens, veglenke.sluttport)
+    return veglenkesekvens.veglenker.map { veglenke ->
+
+        val startport =
+            portLookup[veglenke.startport]
+                ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${veglenkesekvens.id}")
+        val sluttport =
+            portLookup[veglenke.sluttport]
+                ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${veglenkesekvens.id}")
 
         Veglenke(
             veglenkesekvensId = veglenkesekvens.id,
             veglenkenummer = veglenke.nummer,
-            startposisjon = startPosition,
-            sluttposisjon = endPosition,
+            startposisjon = startport.posisjon,
+            sluttposisjon = sluttport.posisjon,
+            startnode = startport.nodeId,
+            sluttnode = sluttport.nodeId,
+            startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
+            sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
             geometri = parseWkt(veglenke.geometri.wkt, SRID.UTM33),
             typeVeg = veglenke.typeVeg,
             detaljniva = veglenke.detaljniva,
+            feltoversikt = veglenke.feltoversikt,
             superstedfesting =
                 veglenke.superstedfesting?.let { stedfesting ->
                     Superstedfesting(
@@ -85,10 +97,11 @@ private fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veg
                 },
         )
     }
+}
 
 suspend fun updateVeglenkesekvenser() {
     var lastHendelseId =
-        KeyValue.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestHendelseId(
+        KeyValue.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestVeglenkesekvensHendelseId(
             KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
                 ?: error("Veglenkesekvenser backfill er ikke ferdig"),
         )
@@ -131,7 +144,7 @@ suspend fun updateVeglenkesekvenser() {
             }
 
             // Apply all updates to RocksDB and mark dirty records in SQL
-            veglenkerStore.batchUpdate(updates)
+            veglenkerStore.batchUpdateVeglenker(updates)
 
             transaction {
                 publishChangedVeglenkesekvensIds(changedIds)
@@ -143,12 +156,3 @@ suspend fun updateVeglenkesekvenser() {
     } while (response.hendelser.isNotEmpty())
     println("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
 }
-
-private fun resolvePortPosition(
-    veglenkesekvens: Veglenkesekvens,
-    portNumber: Int,
-): Double =
-    veglenkesekvens.porter
-        .find { it.nummer == portNumber }
-        ?.posisjon
-        ?: error("Port $portNumber not found in veglenkesekvens ${veglenkesekvens.id}")

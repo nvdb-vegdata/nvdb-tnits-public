@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.geometry.SRID
@@ -42,6 +43,9 @@ class RocksDbVeglenkerStoreTest :
                             veglenkenummer = 1,
                             startposisjon = 0.0,
                             sluttposisjon = 100.0,
+                            startnode = 100,
+                            sluttnode = 200,
+                            startdato = LocalDate(2020, 1, 1),
                             geometri = testGeometry,
                             typeVeg = TypeVeg.KANALISERT_VEG,
                             detaljniva = Detaljniva.VEGTRASE,
@@ -50,17 +54,17 @@ class RocksDbVeglenkerStoreTest :
                     )
 
                 // Test upsert
-                store.upsert(1L, testVeglenker)
+                store.upsertVeglenker(1L, testVeglenker)
 
                 // Test get
-                val retrieved = store.get(1L)
+                val retrieved = store.getVeglenker(1L)
                 retrieved shouldNotBe null
                 retrieved!!.size shouldBe 1
                 retrieved[0].veglenkesekvensId shouldBe 1L
                 retrieved[0].typeVeg shouldBe TypeVeg.KANALISERT_VEG
 
                 // Test getAll
-                val allData = store.getAll()
+                val allData = store.getAllVeglenker()
                 allData.size shouldBe 1
                 allData[1L] shouldNotBe null
 
@@ -68,8 +72,8 @@ class RocksDbVeglenkerStoreTest :
                 store.size() shouldBe 1L
 
                 // Test delete
-                store.delete(1L)
-                store.get(1L) shouldBe null
+                store.deleteVeglenker(1L)
+                store.getVeglenker(1L) shouldBe null
                 store.size() shouldBe 0L
             } finally {
                 store.close()
@@ -102,10 +106,13 @@ class RocksDbVeglenkerStoreTest :
                                     veglenkenummer = 1,
                                     startposisjon = 0.0,
                                     sluttposisjon = 100.0,
+                                    startnode = 100,
+                                    sluttnode = 200,
                                     geometri = testGeometry,
                                     typeVeg = TypeVeg.KANALISERT_VEG,
                                     detaljniva = Detaljniva.VEGTRASE,
                                     superstedfesting = null,
+                                    startdato = LocalDate(2020, 1, 1),
                                 ),
                             ),
                         2L to
@@ -115,17 +122,20 @@ class RocksDbVeglenkerStoreTest :
                                     veglenkenummer = 1,
                                     startposisjon = 0.0,
                                     sluttposisjon = 200.0,
+                                    startnode = 100,
+                                    sluttnode = 200,
                                     geometri = testGeometry,
                                     typeVeg = TypeVeg.ENKEL_BILVEG,
                                     detaljniva = Detaljniva.VEGTRASE,
                                     superstedfesting = null,
+                                    startdato = LocalDate(2020, 1, 1),
                                 ),
                             ),
                         3L to null, // Delete operation
                     )
 
                 // Add item first for delete test
-                store.upsert(
+                store.upsertVeglenker(
                     3L,
                     listOf(
                         Veglenke(
@@ -133,22 +143,25 @@ class RocksDbVeglenkerStoreTest :
                             veglenkenummer = 1,
                             startposisjon = 0.0,
                             sluttposisjon = 300.0,
+                            startnode = 100,
+                            sluttnode = 200,
                             geometri = testGeometry,
                             typeVeg = TypeVeg.ENKEL_BILVEG,
                             detaljniva = Detaljniva.VEGTRASE,
                             superstedfesting = null,
+                            startdato = LocalDate(2020, 1, 1),
                         ),
                     ),
                 )
 
                 // Perform batch update
-                store.batchUpdate(updates)
+                store.batchUpdateVeglenker(updates)
 
                 // Verify results
                 store.size() shouldBe 2L
-                store.get(1L) shouldNotBe null
-                store.get(2L) shouldNotBe null
-                store.get(3L) shouldBe null // Should be deleted
+                store.getVeglenker(1L) shouldNotBe null
+                store.getVeglenker(2L) shouldNotBe null
+                store.getVeglenker(3L) shouldBe null // Should be deleted
             } finally {
                 store.close()
                 File(tempDir).deleteRecursively()
@@ -180,10 +193,13 @@ class RocksDbVeglenkerStoreTest :
                                 veglenkenummer = 1,
                                 startposisjon = 0.0,
                                 sluttposisjon = 100.0,
+                                startnode = 100,
+                                sluttnode = 200,
                                 geometri = testGeometry,
                                 typeVeg = if (i % 2 == 0) TypeVeg.KANALISERT_VEG else TypeVeg.ENKEL_BILVEG,
                                 detaljniva = Detaljniva.VEGTRASE,
                                 superstedfesting = null,
+                                startdato = LocalDate(2020, 1, 1),
                             ),
                         )
                 }
@@ -191,20 +207,20 @@ class RocksDbVeglenkerStoreTest :
                 // Benchmark batch insert
                 val insertTime =
                     kotlin.time.measureTime {
-                        store.batchUpdate(testData)
+                        store.batchUpdateVeglenker(testData)
                     }
 
                 // Benchmark full read
                 val readTime =
                     kotlin.time.measureTime {
-                        store.getAll()
+                        store.getAllVeglenker()
                     }
 
                 // Benchmark random access
                 val randomAccessTime =
                     kotlin.time.measureTime {
                         repeat(100) { i ->
-                            store.get((i * 10L) % 1000L)
+                            store.getVeglenker((i * 10L) % 1000L)
                         }
                     }
 
@@ -245,14 +261,17 @@ class RocksDbVeglenkerStoreTest :
                                 veglenkenummer = 1,
                                 startposisjon = 0.0,
                                 sluttposisjon = (i + 1) * 100.0,
+                                startnode = 100,
+                                sluttnode = 200,
                                 geometri = testGeometry,
                                 typeVeg = if (i % 2 == 0) TypeVeg.KANALISERT_VEG else TypeVeg.ENKEL_BILVEG,
                                 detaljniva = Detaljniva.VEGTRASE,
+                                startdato = LocalDate(2020, 1, 1),
                             ),
                         )
                 }
 
-                store.batchUpdate(testData)
+                store.batchUpdateVeglenker(testData)
                 store.size() shouldBe 100L
 
                 // Test concurrent reads from multiple coroutines
@@ -269,7 +288,7 @@ class RocksDbVeglenkerStoreTest :
                                             val readResults = mutableListOf<List<Veglenke>?>()
                                             repeat(readsPerCoroutine) { readIndex ->
                                                 val veglenkesekvensId = (readIndex % 100).toLong()
-                                                val result = store.get(veglenkesekvensId)
+                                                val result = store.getVeglenker(veglenkesekvensId)
                                                 readResults.add(result)
                                             }
                                             Triple(coroutineId, readResults.size, readResults.count { it != null })
@@ -291,7 +310,7 @@ class RocksDbVeglenkerStoreTest :
                 finalSize shouldBe 100L
 
                 // Spot check some data to ensure it wasn't corrupted
-                val spotCheck = store.get(50L)
+                val spotCheck = store.getVeglenker(50L)
                 spotCheck shouldNotBe null
                 spotCheck!!.size shouldBe 1
                 spotCheck[0].veglenkesekvensId shouldBe 50L
@@ -327,18 +346,21 @@ class RocksDbVeglenkerStoreTest :
                                 veglenkenummer = 1,
                                 startposisjon = 0.0,
                                 sluttposisjon = (i + 1) * 100.0,
+                                startnode = 100,
+                                sluttnode = 200,
                                 geometri = testGeometry,
                                 typeVeg = if (i % 2 == 0) TypeVeg.KANALISERT_VEG else TypeVeg.ENKEL_BILVEG,
                                 detaljniva = Detaljniva.VEGTRASE,
+                                startdato = LocalDate(2020, 1, 1),
                             ),
                         )
                 }
 
-                store.batchUpdate(testData)
+                store.batchUpdateVeglenker(testData)
 
                 // Test batch get with existing keys
                 val requestedIds = setOf(5L, 10L, 15L, 20L, 25L)
-                val batchResult = store.batchGet(requestedIds)
+                val batchResult = store.batchGetVeglenker(requestedIds)
 
                 batchResult.size shouldBe 5
                 batchResult[5L] shouldNotBe null
@@ -355,7 +377,7 @@ class RocksDbVeglenkerStoreTest :
 
                 // Test batch get with mix of existing and non-existing keys
                 val mixedIds = setOf(1L, 999L, 2L, 888L, 3L)
-                val mixedResult = store.batchGet(mixedIds)
+                val mixedResult = store.batchGetVeglenker(mixedIds)
 
                 mixedResult.size shouldBe 3 // Only existing keys should be returned
                 mixedResult[1L] shouldNotBe null
@@ -365,7 +387,7 @@ class RocksDbVeglenkerStoreTest :
                 mixedResult[888L] shouldBe null
 
                 // Test empty batch get
-                val emptyResult = store.batchGet(emptyList())
+                val emptyResult = store.batchGetVeglenker(emptyList())
                 emptyResult.size shouldBe 0
 
                 // Performance comparison: batch vs individual gets
@@ -373,13 +395,13 @@ class RocksDbVeglenkerStoreTest :
 
                 val batchTime =
                     kotlin.time.measureTime {
-                        store.batchGet(performanceTestIds)
+                        store.batchGetVeglenker(performanceTestIds)
                     }
 
                 val individualTime =
                     kotlin.time.measureTime {
                         performanceTestIds.forEach { id ->
-                            store.get(id)
+                            store.getVeglenker(id)
                         }
                     }
 
@@ -420,13 +442,16 @@ class RocksDbVeglenkerStoreTest :
                                 veglenkenummer = 1,
                                 startposisjon = 0.0,
                                 sluttposisjon = i * 100.0,
+                                startnode = 100,
+                                sluttnode = 200,
                                 geometri = testGeometry,
                                 typeVeg = TypeVeg.KANALISERT_VEG,
                                 detaljniva = Detaljniva.VEGTRASE,
+                                startdato = LocalDate(2020, 1, 1),
                             ),
                         )
                 }
-                store.batchUpdate(initialData)
+                store.batchUpdateVeglenker(initialData)
 
                 val operationTime =
                     kotlin.time.measureTime {
@@ -438,7 +463,7 @@ class RocksDbVeglenkerStoreTest :
                                         var successfulReads = 0
                                         repeat(100) { readIndex ->
                                             val veglenkesekvensId = (readIndex % 50).toLong()
-                                            val result = store.get(veglenkesekvensId)
+                                            val result = store.getVeglenker(veglenkesekvensId)
                                             if (result != null) successfulReads++
                                         }
                                         println("Reader 1: $successfulReads/100 successful reads")
@@ -448,7 +473,7 @@ class RocksDbVeglenkerStoreTest :
                                         var successfulReads = 0
                                         repeat(100) { readIndex ->
                                             val veglenkesekvensId = (readIndex % 50).toLong()
-                                            val result = store.get(veglenkesekvensId)
+                                            val result = store.getVeglenker(veglenkesekvensId)
                                             if (result != null) successfulReads++
                                         }
                                         println("Reader 2: $successfulReads/100 successful reads")
@@ -467,12 +492,15 @@ class RocksDbVeglenkerStoreTest :
                                                             veglenkenummer = 1,
                                                             startposisjon = 0.0,
                                                             sluttposisjon = writeIndex * 200.0,
+                                                            startnode = 100,
+                                                            sluttnode = 200,
                                                             geometri = testGeometry,
                                                             typeVeg = TypeVeg.ENKEL_BILVEG,
                                                             detaljniva = Detaljniva.VEGTRASE,
+                                                            startdato = LocalDate(2020, 1, 1),
                                                         ),
                                                     )
-                                                store.upsert(veglenkesekvensId, newVeglenker)
+                                                store.upsertVeglenker(veglenkesekvensId, newVeglenker)
                                                 successfulWrites++
                                             } catch (e: Exception) {
                                                 println("Write error: ${e.message}")

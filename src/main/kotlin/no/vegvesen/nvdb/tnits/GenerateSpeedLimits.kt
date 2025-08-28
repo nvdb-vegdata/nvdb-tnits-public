@@ -12,7 +12,7 @@ import no.vegvesen.nvdb.tnits.config.FETCH_SIZE
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.geometry.*
-import no.vegvesen.nvdb.tnits.model.Utstrekning
+import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
@@ -168,7 +168,7 @@ suspend fun generateSpeedLimitsFullSnapshot() {
 
 fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> =
     ParallelSpeedLimitProcessor(
-        veglenkerBatchLookup = { ids -> veglenkerStore.batchGet(ids) },
+        veglenkerBatchLookup = { ids -> veglenkerStore.batchGetVeglenker(ids) },
     ).generateSpeedLimitsSnapshot()
 
 @Deprecated(
@@ -224,7 +224,7 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
                 val veglenkesekvensIds = stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
                 // Batch fetch veglenker from RocksDB for better performance
-                val overlappendeVeglenker = veglenkerStore.batchGet(veglenkesekvensIds)
+                val overlappendeVeglenker = veglenkerStore.batchGetVeglenker(veglenkesekvensIds)
 
                 val lineStrings =
                     stedfestingLinjer.flatMap { stedfesting ->
@@ -262,10 +262,10 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
     }
 
 val Veglenke.utstrekning
-    get(): Utstrekning = Utstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
+    get(): StedfestingUtstrekning = StedfestingUtstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
 
 val VegobjektStedfesting.utstrekning
-    get(): Utstrekning = Utstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
+    get(): StedfestingUtstrekning = StedfestingUtstrekning(veglenkesekvensId, startposisjon, sluttposisjon)
 
 const val FartsgrenseEgenskapTypeId = 2021
 

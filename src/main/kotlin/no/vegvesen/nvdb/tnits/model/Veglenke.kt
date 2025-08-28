@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.model
 
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
@@ -19,10 +20,15 @@ data class Veglenke(
     val veglenkenummer: Int,
     val startposisjon: Double,
     val sluttposisjon: Double,
+    val startnode: Long,
+    val sluttnode: Long,
+    val startdato: LocalDate,
+    val sluttdato: LocalDate? = null,
     @Serializable(with = JtsGeometrySerializer::class)
     val geometri: Geometry,
     val typeVeg: TypeVeg,
     val detaljniva: Detaljniva,
+    val feltoversikt: List<String> = emptyList(),
     val superstedfesting: Superstedfesting? = null,
 ) {
     val veglenkeId: VeglenkeId

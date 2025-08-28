@@ -1,0 +1,37 @@
+{
+  "id": 85283803,
+  "versjon": 2,
+  "typeId": 105,
+  "gyldighetsperiode": {
+    "startdato": "2009-01-01"
+  },
+  "egenskaper": {
+    "5127": {
+      "type": "DatoEgenskap",
+      "verdi": "1980-01-01"
+    },
+    "2021": {
+      "type": "EnumEgenskap",
+      "verdi": 2730
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 41423,
+        "startposisjon": 0.0,
+        "sluttposisjon": 0.4010989,
+        "retning": "MED"
+      },
+      {
+        "id": 41423,
+        "startposisjon": 0.59010989,
+        "sluttposisjon": 0.95944735,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-04-30T19:09:15.976470Z"
+}

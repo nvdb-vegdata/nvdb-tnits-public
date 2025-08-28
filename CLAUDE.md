@@ -174,3 +174,5 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - **Storage Architecture**: Separates ephemeral road network data (RocksDB) from persistent application state (SQL database)
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
+- use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803/2?inkluder=alle to fetch a vegobjekt with a given type, id and version
+- use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424 to fetch multiple veglenkesekvenser
