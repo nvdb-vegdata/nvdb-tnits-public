@@ -5,8 +5,8 @@ import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.measure
+import no.vegvesen.nvdb.tnits.nodePortCountRepository
 import no.vegvesen.nvdb.tnits.uberiketApi
-import no.vegvesen.nvdb.tnits.veglenkerStore
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -39,7 +39,7 @@ suspend fun backfillNoder() {
                     updates[node.id] = portCount
                 }
 
-                veglenkerStore.batchUpdateNodePortCounts(updates)
+                nodePortCountRepository.batchUpdate(updates)
                 updates.clear()
 
                 KeyValue.put("noder_backfill_last_id", lastId!!)
@@ -94,7 +94,7 @@ suspend fun updateNoder() {
             }
 
             // Apply all updates to RocksDB
-            veglenkerStore.batchUpdateNodePortCounts(updates)
+            nodePortCountRepository.batchUpdate(updates)
 
             // Update progress tracking
             KeyValue.put("noder_last_hendelse_id", lastHendelseId)

@@ -4,7 +4,8 @@ import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
-import no.vegvesen.nvdb.tnits.storage.VeglenkerStore
+import no.vegvesen.nvdb.tnits.storage.NodePortCountRepository
+import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.today
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
@@ -18,7 +19,8 @@ import org.openlr.map.Line
 import org.openlr.map.Node
 
 class OpenLrService(
-    private val veglenkerStore: VeglenkerStore,
+    private val veglenkerStore: VeglenkerRepository,
+    private val nodePortCountRepository: NodePortCountRepository,
 ) {
     private val encoder = EncoderFactory().create()
 
@@ -27,7 +29,7 @@ class OpenLrService(
     fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> {
         val veglenker =
             veglenkerStore
-                .batchGetVeglenker(stedfestinger.map { it.veglenkesekvensId })
+                .batchGet(stedfestinger.map { it.veglenkesekvensId })
                 .values
                 .flatten()
                 .filter { it.sluttdato == null || it.sluttdato > today() }
@@ -48,7 +50,7 @@ class OpenLrService(
             veglenker
                 .flatMap { listOf(it.startnode, it.sluttnode) }
                 .toSet()
-                .let { veglenkerStore.batchGetNodePortCounts(it) }
+                .let { nodePortCountRepository.batchGet(it) }
 
         fun isNodeValid(nodeId: Long): Boolean = nodeConnectionCountById[nodeId]?.let { it <= 2 } ?: false
 

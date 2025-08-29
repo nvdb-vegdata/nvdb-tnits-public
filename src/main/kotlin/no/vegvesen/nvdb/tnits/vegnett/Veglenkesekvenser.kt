@@ -13,7 +13,7 @@ import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.uberiketApi
-import no.vegvesen.nvdb.tnits.veglenkerStore
+import no.vegvesen.nvdb.tnits.veglenkerRepository
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -48,7 +48,7 @@ suspend fun backfillVeglenkesekvenser() {
                 }
 
                 // Batch update to RocksDB
-                veglenkerStore.batchUpdateVeglenker(updates)
+                veglenkerRepository.batchUpdate(updates)
                 updates.clear()
 
                 // Update progress in SQL (outside RocksDB transaction)
@@ -144,7 +144,7 @@ suspend fun updateVeglenkesekvenser() {
             }
 
             // Apply all updates to RocksDB and mark dirty records in SQL
-            veglenkerStore.batchUpdateVeglenker(updates)
+            veglenkerRepository.batchUpdate(updates)
 
             transaction {
                 publishChangedVeglenkesekvensIds(changedIds)

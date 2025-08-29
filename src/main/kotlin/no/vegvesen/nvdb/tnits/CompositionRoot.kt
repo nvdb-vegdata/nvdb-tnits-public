@@ -11,9 +11,8 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.RocksDbVeglenkerStore
-import org.openlr.encoder.EncoderFactory
-import org.openlr.location.LocationFactory
+import no.vegvesen.nvdb.tnits.storage.*
+import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 
 private fun ObjectMapper.initialize(): ObjectMapper =
     apply {
@@ -74,8 +73,18 @@ val datakatalogHttpClient =
 
 val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
 
-val veglenkerStore = RocksDbVeglenkerStore()
+val rocksDbConfiguration = RocksDbConfiguration()
 
-val openLrEncoder = EncoderFactory().create()
+val veglenkerRepository: VeglenkerRepository =
+    VeglenkerRocksDbStore(
+        rocksDbConfiguration.getDatabase(),
+        rocksDbConfiguration.getDefaultColumnFamily(),
+    )
 
-val locationFactory = LocationFactory()
+val nodePortCountRepository: NodePortCountRepository =
+    NodePortCountRocksDbStore(
+        rocksDbConfiguration.getDatabase(),
+        rocksDbConfiguration.getNoderColumnFamily(),
+    )
+
+val cachedVegnett = CachedVegnett(veglenkerRepository)

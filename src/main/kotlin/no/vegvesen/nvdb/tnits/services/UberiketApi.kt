@@ -8,7 +8,7 @@ import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.extensions.executeAsNdjsonFlow
 import kotlin.time.Instant
 
-const val VEGLENKER_PAGE_SIZE = 100
+const val VEGLENKER_PAGE_SIZE = 1000
 
 const val HENDELSER_PAGE_SIZE = 1000
 

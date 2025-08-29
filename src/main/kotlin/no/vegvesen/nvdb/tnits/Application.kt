@@ -18,7 +18,7 @@ suspend fun main() {
     println("Applikasjon startet, databasen er konfigurert!")
 
     // Check if RocksDB exists and has data
-    if (!veglenkerStore.existsAndHasData()) {
+    if (!rocksDbConfiguration.existsAndHasData()) {
         println("RocksDB-database eksisterer ikke eller er tom. Nullstiller veglenkesekvenser-innstillinger...")
         KeyValue.clearVeglenkesekvensSettings()
         println("Veglenkesekvenser-innstillinger nullstilt. Backfill vil starte på nytt.")
@@ -43,6 +43,10 @@ suspend fun main() {
     }
 
     println("Oppdateringer fullført!")
+
+    measure("Bygger vegnett-cache", true) {
+        cachedVegnett.initialize()
+    }
 
     do {
         println("Trykk:")

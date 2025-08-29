@@ -168,7 +168,11 @@ suspend fun generateSpeedLimitsFullSnapshot() {
 
 fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> =
     ParallelSpeedLimitProcessor(
-        veglenkerBatchLookup = { ids -> veglenkerStore.batchGetVeglenker(ids) },
+        veglenkerBatchLookup = { ids ->
+            ids.associateWith {
+                cachedVegnett.getVeglenker(it)
+            }
+        },
     ).generateSpeedLimitsSnapshot()
 
 @Deprecated(
@@ -224,7 +228,7 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
                 val veglenkesekvensIds = stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
                 // Batch fetch veglenker from RocksDB for better performance
-                val overlappendeVeglenker = veglenkerStore.batchGetVeglenker(veglenkesekvensIds)
+                val overlappendeVeglenker = veglenkerRepository.batchGet(veglenkesekvensIds)
 
                 val lineStrings =
                     stedfestingLinjer.flatMap { stedfesting ->
