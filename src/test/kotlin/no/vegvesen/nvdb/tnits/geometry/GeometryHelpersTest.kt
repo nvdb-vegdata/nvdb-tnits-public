@@ -13,7 +13,7 @@ class GeometryHelpersTest :
             val projected = geometry.projectTo(SRID.WGS84)
 
             projected.srid shouldBe SRID.WGS84
-            projected.toText() shouldBe "LINESTRING (55.257432 15.194231, 55.258328 15.195809)"
+            projected.toText() shouldBe "LINESTRING (15.194231 55.257432, 15.195809 55.258328)"
         }
 
         "simplifies geometry to specified tolerance" {

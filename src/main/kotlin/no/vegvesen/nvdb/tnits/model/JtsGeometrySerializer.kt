@@ -15,9 +15,9 @@ import org.locationtech.jts.io.WKBWriter
 @Serializer(forClass = Geometry::class)
 @OptIn(ExperimentalSerializationApi::class)
 object JtsGeometrySerializer : KSerializer<Geometry> {
-    fun createWriter(): WKBWriter = WKBWriter(2, true)
+    fun createWriter(): WKBWriter = WKBWriter(2)
 
-    fun createReader(): WKBReader = WKBReader(geometryFactories[SRID.UTM33])
+    fun createReader(): WKBReader = WKBReader(geometryFactories[SRID.WGS84])
 
     private val byteArraySerializer = ByteArraySerializer()
 
@@ -25,6 +25,9 @@ object JtsGeometrySerializer : KSerializer<Geometry> {
         encoder: Encoder,
         value: Geometry,
     ) {
+        check(value.srid == SRID.WGS84) {
+            "Only SRID ${SRID.WGS84} is supported, but got ${value.srid}"
+        }
         val bytes = createWriter().write(value)
         encoder.encodeSerializableValue(byteArraySerializer, bytes)
     }

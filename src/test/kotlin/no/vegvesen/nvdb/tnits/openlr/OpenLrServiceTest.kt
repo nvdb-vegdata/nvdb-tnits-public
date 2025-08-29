@@ -12,11 +12,13 @@ import no.vegvesen.nvdb.apiles.uberiket.NoderSide
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
+import no.vegvesen.nvdb.tnits.cachedVegnett
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.objectMapper
 import no.vegvesen.nvdb.tnits.storage.NodePortCountRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
+import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import java.io.File
@@ -36,22 +38,15 @@ class OpenLrServiceTest :
                     configuration.getDatabase(),
                     configuration.getDefaultColumnFamily(),
                 )
-            val nodeStore =
-                NodePortCountRocksDbStore(
-                    configuration.getDatabase(),
-                    configuration.getNoderColumnFamily(),
-                )
 
             try {
                 // Load test data from JSON files
                 val fartsgrense = objectMapper.readJson<Vegobjekt>("speed-limit-85283803-v2.json")
                 val veglenkesekvens =
                     objectMapper.readJson<VeglenkesekvenserSide>("veglenkesekvens-41423.json").veglenkesekvenser.single()
-                val noder = objectMapper.readJson<NoderSide>("noder-from-veglenkesekvens-41423.json").noder
 
                 // Parse and convert data
                 val veglenker = convertToDomainVeglenker(veglenkesekvens)
-                val nodePortCounts = noder.associate { node -> node.id to node.porter.size }
                 val stedfestinger =
                     fartsgrense.getStedfestingLinjer().map { stedfesting ->
                         StedfestingUtstrekning(
@@ -66,18 +61,13 @@ class OpenLrServiceTest :
                 val veglenkesekvensId = 41423L
                 veglenkerStore.upsert(veglenkesekvensId, veglenker)
 
-                // Add node port counts
-                nodePortCounts.forEach { (nodeId, portCount) ->
-                    nodeStore.upsert(nodeId, portCount)
-                }
-
                 // Verify data was stored correctly
                 val storedVeglenker = veglenkerStore.get(veglenkesekvensId)
                 storedVeglenker shouldNotBe null
                 storedVeglenker!! shouldHaveSize 17
 
                 // Create OpenLR service and test
-                val openLrService = OpenLrService(veglenkerStore, nodeStore)
+                val openLrService = OpenLrService(CachedVegnett(veglenkerStore))
 
                 // Test the conversion
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
@@ -94,7 +84,6 @@ class OpenLrServiceTest :
                 println("Successfully created ${openLrReferences.size} OpenLR location references")
                 println("Stedfesting segments: ${stedfestinger.size}")
                 println("Veglenker count: ${storedVeglenker.size}")
-                println("Node port counts: ${nodePortCounts.size}")
             } finally {
                 configuration.close()
                 File(tempDir).deleteRecursively()
@@ -156,7 +145,7 @@ class OpenLrServiceTest :
                 storedVeglenker2553792!! shouldHaveSize 1
 
                 // Create OpenLR service and test
-                val openLrService = OpenLrService(veglenkerStore, nodeStore)
+                val openLrService = OpenLrService(cachedVegnett)
 
                 // Test the conversion
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)

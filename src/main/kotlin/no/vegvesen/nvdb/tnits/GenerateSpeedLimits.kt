@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toKotlinLocalDate
-import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.tnits.config.FETCH_SIZE
@@ -31,8 +30,6 @@ object VegobjektTyper {
     const val FARTSGRENSE = 105
     const val FUNKSJONELL_VEGKLASSE = 821
 }
-
-fun today() = Clock.System.todayIn(OsloZone)
 
 inline fun <T> measure(
     label: String,

@@ -1,5 +1,7 @@
 package no.vegvesen.nvdb.tnits.extensions
 
+import kotlinx.datetime.todayIn
+import no.vegvesen.nvdb.tnits.OsloZone
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import kotlin.time.Clock
@@ -20,3 +22,5 @@ fun Instant.toOffsetDateTime(): OffsetDateTime =
         .toJavaInstant()
         .atZone(OsloZoneId)
         .toOffsetDateTime()
+
+val today by lazy { Clock.System.todayIn(OsloZone) }

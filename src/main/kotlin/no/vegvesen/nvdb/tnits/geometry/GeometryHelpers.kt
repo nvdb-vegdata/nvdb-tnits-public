@@ -22,6 +22,7 @@ import javax.xml.crypto.dsig.TransformException
 object SRID {
     const val UTM33 = 25833
     const val WGS84 = 4326
+    const val EPSG5973 = 5973
 }
 
 val geometryFactories =
@@ -34,6 +35,7 @@ val wktReaders =
     mapOf(
         SRID.UTM33 to WKTReader(geometryFactories[SRID.UTM33]),
         SRID.WGS84 to WKTReader(geometryFactories[SRID.WGS84]),
+        SRID.EPSG5973 to WKTReader(geometryFactories[SRID.UTM33]),
     )
 
 fun parseWkt(
@@ -41,7 +43,8 @@ fun parseWkt(
     srid: Int,
 ): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
 
-fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid")
+// OpenLR library expects coordinates in longitude/latitude order for WGS84. For other CRSs, it does not matter.
+fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", true)
 
 fun Geometry.projectTo(srid: Int): Geometry =
     if (this.srid == srid) {

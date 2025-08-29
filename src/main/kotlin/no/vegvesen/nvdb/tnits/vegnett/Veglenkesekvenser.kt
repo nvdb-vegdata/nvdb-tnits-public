@@ -9,6 +9,7 @@ import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
+import no.vegvesen.nvdb.tnits.geometry.projectTo
 import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
@@ -64,39 +65,46 @@ suspend fun backfillVeglenkesekvenser() {
 fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
     val portLookup = veglenkesekvens.porter.associateBy { it.nummer }
 
-    return veglenkesekvens.veglenker.map { veglenke ->
+    return veglenkesekvens.veglenker
+        .map { veglenke ->
 
-        val startport =
-            portLookup[veglenke.startport]
-                ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${veglenkesekvens.id}")
-        val sluttport =
-            portLookup[veglenke.sluttport]
-                ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${veglenkesekvens.id}")
+            val startport =
+                portLookup[veglenke.startport]
+                    ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${veglenkesekvens.id}")
+            val sluttport =
+                portLookup[veglenke.sluttport]
+                    ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${veglenkesekvens.id}")
 
-        Veglenke(
-            veglenkesekvensId = veglenkesekvens.id,
-            veglenkenummer = veglenke.nummer,
-            startposisjon = startport.posisjon,
-            sluttposisjon = sluttport.posisjon,
-            startnode = startport.nodeId,
-            sluttnode = sluttport.nodeId,
-            startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
-            sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
-            geometri = parseWkt(veglenke.geometri.wkt, SRID.UTM33),
-            typeVeg = veglenke.typeVeg,
-            detaljniva = veglenke.detaljniva,
-            feltoversikt = veglenke.feltoversikt,
-            superstedfesting =
-                veglenke.superstedfesting?.let { stedfesting ->
-                    Superstedfesting(
-                        veglenksekvensId = stedfesting.id,
-                        startposisjon = stedfesting.startposisjon,
-                        sluttposisjon = stedfesting.sluttposisjon,
-                        kjorefelt = stedfesting.kjorefelt,
-                    )
-                },
-        )
-    }
+            Veglenke(
+                veglenkesekvensId = veglenkesekvens.id,
+                veglenkenummer = veglenke.nummer,
+                startposisjon = startport.posisjon,
+                sluttposisjon = sluttport.posisjon,
+                startnode = startport.nodeId,
+                sluttnode = sluttport.nodeId,
+                startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
+                sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
+                geometri =
+                    parseWkt(
+                        veglenke.geometri.wkt,
+                        veglenke.geometri.srid.value
+                            .toInt(),
+                    ).projectTo(SRID.WGS84),
+                typeVeg = veglenke.typeVeg,
+                detaljniva = veglenke.detaljniva,
+                feltoversikt = veglenke.feltoversikt,
+                lengde = veglenke.geometri.lengde ?: 0.0,
+                superstedfesting =
+                    veglenke.superstedfesting?.let { stedfesting ->
+                        Superstedfesting(
+                            veglenksekvensId = stedfesting.id,
+                            startposisjon = stedfesting.startposisjon,
+                            sluttposisjon = stedfesting.sluttposisjon,
+                            kjorefelt = stedfesting.kjorefelt,
+                        )
+                    },
+            )
+        }.sortedBy { it.startposisjon }
 }
 
 suspend fun updateVeglenkesekvenser() {

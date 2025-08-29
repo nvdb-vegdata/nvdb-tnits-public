@@ -8,6 +8,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.geometry.projectTo
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 
@@ -20,7 +21,7 @@ class JtsGeometrySerializerTest :
 
         "should serialize and deserialize Point geometry" {
             val originalPoint = geometryFactory.createPoint(Coordinate(10.5, 20.3))
-            originalPoint.srid = SRID.UTM33
+            originalPoint.srid = SRID.WGS84
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalPoint)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
@@ -28,8 +29,8 @@ class JtsGeometrySerializerTest :
             deserialized.shouldBeInstanceOf<Point>()
             deserialized.coordinate.x shouldBe 10.5
             deserialized.coordinate.y shouldBe 20.3
-            deserialized.srid shouldBe SRID.UTM33
-            deserialized.factory.srid shouldBe SRID.UTM33
+            deserialized.srid shouldBe SRID.WGS84
+            deserialized.factory.srid shouldBe SRID.WGS84
         }
 
         "should serialize and deserialize LineString geometry" {
@@ -46,15 +47,14 @@ class JtsGeometrySerializerTest :
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<LineString>()
-            val lineString = deserialized as LineString
-            lineString.numPoints shouldBe 3
-            lineString.getCoordinateN(0).x shouldBe 0.0
-            lineString.getCoordinateN(0).y shouldBe 0.0
-            lineString.getCoordinateN(1).x shouldBe 10.0
-            lineString.getCoordinateN(1).y shouldBe 10.0
-            lineString.getCoordinateN(2).x shouldBe 20.0
-            lineString.getCoordinateN(2).y shouldBe 5.0
-            lineString.srid shouldBe SRID.WGS84
+            deserialized.numPoints shouldBe 3
+            deserialized.getCoordinateN(0).x shouldBe 0.0
+            deserialized.getCoordinateN(0).y shouldBe 0.0
+            deserialized.getCoordinateN(1).x shouldBe 10.0
+            deserialized.getCoordinateN(1).y shouldBe 10.0
+            deserialized.getCoordinateN(2).x shouldBe 20.0
+            deserialized.getCoordinateN(2).y shouldBe 5.0
+            deserialized.srid shouldBe SRID.WGS84
         }
 
         "should serialize and deserialize Polygon geometry" {
@@ -81,17 +81,16 @@ class JtsGeometrySerializerTest :
                 )
 
             val originalPolygon = geometryFactory.createPolygon(shell, arrayOf(hole))
-            originalPolygon.srid = SRID.UTM33
+            originalPolygon.srid = SRID.WGS84
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalPolygon)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<Polygon>()
-            val polygon = deserialized as Polygon
-            polygon.numInteriorRing shouldBe 1
-            polygon.exteriorRing.numPoints shouldBe 5
-            polygon.getInteriorRingN(0).numPoints shouldBe 5
-            polygon.srid shouldBe SRID.UTM33
+            deserialized.numInteriorRing shouldBe 1
+            deserialized.exteriorRing.numPoints shouldBe 5
+            deserialized.getInteriorRingN(0).numPoints shouldBe 5
+            deserialized.srid shouldBe SRID.WGS84
         }
 
         "should serialize and deserialize MultiLineString geometry" {
@@ -112,29 +111,28 @@ class JtsGeometrySerializerTest :
                 )
 
             val originalMultiLineString = geometryFactory.createMultiLineString(arrayOf(line1, line2))
-            originalMultiLineString.srid = SRID.UTM33
+            originalMultiLineString.srid = SRID.WGS84
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalMultiLineString)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<MultiLineString>()
-            val multiLineString = deserialized as MultiLineString
-            multiLineString.numGeometries shouldBe 2
-            multiLineString.srid shouldBe SRID.UTM33
+            deserialized.numGeometries shouldBe 2
+            deserialized.srid shouldBe SRID.WGS84
 
-            val firstLine = multiLineString.getGeometryN(0) as LineString
+            val firstLine = deserialized.getGeometryN(0) as LineString
             firstLine.getCoordinateN(0).x shouldBe 0.0
             firstLine.getCoordinateN(1).x shouldBe 10.0
         }
 
         "should preserve SRID during serialization round trip" {
             val originalGeometry = wktReader.read("LINESTRING(590000 6640000, 591000 6641000)")
-            originalGeometry.srid = SRID.UTM33
+            originalGeometry.srid = SRID.WGS84
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalGeometry)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
-            deserialized.srid shouldBe SRID.UTM33
+            deserialized.srid shouldBe SRID.WGS84
         }
 
         "should handle empty geometries" {
@@ -156,17 +154,16 @@ class JtsGeometrySerializerTest :
                     Coordinate(10.0, 10.0, 200.0),
                     Coordinate(20.0, 5.0, 150.0),
                 )
-            val originalLineString = geometryFactory.createLineString(coordinatesWithZ)
+            val originalLineString = geometryFactory.createLineString(coordinatesWithZ).also { it.srid = SRID.WGS84 }
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalLineString)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<LineString>()
-            val lineString = deserialized as LineString
 
             // Note: JtsGeometrySerializer creates WKBWriter with 2 dimensions, so Z coordinates will be lost
             // This is expected behavior based on the implementation
-            lineString.getCoordinateN(0).z.isNaN() shouldBe true
+            deserialized.getCoordinateN(0).z.isNaN() shouldBe true
         }
 
         "should create separate writer instances for thread safety" {
@@ -187,7 +184,7 @@ class JtsGeometrySerializerTest :
 
         "should work with JSON serialization (for debugging)" {
             val originalPoint = geometryFactory.createPoint(Coordinate(10.5, 20.3))
-            originalPoint.srid = SRID.UTM33
+            originalPoint.srid = SRID.WGS84
 
             // This tests that the serializer works with different formats
             val jsonString = Json.encodeToString(JtsGeometrySerializer, originalPoint)
@@ -196,26 +193,27 @@ class JtsGeometrySerializerTest :
             deserialized.shouldBeInstanceOf<Point>()
             deserialized.coordinate.x shouldBe 10.5
             deserialized.coordinate.y shouldBe 20.3
-            deserialized.srid shouldBe SRID.UTM33
+            deserialized.srid shouldBe SRID.WGS84
         }
 
         "should handle complex road network geometries" {
             // Test with a realistic road segment geometry
             val roadGeometry =
-                wktReader.read(
-                    "LINESTRING(590123.45 6640567.89, 590234.56 6640678.90, 590345.67 6640789.01, 590456.78 6640890.12)",
-                )
-            roadGeometry.srid = SRID.UTM33
+                wktReader
+                    .read(
+                        "LINESTRING(590123.45 6640567.89, 590234.56 6640678.90, 590345.67 6640789.01, 590456.78 6640890.12)",
+                    ).also { it.srid = SRID.UTM33 }
+                    .projectTo(SRID.WGS84)
 
             val serialized = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, roadGeometry)
             val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, serialized)
 
             deserialized.shouldBeInstanceOf<LineString>()
             deserialized.numPoints shouldBe 4
-            deserialized.srid shouldBe SRID.UTM33
+            deserialized.srid shouldBe SRID.WGS84
 
             // Verify coordinate precision is preserved
-            deserialized.getCoordinateN(0).x shouldBe 590123.5
-            deserialized.getCoordinateN(0).y shouldBe 6640567.9
+            deserialized.getCoordinateN(0).x shouldBe 16.61066
+            deserialized.getCoordinateN(0).y shouldBe 59.89279
         }
     })

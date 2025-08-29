@@ -9,6 +9,7 @@ import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.geometry.SRID
+import no.vegvesen.nvdb.tnits.geometry.geometryFactories
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -54,7 +55,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                             Coordinate(10.0, 60.0),
                             Coordinate(10.1, 60.1),
                         ),
-                    ).also { it.srid = SRID.UTM33 }
+                    ).also { it.srid = SRID.WGS84 }
 
             val testVeglenker =
                 listOf(
@@ -69,6 +70,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         geometri = testGeometry,
                         typeVeg = TypeVeg.KANALISERT_VEG,
                         detaljniva = Detaljniva.VEGTRASE,
+                        lengde = testGeometry.length,
                         feltoversikt = emptyList(),
                     ),
                 )
@@ -90,7 +92,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
         }
 
         "should perform batch operations" {
-            val geometryFactory = GeometryFactory()
+            val geometryFactory = geometryFactories[SRID.WGS84]!!
             val testGeometry =
                 geometryFactory
                     .createLineString(
@@ -98,7 +100,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                             Coordinate(10.0, 60.0),
                             Coordinate(10.1, 60.1),
                         ),
-                    ).also { it.srid = SRID.UTM33 }
+                    )
 
             val testVeglenker1 =
                 listOf(
@@ -114,6 +116,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         typeVeg = TypeVeg.KANALISERT_VEG,
                         detaljniva = Detaljniva.VEGTRASE,
                         feltoversikt = emptyList(),
+                        lengde = testGeometry.length,
                     ),
                 )
 
@@ -131,6 +134,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         typeVeg = TypeVeg.KANALISERT_VEG,
                         detaljniva = Detaljniva.VEGTRASE,
                         feltoversikt = emptyList(),
+                        lengde = testGeometry.length,
                     ),
                 )
 
