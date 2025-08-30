@@ -62,6 +62,7 @@ dependencies {
 
     // OpenLR
     implementation("org.openlr:openlr-encoder:2.0-beta3")
+    implementation("org.openlr:openlr-binary:2.0-beta3")
     implementation("org.locationtech.jts:jts-core:1.20.0")
     implementation("org.geotools:gt-main:33.2")
     implementation("org.geotools:gt-epsg-hsql:33.2")

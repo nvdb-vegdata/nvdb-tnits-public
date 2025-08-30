@@ -79,7 +79,7 @@ class OpenLrService(
 
         val connectedPaths = mutableListOf<Path<OpenLrLine>>()
 
-        fun <L : Line<L>> Path<L>.isConnected(other: Path<L>): Boolean = this.end == other.start
+        fun <L : Line<L>> Path<L>.isConnected(other: Path<L>): Boolean = this.end.geometry == other.start.geometry
 
         for (path in paths) {
             if (connectedPaths.isEmpty() || connectedPaths.last().isConnected(path)) {

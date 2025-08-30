@@ -3,8 +3,8 @@ package no.vegvesen.nvdb.tnits.storage
 import org.rocksdb.*
 import java.io.File
 
-class RocksDbConfiguration(
-    private val dbPath: String = "veglenker.db",
+open class RocksDbConfiguration(
+    protected val dbPath: String = "veglenker.db",
     private val enableCompression: Boolean = true,
 ) : AutoCloseable {
     private lateinit var db: RocksDB
