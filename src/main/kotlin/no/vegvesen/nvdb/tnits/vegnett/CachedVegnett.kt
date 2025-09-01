@@ -31,18 +31,18 @@ class CachedVegnett(
         veglenkerLookup.forEach { (_, veglenker) ->
             veglenker.forEach { veglenke ->
 
-                val feltoversikt =
-                    if (veglenke.konnektering) {
-                        findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
-                    } else {
-                        veglenke.feltoversikt
-                    }
-
-                check(feltoversikt != null && feltoversikt.isNotEmpty()) {
-                    "Mangler feltoversikt for veglenke ${veglenke.veglenkeId}"
-                }
-
-                val tillattRetning = getTillattRetning(feltoversikt)
+//                val feltoversikt =
+//                    if (veglenke.konnektering) {
+//                        findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
+//                    } else {
+//                        veglenke.feltoversikt
+//                    }
+//
+//                check(feltoversikt != null && feltoversikt.isNotEmpty()) {
+//                    "Mangler feltoversikt for veglenke ${veglenke.veglenkeId}"
+//                }
+//
+//                val tillattRetning = getTillattRetning(feltoversikt)
 
                 outgoingVeglenker.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
                 outgoingVeglenker.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }

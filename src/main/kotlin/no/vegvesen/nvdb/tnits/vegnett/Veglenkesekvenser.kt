@@ -20,6 +20,13 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 suspend fun backfillVeglenkesekvenser() {
+    val backfillCompleted = KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
+
+    if (backfillCompleted != null) {
+        println("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
+        return
+    }
+
     var lastId = KeyValue.get<Long>("veglenkesekvenser_backfill_last_id")
 
     if (lastId == null) {
