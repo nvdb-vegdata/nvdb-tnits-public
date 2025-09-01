@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
+import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
 import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 class CachedVegnett(
     private val veglenkerRepository: VeglenkerRepository,
 ) {
-    private lateinit var veglenker: Map<Long, List<Veglenke>>
+    private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
     private val outgoingVeglenker = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
     private val incomingVeglenker = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
 
@@ -26,29 +27,67 @@ class CachedVegnett(
     fun initialize() {
         if (initialized) return
 
-        veglenker = veglenkerRepository.getAll()
-        veglenker.values.forEach { veglenker ->
-            veglenker.forEach {
-                outgoingVeglenker.computeIfAbsent(it.startnode) { mutableSetOf() }.add(it)
-                incomingVeglenker.computeIfAbsent(it.sluttnode) { mutableSetOf() }.add(it)
+        veglenkerLookup = veglenkerRepository.getAll()
+        veglenkerLookup.forEach { (_, veglenker) ->
+            veglenker.forEach { veglenke ->
+
+                val feltoversikt =
+                    if (veglenke.konnektering) {
+                        findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
+                    } else {
+                        veglenke.feltoversikt
+                    }
+
+                check(feltoversikt != null && feltoversikt.isNotEmpty()) {
+                    "Mangler feltoversikt for veglenke ${veglenke.veglenkeId}"
+                }
+
+                val tillattRetning = getTillattRetning(feltoversikt)
+
+                outgoingVeglenker.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
+                outgoingVeglenker.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }
+                incomingVeglenker.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }.add(veglenke)
+                incomingVeglenker.computeIfAbsent(veglenke.startnode) { mutableSetOf() }
             }
         }
         initialized = true
     }
 
+    private fun getTillattRetning(feltoversikt: List<String>): List<Retning> {
+        val retninger =
+            feltoversikt
+                .map {
+                    it.takeWhile { char -> char.isDigit() }.toInt() % 2
+                }.toSet()
+        return when (retninger) {
+            setOf(0, 1) -> listOf(Retning.MED, Retning.MOT)
+            setOf(0) -> listOf(Retning.MOT)
+            setOf(1) -> listOf(Retning.MED)
+            else -> throw IllegalArgumentException("Ugyldig feltoversikt: $feltoversikt")
+        }
+    }
+
+    private fun findClosestNonKonnekteringVeglenke(
+        veglenke: Veglenke,
+        veglenker: List<Veglenke>,
+    ): Veglenke? =
+        veglenker
+            .filter { !it.konnektering }
+            .minByOrNull { (it.startposisjon - veglenke.startposisjon).let { diff -> diff * diff } }
+
     fun getVeglenker(veglenkesekvensId: Long): List<Veglenke> {
         initialize()
-        return veglenker[veglenkesekvensId] ?: emptyList()
+        return veglenkerLookup[veglenkesekvensId] ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
     }
 
     fun getOutgoingVeglenker(nodeId: Long): Set<Veglenke> {
         initialize()
-        return outgoingVeglenker[nodeId] ?: emptySet()
+        return outgoingVeglenker[nodeId] ?: error("Mangler outgoing veglenker for nodeId $nodeId")
     }
 
     fun getIncomingVeglenker(nodeId: Long): Set<Veglenke> {
         initialize()
-        return incomingVeglenker[nodeId] ?: emptySet()
+        return incomingVeglenker[nodeId] ?: error("Mangler incoming veglenker for nodeId $nodeId")
     }
 
     fun getIncomingLines(id: Long): List<OpenLrLine> = getIncomingVeglenker(id).map { getOrPut(it) }

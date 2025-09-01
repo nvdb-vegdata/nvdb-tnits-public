@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.openlr
 
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
@@ -10,8 +9,6 @@ import org.openlr.map.FormOfWay
 import org.openlr.map.FunctionalRoadClass
 import org.openlr.map.Line
 import org.openlr.map.Node
-
-fun Veglenke.isActive() = sluttdato == null || sluttdato > today
 
 fun TypeVeg.toFormOfWay(): FormOfWay =
     when (this) {
@@ -34,9 +31,10 @@ fun TypeVeg.toFormOfWay(): FormOfWay =
         TypeVeg.ANNET -> FormOfWay.OTHER
     }
 
-class OpenLrLine private constructor(
+@ConsistentCopyVisibility
+data class OpenLrLine private constructor(
     val id: VeglenkeId,
-    val veglenke: Veglenke,
+    val lengde: Double,
     val startnode: OpenLrNode,
     val sluttnode: OpenLrNode,
     val geometri: LineString,
@@ -60,7 +58,14 @@ class OpenLrLine private constructor(
 
     override fun getGeometry(): LineString = geometri
 
-    override fun getLength(): Double = veglenke.lengde
+    override fun getLength(): Double = lengde
+
+    fun reverse(): OpenLrLine =
+        copy(
+            startnode = sluttnode,
+            sluttnode = startnode,
+            geometri = geometri.reverse() as LineString,
+        )
 
     companion object {
         fun fromVeglenke(
@@ -82,7 +87,7 @@ class OpenLrLine private constructor(
             val line =
                 OpenLrLine(
                     id = veglenke.veglenkeId,
-                    veglenke = veglenke,
+                    lengde = veglenke.lengde,
                     startnode = startNode,
                     sluttnode = endNode,
                     geometri = geometry,

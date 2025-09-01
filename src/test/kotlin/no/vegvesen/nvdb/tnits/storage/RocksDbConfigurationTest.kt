@@ -42,16 +42,9 @@ class RocksDbConfigurationTest : StringSpec() {
                     configuration.getDefaultColumnFamily(),
                 )
 
-            val nodeStore =
-                NodePortCountRocksDbStore(
-                    configuration.getDatabase(),
-                    configuration.getNoderColumnFamily(),
-                )
-
             veglenkerStore.upsert(1L, emptyList())
-            nodeStore.upsert(100L, 4)
 
-            configuration.getTotalSize() shouldBe 2L
+            configuration.getTotalSize() shouldBe 1L
             configuration.existsAndHasData() shouldBe true
 
             configuration.clear()

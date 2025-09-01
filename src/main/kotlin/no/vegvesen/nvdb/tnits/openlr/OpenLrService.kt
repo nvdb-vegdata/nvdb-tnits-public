@@ -49,32 +49,36 @@ class OpenLrService(
 
     private val operations = MapOperations()
 
-    fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> {
-        if (stedfestinger.isEmpty()) {
-            return emptyList()
+    fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> =
+        stedfestinger
+            .let(::createPaths)
+            .let(::mergeConnectedPaths)
+            .map(locationFactory::createLineLocation)
+            .map(encoder::encode)
+
+    private fun createPaths(stedfestinger: List<StedfestingUtstrekning>): List<Path<OpenLrLine>> =
+        // TODO: How are gaps in veglenker handled?
+        stedfestinger.flatMap { stedfesting ->
+            val veglenker =
+                cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
+                    it.utstrekning.overlaps(stedfesting)
+                }
+
+            // Antagelse: Veglenker lagres sortert
+            val positiveOffset = findOffsetInMeters(veglenker.first(), stedfesting.startposisjon, true)
+            val negativeOffset = findOffsetInMeters(veglenker.last(), stedfesting.sluttposisjon, false)
+
+            val lines = cachedVegnett.getLines(veglenker)
+
+            // TODO: Handle retning and kjorefelt
+            val paths = mutableListOf<Path<OpenLrLine>>()
+
+            paths.add(pathFactory.create(lines, positiveOffset, negativeOffset))
+            paths
         }
 
-        // TODO: How are gaps in veglenker handled?
-        val paths =
-            stedfestinger.map { stedfesting ->
-                val veglenker =
-                    cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
-                        it.isActive() && it.utstrekning.overlaps(stedfesting)
-                    }
-
-                // Antagelse: Veglenker lagres sortert
-                val positiveOffset = findOffsetInMeters(veglenker.first(), stedfesting.startposisjon, true)
-                val negativeOffset = findOffsetInMeters(veglenker.last(), stedfesting.sluttposisjon, false)
-
-                val lines = cachedVegnett.getLines(veglenker)
-
-                // TODO: Handle retning and kjorefelt
-                pathFactory.create(lines, positiveOffset, negativeOffset)
-            }
-
-        // TODO: Join consecutive paths
+    private fun mergeConnectedPaths(paths: List<Path<OpenLrLine>>): MutableList<Path<OpenLrLine>> {
         // Antagelse: Stedfestinger ligger i rekkefølge??
-
         val mergedPaths = mutableListOf<Path<OpenLrLine>>()
 
         val connectedPaths = mutableListOf<Path<OpenLrLine>>()
@@ -96,14 +100,12 @@ class OpenLrService(
             val mergedPath = operations.joinPaths(connectedPaths)
             mergedPaths.add(mergedPath)
         }
-
-        val locations =
-            mergedPaths.map { path ->
-                locationFactory.createLineLocation(path)
-            }
-
-        return locations.map { location ->
-            encoder.encode(location)
-        }
+        return mergedPaths
     }
+}
+
+enum class TillattRetning {
+    Med,
+    Mot,
+    Begge,
 }

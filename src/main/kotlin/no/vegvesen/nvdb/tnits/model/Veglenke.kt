@@ -25,6 +25,7 @@ data class Veglenke(
     val startdato: LocalDate,
     val sluttdato: LocalDate? = null,
     val lengde: Double,
+    val konnektering: Boolean,
     @Serializable(with = JtsGeometrySerializer::class)
     val geometri: Geometry,
     val typeVeg: TypeVeg,

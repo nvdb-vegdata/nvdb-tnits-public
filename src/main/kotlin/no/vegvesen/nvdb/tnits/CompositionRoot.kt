@@ -11,7 +11,9 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.*
+import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
+import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
+import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 
 private fun ObjectMapper.initialize(): ObjectMapper =
@@ -79,12 +81,6 @@ val veglenkerRepository: VeglenkerRepository =
     VeglenkerRocksDbStore(
         rocksDbConfiguration.getDatabase(),
         rocksDbConfiguration.getDefaultColumnFamily(),
-    )
-
-val nodePortCountRepository: NodePortCountRepository =
-    NodePortCountRocksDbStore(
-        rocksDbConfiguration.getDatabase(),
-        rocksDbConfiguration.getNoderColumnFamily(),
     )
 
 val cachedVegnett = CachedVegnett(veglenkerRepository)

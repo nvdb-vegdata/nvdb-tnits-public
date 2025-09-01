@@ -62,6 +62,12 @@ suspend fun backfillVeglenkesekvenser() {
     } while (veglenkesekvenser.isNotEmpty())
 }
 
+/**
+ * Konverterer en [Veglenkesekvens] fra Uberiket API til en liste av domenemodellen [Veglenke].
+ * - Filtrer til bare aktive veglenker.
+ * - Mapper start- og sluttporter til posisjoner og noder.
+ * - Sorterer veglenkene etter startposisjon.
+ */
 fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
     val portLookup = veglenkesekvens.porter.associateBy { it.nummer }
 
@@ -94,6 +100,7 @@ fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
                 detaljniva = veglenke.detaljniva,
                 feltoversikt = veglenke.feltoversikt,
                 lengde = veglenke.geometri.lengde ?: 0.0,
+                konnektering = veglenke.konnektering,
                 superstedfesting =
                     veglenke.superstedfesting?.let { stedfesting ->
                         Superstedfesting(
@@ -104,7 +111,8 @@ fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
                         )
                     },
             )
-        }.sortedBy { it.startposisjon }
+        }.filter { it.sluttdato == null }
+        .sortedBy { it.startposisjon }
 }
 
 suspend fun updateVeglenkesekvenser() {

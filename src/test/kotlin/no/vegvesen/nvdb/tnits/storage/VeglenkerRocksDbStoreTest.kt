@@ -72,6 +72,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         detaljniva = Detaljniva.VEGTRASE,
                         lengde = testGeometry.length,
                         feltoversikt = emptyList(),
+                        konnektering = false,
                     ),
                 )
 
@@ -117,6 +118,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         detaljniva = Detaljniva.VEGTRASE,
                         feltoversikt = emptyList(),
                         lengde = testGeometry.length,
+                        konnektering = false,
                     ),
                 )
 
@@ -135,6 +137,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
                         detaljniva = Detaljniva.VEGTRASE,
                         feltoversikt = emptyList(),
                         lengde = testGeometry.length,
+                        konnektering = false,
                     ),
                 )
 
