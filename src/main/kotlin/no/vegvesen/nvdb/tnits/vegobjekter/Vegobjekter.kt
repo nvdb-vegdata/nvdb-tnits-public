@@ -29,13 +29,15 @@ private val dirtyCheckForTypes =
         VegobjektTyper.FUNKSJONELL_VEGKLASSE,
     )
 
-suspend fun updateVegobjekter(typeId: Int) {
+suspend fun updateVegobjekter(typeId: Int): Int {
     var lastHendelseId =
         KeyValue.get<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(
             typeId,
             KeyValue.get<Instant>("vegobjekter_${typeId}_backfill_completed")
                 ?: error("Backfill for type $typeId er ikke ferdig"),
         )
+
+    var hendelseCount = 0
 
     println("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $lastHendelseId")
 
@@ -86,9 +88,11 @@ suspend fun updateVegobjekter(typeId: Int) {
                 KeyValue.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
             }
             println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
+            hendelseCount += response.hendelser.size
         }
     } while (response.hendelser.isNotEmpty())
     println("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse-ID: $lastHendelseId")
+    return hendelseCount
 }
 
 suspend fun backfillVegobjekter(typeId: Int) {

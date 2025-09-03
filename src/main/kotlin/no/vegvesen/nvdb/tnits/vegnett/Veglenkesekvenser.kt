@@ -122,12 +122,14 @@ fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
         .sortedBy { it.startposisjon }
 }
 
-suspend fun updateVeglenkesekvenser() {
+suspend fun updateVeglenkesekvenser(): Int {
     var lastHendelseId =
         KeyValue.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestVeglenkesekvensHendelseId(
             KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
                 ?: error("Veglenkesekvenser backfill er ikke ferdig"),
         )
+
+    var hendelseCount = 0
 
     do {
         val response =
@@ -175,7 +177,10 @@ suspend fun updateVeglenkesekvenser() {
             }
 
             println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
+            hendelseCount += response.hendelser.size
         }
     } while (response.hendelser.isNotEmpty())
     println("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
+
+    return hendelseCount
 }

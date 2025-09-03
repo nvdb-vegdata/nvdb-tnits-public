@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits
 
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.config.configureDatabase
@@ -10,6 +11,8 @@ import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegnett.updateVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegobjekter.backfillVegobjekter
 import no.vegvesen.nvdb.tnits.vegobjekter.updateVegobjekter
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 suspend fun main() {
     println("Starter NVDB TN-ITS konsollapplikasjon...")
@@ -42,6 +45,26 @@ suspend fun main() {
         }
     }
 
+    // Final update check to avoid missing changes during backfill and initial update
+    var now: Instant
+    coroutineScope {
+        do {
+            now = Clock.System.now()
+            val veglenkesekvensHendelseCount =
+                async {
+                    updateVeglenkesekvenser()
+                }
+            val vegobjekterHendelseCounts =
+                vegobjektTyper.map { typeId ->
+                    async {
+                        updateVegobjekter(typeId)
+                    }
+                }
+
+            val total = veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() }
+        } while (total > 0)
+    }
+
     println("Oppdateringer fullført!")
 
     measure("Bygger vegnett-cache", true) {
@@ -59,13 +82,13 @@ suspend fun main() {
         when (input) {
             "1" -> {
                 println("Genererer fullt snapshot av TN-ITS fartsgrenser...")
-                generateSpeedLimitsFullSnapshot()
+                generateSpeedLimitsFullSnapshot(now)
                 println("Fullt snapshot generert.")
             }
 
             "2" -> {
                 println("Genererer delta snapshot av TN-ITS fartsgrenser...")
-                generateSpeedLimitsDeltaUpdate()
+                generateSpeedLimitsDeltaUpdate(now)
             }
 
             "3" -> {
