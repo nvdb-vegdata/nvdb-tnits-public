@@ -121,7 +121,7 @@ private fun setupOpenLrService(
     val veglenkerStore =
         VeglenkerRocksDbStore(
             config.getDatabase(),
-            config.getDefaultColumnFamily(),
+            config.getVeglenkerColumnFamily(),
         )
     val veglenkesekvenser =
         paths.flatMap { path ->

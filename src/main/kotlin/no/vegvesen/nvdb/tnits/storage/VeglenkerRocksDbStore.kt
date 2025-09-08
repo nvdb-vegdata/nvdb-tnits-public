@@ -6,6 +6,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.ColumnFamilyHandle
 import org.rocksdb.RocksDB
+import org.rocksdb.RocksDBException
 import org.rocksdb.WriteBatch
 import org.rocksdb.WriteOptions
 import java.nio.ByteBuffer
@@ -95,6 +96,14 @@ class VeglenkerRocksDbStore(
             }
         } finally {
             writeBatch.close()
+        }
+    }
+
+    fun clear() {
+        try {
+            db.deleteRange(columnFamily, ByteArray(0), ByteArray(8) { 0xFF.toByte() })
+        } catch (e: RocksDBException) {
+            throw RuntimeException("Failed to clear veglenker data", e)
         }
     }
 

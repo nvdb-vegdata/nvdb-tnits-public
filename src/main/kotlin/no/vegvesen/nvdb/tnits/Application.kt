@@ -46,24 +46,7 @@ suspend fun main() {
     }
 
     // Final update check to avoid missing changes during backfill and initial update
-    var now: Instant
-    coroutineScope {
-        do {
-            now = Clock.System.now()
-            val veglenkesekvensHendelseCount =
-                async {
-                    updateVeglenkesekvenser()
-                }
-            val vegobjekterHendelseCounts =
-                vegobjektTyper.map { typeId ->
-                    async {
-                        updateVegobjekter(typeId)
-                    }
-                }
-
-            val total = veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() }
-        } while (total > 0)
-    }
+    val now: Instant = performFinalSyncCheckAndGetTimestamp(vegobjektTyper)
 
     println("Oppdateringer fullført!")
 
@@ -99,4 +82,26 @@ suspend fun main() {
             else -> println("Ugyldig valg, vennligst prøv igjen.")
         }
     } while (true)
+}
+
+private suspend fun performFinalSyncCheckAndGetTimestamp(vegobjektTyper: List<Int>): Instant {
+    var now: Instant
+    coroutineScope {
+        do {
+            now = Clock.System.now()
+            val veglenkesekvensHendelseCount =
+                async {
+                    updateVeglenkesekvenser()
+                }
+            val vegobjekterHendelseCounts =
+                vegobjektTyper.map { typeId ->
+                    async {
+                        updateVegobjekter(typeId)
+                    }
+                }
+
+            val total = veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() }
+        } while (total > 0)
+    }
+    return now
 }

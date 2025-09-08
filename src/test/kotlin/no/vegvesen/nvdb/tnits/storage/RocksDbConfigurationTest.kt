@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.TestCase
@@ -39,7 +40,7 @@ class RocksDbConfigurationTest : StringSpec() {
             val veglenkerStore =
                 VeglenkerRocksDbStore(
                     configuration.getDatabase(),
-                    configuration.getDefaultColumnFamily(),
+                    configuration.getVeglenkerColumnFamily(),
                 )
 
             veglenkerStore.upsert(1L, emptyList())
@@ -51,6 +52,26 @@ class RocksDbConfigurationTest : StringSpec() {
 
             configuration.getTotalSize() shouldBe 0L
             configuration.existsAndHasData() shouldBe false
+        }
+
+        "should provide access to column families by name" {
+            val defaultCF = configuration.getColumnFamily(RocksDbConfiguration.DEFAULT_COLUMN_FAMILY)
+            val noderCF = configuration.getColumnFamily(RocksDbConfiguration.NODER_COLUMN_FAMILY)
+            val veglenkerCF = configuration.getColumnFamily(RocksDbConfiguration.VEGLENKER_COLUMN_FAMILY)
+
+            defaultCF shouldBe configuration.getDefaultColumnFamily()
+            noderCF shouldBe configuration.getNoderColumnFamily()
+            veglenkerCF shouldBe configuration.getVeglenkerColumnFamily()
+
+            String(defaultCF.name) shouldBe "default"
+            String(noderCF.name) shouldBe "noder"
+            String(veglenkerCF.name) shouldBe "veglenker"
+        }
+
+        "should throw exception for unknown column family" {
+            shouldThrow<IllegalArgumentException> {
+                configuration.getColumnFamily("unknown")
+            }
         }
     }
 }

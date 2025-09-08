@@ -80,7 +80,7 @@ val rocksDbConfiguration = RocksDbConfiguration()
 val veglenkerRepository: VeglenkerRepository =
     VeglenkerRocksDbStore(
         rocksDbConfiguration.getDatabase(),
-        rocksDbConfiguration.getDefaultColumnFamily(),
+        rocksDbConfiguration.getVeglenkerColumnFamily(),
     )
 
 val cachedVegnett = CachedVegnett(veglenkerRepository)

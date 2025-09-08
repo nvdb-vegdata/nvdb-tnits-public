@@ -26,7 +26,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
         store =
             VeglenkerRocksDbStore(
                 configuration.getDatabase(),
-                configuration.getDefaultColumnFamily(),
+                configuration.getVeglenkerColumnFamily(),
             )
     }
 
@@ -36,7 +36,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
         store =
             VeglenkerRocksDbStore(
                 configuration.getDatabase(),
-                configuration.getDefaultColumnFamily(),
+                configuration.getVeglenkerColumnFamily(),
             )
     }
 
