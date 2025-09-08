@@ -54,25 +54,25 @@ class OpenLrServiceTest :
                         10.46041 to 63.42712,
                         10.46647 to 63.42433,
                     )
-                // Første stedfesting, mot lenkeretning
-                openLrReferences[2].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
-                    listOf(
-                        10.45995 to 63.42732,
-                        10.45458 to 63.43004,
-                    )
                 // Siste stedfesting, mot lenkeretning
-                openLrReferences[3].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+                openLrReferences[2].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
                     listOf(
                         10.46647 to 63.42433,
                         10.46041 to 63.42712,
+                    )
+                // Første stedfesting, mot lenkeretning
+                openLrReferences[3].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+                    listOf(
+                        10.45995 to 63.42732,
+                        10.45458 to 63.43004,
                     )
 
                 binary shouldBe
                     listOf(
                         "CwdvMy0bFwIQBwIZ/vADOy0=",
                         "CwdwQy0ajwMMBwJe/ukCfCQV",
-                        "CwdwLi0amAMbB/3nARACUC0=",
                         "CwdxXS0aDQIcB/2iARcDbBUk",
+                        "CwdwLi0amAMbB/3nARACUC0=",
                     )
             }
         }
