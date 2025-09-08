@@ -16,7 +16,10 @@ import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
+import org.openlr.binary.BinaryMarshallerFactory
 import java.io.InputStream
+
+private val marshaller = BinaryMarshallerFactory().create()
 
 class OpenLrServiceTest :
     StringSpec({
@@ -24,14 +27,21 @@ class OpenLrServiceTest :
         "should convert speed limit stedfesting to OpenLR with real NVDB data" {
             withTempDb { config ->
                 // Arrange
-                val openLrService = setupOpenLrService(config, "veglenkesekvens-41423.json")
+                val openLrService =
+                    setupOpenLrService(
+                        config,
+                        "veglenkesekvens-41423.json",
+                        "veglenkesekvenser-41437-41438.json",
+                    )
                 val stedfestinger = loadStedfestinger("speed-limit-85283803-v2.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
+                val binary = openLrReferences.map(marshaller::marshallToBase64String)
 
                 // Assert
-                openLrReferences shouldHaveSize 2
+                openLrReferences shouldHaveSize 4
+
                 // Første stedfesting, med lenkeretning
                 openLrReferences[0].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
                     listOf(
@@ -41,55 +51,64 @@ class OpenLrServiceTest :
                 // Siste stedfesting, med lenkeretning
                 openLrReferences[1].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
                     listOf(
-                        10.46049 to 63.42708,
-                        10.46598 to 63.42458,
+                        10.46041 to 63.42712,
+                        10.46647 to 63.42433,
+                    )
+                // Første stedfesting, mot lenkeretning
+                openLrReferences[2].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+                    listOf(
+                        10.45995 to 63.42732,
+                        10.45458 to 63.43004,
+                    )
+                // Siste stedfesting, mot lenkeretning
+                openLrReferences[3].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+                    listOf(
+                        10.46647 to 63.42433,
+                        10.46041 to 63.42712,
                     )
 
-                // TODO én referanse hver vei
-//                // Assert
-//                openLrReferences shouldHaveSize 4
-//                // Første stedfesting, med lenkeretning
-//                openLrReferences[0].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
-//                    listOf(
-//                        10.45458 to 63.43004,
-//                        10.45995 to 63.42732,
-//                    )
-//                // Første stedfesting, mot lenkeretning
-//                openLrReferences[1].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
-//                    listOf(
-//                        10.45995 to 63.42732,
-//                        10.45458 to 63.43004,
-//                    )
-//                // Siste stedfesting, med lenkeretning
-//                openLrReferences[2].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
-//                    listOf(
-//                        10.46049 to 63.42708,
-//                        10.46598 to 63.42458,
-//                    )
-//                // Siste stedfesting, mot lenkeretning
-//                openLrReferences[3].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
-//                    listOf(
-//                        10.46049 to 63.42708,
-//                        10.46598 to 63.42458,
-//                    )
+                binary shouldBe
+                    listOf(
+                        "CwdvMy0bFwIQBwIZ/vADOy0=",
+                        "CwdwQy0ajwMMBwJe/ukCfCQV",
+                        "CwdwLi0amAMbB/3nARACUC0=",
+                        "CwdxXS0aDQIcB/2iARcDbBUk",
+                    )
             }
         }
 
         "should convert speed limit stedfesting to OpenLR with multi-sequence NVDB data" {
             withTempDb { config ->
                 // Arrange
-                val openLrService = setupOpenLrService(config, "veglenkesekvenser-41658-2553792.json")
+                val openLrService =
+                    setupOpenLrService(
+                        config,
+                        "veglenkesekvenser-41658-2553792.json",
+                        "veglenkesekvenser-42241-48174-41659.json",
+                    )
                 val stedfestinger = loadStedfestinger("speed-limit-85283410-v1.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
+                val binary = openLrReferences.map(marshaller::marshallToBase64String)
 
                 // Assert
-                openLrReferences shouldHaveSize 1
+                openLrReferences shouldHaveSize 2
                 openLrReferences[0].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
                     listOf(
                         10.50101 to 63.4266,
                         10.50769 to 63.42537,
+                    )
+                openLrReferences[1].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+                    listOf(
+                        10.50769 to 63.42537,
+                        10.50101 to 63.4266,
+                    )
+
+                binary shouldBe
+                    listOf(
+                        "Cwd3py0adgMIBgKc/4UDGg==",
+                        "Cwd43i0aPQMaBv1kAHsDCA==",
                     )
             }
         }
@@ -97,7 +116,7 @@ class OpenLrServiceTest :
 
 private fun setupOpenLrService(
     config: RocksDbConfiguration,
-    path: String,
+    vararg paths: String,
 ): OpenLrService {
     val veglenkerStore =
         VeglenkerRocksDbStore(
@@ -105,11 +124,13 @@ private fun setupOpenLrService(
             config.getDefaultColumnFamily(),
         )
     val veglenkesekvenser =
-        objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
+        paths.flatMap { path ->
+            objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
+        }
 
-    for (veglenkesekven in veglenkesekvenser) {
-        val veglenker = convertToDomainVeglenker(veglenkesekven)
-        veglenkerStore.upsert(veglenkesekven.id, veglenker)
+    for (veglenkesekvens in veglenkesekvenser) {
+        val veglenker = convertToDomainVeglenker(veglenkesekvens)
+        veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
     val openLrService = OpenLrService(CachedVegnett(veglenkerStore))
     return openLrService

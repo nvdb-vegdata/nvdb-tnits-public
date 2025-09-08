@@ -5,6 +5,7 @@ import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
 import no.vegvesen.nvdb.tnits.utstrekning
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
+import org.locationtech.jts.geom.LineString
 import org.openlr.encoder.EncoderFactory
 import org.openlr.location.LocationFactory
 import org.openlr.locationreference.LineLocationReference
@@ -52,30 +53,75 @@ class OpenLrService(
     fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> =
         stedfestinger
             .let(::createPaths)
-            .let(::mergeConnectedPaths)
+            .map(::mergeConnectedPaths)
+            .flatten()
             .map(locationFactory::createLineLocation)
             .map(encoder::encode)
 
-    private fun createPaths(stedfestinger: List<StedfestingUtstrekning>): List<Path<OpenLrLine>> =
-        // TODO: How are gaps in veglenker handled?
-        stedfestinger.flatMap { stedfesting ->
+    private fun createPaths(stedfestinger: List<StedfestingUtstrekning>): List<List<Path<OpenLrLine>>> {
+        val forwardPaths = mutableListOf<Path<OpenLrLine>>()
+        val reversePaths = mutableListOf<Path<OpenLrLine>>()
+
+        for (stedfesting in stedfestinger) {
             val veglenker =
                 cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
                     it.utstrekning.overlaps(stedfesting)
                 }
 
-            // Antagelse: Veglenker lagres sortert
-            val positiveOffset = findOffsetInMeters(veglenker.first(), stedfesting.startposisjon, true)
-            val negativeOffset = findOffsetInMeters(veglenker.last(), stedfesting.sluttposisjon, false)
-
-            val lines = cachedVegnett.getLines(veglenker)
-
-            // TODO: Handle retning and kjorefelt
-            val paths = mutableListOf<Path<OpenLrLine>>()
-
-            paths.add(pathFactory.create(lines, positiveOffset, negativeOffset))
-            paths
+            createPath(veglenker, stedfesting, TillattRetning.Med)?.let {
+                forwardPaths.add(it)
+            }
+            createPath(veglenker, stedfesting, TillattRetning.Mot)?.let {
+                reversePaths.add(it)
+            }
         }
+
+        return listOfNotNull(forwardPaths.ifEmpty { null }, reversePaths.asReversed().ifEmpty { null })
+    }
+
+    private fun createPath(
+        veglenker: List<Veglenke>,
+        stedfesting: StedfestingUtstrekning,
+        retning: TillattRetning,
+    ): Path<OpenLrLine>? {
+        val directed =
+            veglenker.filter {
+                cachedVegnett.hasRetning(it, retning)
+            }
+
+        if (directed.isEmpty()) {
+            return null
+        }
+
+        directed.forEachIndexed { i, veglenke ->
+            check(i == 0 || (veglenke.geometri as LineString).startPoint == (directed[i - 1].geometri as LineString).endPoint) {
+                "Veglenker er ikke sammenhengende i retning for stedfesting $stedfesting"
+            }
+        }
+
+        val lines =
+            cachedVegnett.getLines(
+                directed.let {
+                    if (retning == TillattRetning.Med) it else it.asReversed()
+                },
+                retning,
+            )
+
+        val positiveOffset = findOffsetInMeters(veglenker.first(), stedfesting.startposisjon, true)
+        val negativeOffset = findOffsetInMeters(veglenker.last(), stedfesting.sluttposisjon, false)
+
+        return pathFactory.create(
+            lines,
+            when (retning) {
+                TillattRetning.Med -> positiveOffset
+                TillattRetning.Mot -> negativeOffset
+            },
+            when (retning) {
+                TillattRetning.Med -> negativeOffset
+                TillattRetning.Mot -> positiveOffset
+            },
+        )
+    }
 
     private fun mergeConnectedPaths(paths: List<Path<OpenLrLine>>): MutableList<Path<OpenLrLine>> {
         // Antagelse: Stedfestinger ligger i rekkefølge??
@@ -107,5 +153,4 @@ class OpenLrService(
 enum class TillattRetning {
     Med,
     Mot,
-    Begge,
 }

@@ -1,0 +1,3030 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 41437,
+      "porter": [
+        {
+          "nummer": 14,
+          "nodeId": 3976975,
+          "nodePortNummer": 2,
+          "posisjon": 0.20489079
+        },
+        {
+          "nummer": 15,
+          "nodeId": 3976972,
+          "nodePortNummer": 2,
+          "posisjon": 0.43911017
+        },
+        {
+          "nummer": 16,
+          "nodeId": 3976970,
+          "nodePortNummer": 2,
+          "posisjon": 0.53290376
+        },
+        {
+          "nummer": 17,
+          "nodeId": 3976969,
+          "nodePortNummer": 2,
+          "posisjon": 0.59451672
+        },
+        {
+          "nummer": 18,
+          "nodeId": 3976968,
+          "nodePortNummer": 2,
+          "posisjon": 0.65510209
+        },
+        {
+          "nummer": 11,
+          "nodeId": 1994319,
+          "nodePortNummer": 2,
+          "posisjon": 0.30980518
+        },
+        {
+          "nummer": 1,
+          "nodeId": 95817,
+          "nodePortNummer": 1,
+          "posisjon": 0.0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 95685,
+          "nodePortNummer": 1,
+          "posisjon": 1.0
+        },
+        {
+          "nummer": 3,
+          "nodeId": 95704,
+          "nodePortNummer": 2,
+          "posisjon": 0.87320551
+        },
+        {
+          "nummer": 4,
+          "nodeId": 95713,
+          "nodePortNummer": 2,
+          "posisjon": 0.70478849
+        },
+        {
+          "nummer": 5,
+          "nodeId": 95723,
+          "nodePortNummer": 2,
+          "posisjon": 0.54015182
+        },
+        {
+          "nummer": 6,
+          "nodeId": 95786,
+          "nodePortNummer": 2,
+          "posisjon": 0.16932499
+        },
+        {
+          "nummer": 7,
+          "nodeId": 95817,
+          "nodePortNummer": 2,
+          "posisjon": 0.08781601
+        },
+        {
+          "nummer": 12,
+          "nodeId": 2562406,
+          "nodePortNummer": 1,
+          "posisjon": 0.13076768
+        },
+        {
+          "nummer": 13,
+          "nodeId": 3815031,
+          "nodePortNummer": 1,
+          "posisjon": 0.98687768
+        },
+        {
+          "nummer": 8,
+          "nodeId": 2852833,
+          "nodePortNummer": 1,
+          "posisjon": 0.04172567
+        },
+        {
+          "nummer": 9,
+          "nodeId": 1838134,
+          "nodePortNummer": 1,
+          "posisjon": 0.89220609
+        },
+        {
+          "nummer": 10,
+          "nodeId": 2852834,
+          "nodePortNummer": 1,
+          "posisjon": 0.11388352
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 16,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 17,
+          "sluttport": 18,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273588.241633999 7041528.58123852 52.2937753685301, 273586.9 7041514.6 52.435, 273585.4 7041497.9 52.735, 273584.034685519 7041482.51745685 53.1901048268679)",
+            "srid": 5973,
+            "lengde": 46.26580551962997,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 46.2658055131043,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 17,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 18,
+          "sluttport": 4,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273584.034685519 7041482.51745685 53.1901048268679, 273583.9 7041481 53.235, 273582.5 7041465.4 53.635, 273581.7 7041459.5 53.735, 273581.3 7041453.7 53.835, 273580.8 7041444.733 53.935)",
+            "srid": 5973,
+            "lengde": 37.942837633255735,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 37.9428376351463,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 6,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 4,
+          "sluttport": 3,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273580.799987793 7041444.73336792 53.935, 273580.4 7041434.6 54.236, 273579.7 7041432.8 54.136, 273578.4 7041419 54.236, 273577.3 7041406.3 54.336, 273576 7041392.6 54.436, 273575.3 7041382.8 54.536, 273573.5 7041362.8 54.536, 273571.9 7041345.3 54.736, 273571 7041336.5 54.836, 273570.8 7041333.2 54.936, 273570.2 7041327.5 54.936, 273569.1 7041320.2 54.936)",
+            "srid": 5973,
+            "lengde": 125.19931652791148,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 125.199316527909,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 8,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-19",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 9,
+          "sluttport": 13,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273568.8 7041305.9 55.536, 273567.2 7041295.6 55.836, 273566.3 7041284.8 56.436, 273565.1 7041270.7 57.536, 273564.3 7041263.4 58.136, 273562.6 7041256.4 58.536, 273560 7041249.3 58.836, 273556.5 7041243.4 59.036, 273553.4 7041239.7 59.136, 273551.93 7041238.25 59.14)",
+            "srid": 5973,
+            "lengde": 71.38110772962622,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 71.3811077296262,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 12,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-19",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 13,
+          "sluttport": 2,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273551.93 7041238.25 59.14, 273544.888 7041231.3 59.136)",
+            "srid": 5973,
+            "lengde": 9.89405275924947,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 9.89405275924947,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 7,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 3,
+          "sluttport": 9,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273569.1 7041320.2 54.936, 273568.800048828 7041305.8999939 55.536)",
+            "srid": 5973,
+            "lengde": 14.3157450278035,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 14.3157307531498,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01",
+            "sluttdato": "2010-10-12"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 8,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273741.32 7041871.8 42.715, 273748.600097656 7041879.10009766 42.835, 273748.700195313 7041884.60009766 42.535, 273749.200195313 7041888.20019531 42.435, 273751.100097656 7041891.39990234 42.235, 273754.100097656 7041893.5 42.035, 273757.5 7041893.79980469 41.935, 273761 7041893.20007324 41.535)",
+            "srid": 5973,
+            "lengde": 33.8377126020603,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 33.8377126020603,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 9,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 10,
+          "sluttport": 12,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273735.502 7041855.641 44.041, 273730.899902344 7041849 44.435, 273728.26 7041845.2 44.635)",
+            "srid": 5973,
+            "lengde": 12.720622856775,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 12.7206555060049,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 11,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 12,
+          "sluttport": 6,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273728.26 7041845.2 44.635, 273722.200195313 7041836.39990234 45.035, 273717.700195313 7041829.39990234 45.235, 273712.696044922 7041820.70391846 45.235)",
+            "srid": 5973,
+            "lengde": 29.0492809420045,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 29.0492809420045,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 3,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "GANG_OG_SYKKELVEG",
+          "startport": 7,
+          "sluttport": 10,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273741.32 7041871.8 42.715, 273741.700195313 7041864.29980469 43.435, 273737.899902344 7041859.10009766 43.835, 273735.502 7041855.641 44.041)",
+            "srid": 5973,
+            "lengde": 18.2111285683886,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7042,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 18.2110959946943,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 2,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01",
+            "sluttdato": "2010-10-12"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 8,
+          "sluttport": 7,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273761 7041893.20007324 41.535, 273764.100097656 7041890.89990234 41.435, 273765.600097656 7041888.79980469 41.535, 273766 7041885.5 41.635, 273765.299804688 7041882.10009766 41.835, 273763.200195313 7041879 42.035, 273759.200195313 7041877.10009766 42.235, 273753.600097656 7041874.89990234 42.635, 273741.32 7041871.8 42.715)",
+            "srid": 5973,
+            "lengde": 40.1246782058184,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 40.1246782058184,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 4,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 6,
+          "sluttport": 14,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273712.696 7041820.704 45.235, 273708.8 7041813.8 45.735, 273704.4 7041806.6 45.935, 273699 7041797.7 46.135)",
+            "srid": 5973,
+            "lengde": 26.795566615433344,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 26.7955666154333,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 13,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 14,
+          "sluttport": 11,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273699 7041797.7 46.135, 273693.1 7041788.3 46.435, 273685.6 7041776.1 46.735, 273683.9 7041773.6 46.735, 273677.3 7041762.1 47.135, 273668.5 7041746.5 47.435, 273659.403 7041729.352 47.8)",
+            "srid": 5973,
+            "lengde": 79.04338018223383,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 79.0433801822338,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 10,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 11,
+          "sluttport": 15,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273659.403 7041729.352 47.8, 273656.198 7041723.859 47.935, 273648.8 7041710.5 48.635, 273640.1 7041694.6 49.235, 273631.8 7041678.8 49.935, 273623.7 7041662.8 50.635, 273616.9 7041647.1 51.135, 273615.208950208 7041642.69119161 51.2255919531574)",
+            "srid": 5973,
+            "lengde": 97.43007577866709,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 97.4300757761423,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 14,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 15,
+          "sluttport": 16,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273615.208950208 7041642.69119161 51.2255919531574, 273611.3 7041632.5 51.435, 273606.4 7041618 51.735, 273601.6 7041601.7 51.835, 273597.8 7041586.6 51.935, 273596.6 7041581.5 51.935, 273595.347709517 7041574.97490748 51.935)",
+            "srid": 5973,
+            "lengde": 70.67257109422368,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 70.6725710940046,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 15,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 16,
+          "sluttport": 5,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273595.347709517 7041574.97490748 51.935, 273594.7 7041571.6 51.935, 273594.4 7041569.6 51.835)",
+            "srid": 5973,
+            "lengde": 5.461345072326967,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 5.46134507507086,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 5,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 5,
+          "sluttport": 17,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273594.4 7041569.6 51.835, 273593.6 7041565.9 51.935, 273590.7 7041550.4 52.135, 273588.8 7041534.4 52.235, 273588.241633999 7041528.58123852 52.2937753685301)",
+            "srid": 5973,
+            "lengde": 41.51555810053695,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 41.515558105172,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 753.437290352288,
+      "sistEndret": "2025-05-02T12:59:07.307765Z"
+    },
+    {
+      "id": 41438,
+      "porter": [
+        {
+          "nummer": 53,
+          "nodeId": 4004330,
+          "nodePortNummer": 2,
+          "posisjon": 0.18937148
+        },
+        {
+          "nummer": 54,
+          "nodeId": 4004328,
+          "nodePortNummer": 2,
+          "posisjon": 0.20947862
+        },
+        {
+          "nummer": 51,
+          "nodeId": 3984109,
+          "nodePortNummer": 2,
+          "posisjon": 0.02459627
+        },
+        {
+          "nummer": 52,
+          "nodeId": 3984103,
+          "nodePortNummer": 2,
+          "posisjon": 0.38885089
+        },
+        {
+          "nummer": 48,
+          "nodeId": 3978953,
+          "nodePortNummer": 2,
+          "posisjon": 0.53697567
+        },
+        {
+          "nummer": 49,
+          "nodeId": 3978952,
+          "nodePortNummer": 2,
+          "posisjon": 0.71877149
+        },
+        {
+          "nummer": 50,
+          "nodeId": 3978949,
+          "nodePortNummer": 2,
+          "posisjon": 0.83264599
+        },
+        {
+          "nummer": 47,
+          "nodeId": 3953124,
+          "nodePortNummer": 1,
+          "posisjon": 0.96795362
+        },
+        {
+          "nummer": 34,
+          "nodeId": 3305446,
+          "nodePortNummer": 1,
+          "posisjon": 0.99688611
+        },
+        {
+          "nummer": 1,
+          "nodeId": 95701,
+          "nodePortNummer": 1,
+          "posisjon": 0.0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 94909,
+          "nodePortNummer": 3,
+          "posisjon": 1.0
+        },
+        {
+          "nummer": 3,
+          "nodeId": 94922,
+          "nodePortNummer": 3,
+          "posisjon": 0.98563449
+        },
+        {
+          "nummer": 4,
+          "nodeId": 94952,
+          "nodePortNummer": 2,
+          "posisjon": 0.94303871
+        },
+        {
+          "nummer": 5,
+          "nodeId": 94976,
+          "nodePortNummer": 2,
+          "posisjon": 0.91904842
+        },
+        {
+          "nummer": 6,
+          "nodeId": 94984,
+          "nodePortNummer": 2,
+          "posisjon": 0.91439037
+        },
+        {
+          "nummer": 7,
+          "nodeId": 95010,
+          "nodePortNummer": 2,
+          "posisjon": 0.90015913
+        },
+        {
+          "nummer": 8,
+          "nodeId": 95116,
+          "nodePortNummer": 2,
+          "posisjon": 0.82341984
+        },
+        {
+          "nummer": 9,
+          "nodeId": 95122,
+          "nodePortNummer": 2,
+          "posisjon": 0.80600794
+        },
+        {
+          "nummer": 10,
+          "nodeId": 95145,
+          "nodePortNummer": 2,
+          "posisjon": 0.7114397
+        },
+        {
+          "nummer": 11,
+          "nodeId": 95168,
+          "nodePortNummer": 2,
+          "posisjon": 0.66606796
+        },
+        {
+          "nummer": 12,
+          "nodeId": 95169,
+          "nodePortNummer": 2,
+          "posisjon": 0.65902237
+        },
+        {
+          "nummer": 40,
+          "nodeId": 3815170,
+          "nodePortNummer": 1,
+          "posisjon": 0.34485843
+        },
+        {
+          "nummer": 41,
+          "nodeId": 3815189,
+          "nodePortNummer": 1,
+          "posisjon": 0.06700807
+        },
+        {
+          "nummer": 42,
+          "nodeId": 3815166,
+          "nodePortNummer": 1,
+          "posisjon": 0.07730574
+        },
+        {
+          "nummer": 43,
+          "nodeId": 3814990,
+          "nodePortNummer": 1,
+          "posisjon": 0.00305352
+        },
+        {
+          "nummer": 28,
+          "nodeId": 1955794,
+          "nodePortNummer": 1,
+          "posisjon": 0.99367154
+        },
+        {
+          "nummer": 29,
+          "nodeId": 1964119,
+          "nodePortNummer": 1,
+          "posisjon": 0.54404214
+        },
+        {
+          "nummer": 30,
+          "nodeId": 3793897,
+          "nodePortNummer": 1,
+          "posisjon": 0.56175248
+        },
+        {
+          "nummer": 35,
+          "nodeId": 3793885,
+          "nodePortNummer": 1,
+          "posisjon": 0.82975497
+        },
+        {
+          "nummer": 36,
+          "nodeId": 3793847,
+          "nodePortNummer": 1,
+          "posisjon": 0.67155603
+        },
+        {
+          "nummer": 37,
+          "nodeId": 3793834,
+          "nodePortNummer": 1,
+          "posisjon": 0.65542599
+        },
+        {
+          "nummer": 38,
+          "nodeId": 3793819,
+          "nodePortNummer": 2,
+          "posisjon": 0.56659642
+        },
+        {
+          "nummer": 39,
+          "nodeId": 3793791,
+          "nodePortNummer": 1,
+          "posisjon": 0.43677847
+        },
+        {
+          "nummer": 13,
+          "nodeId": 95215,
+          "nodePortNummer": 2,
+          "posisjon": 0.60314934
+        },
+        {
+          "nummer": 14,
+          "nodeId": 95256,
+          "nodePortNummer": 2,
+          "posisjon": 0.55670072
+        },
+        {
+          "nummer": 15,
+          "nodeId": 95265,
+          "nodePortNummer": 2,
+          "posisjon": 0.5537019
+        },
+        {
+          "nummer": 16,
+          "nodeId": 95291,
+          "nodePortNummer": 2,
+          "posisjon": 0.49525201
+        },
+        {
+          "nummer": 31,
+          "nodeId": 1994036,
+          "nodePortNummer": 1,
+          "posisjon": 0.79068976
+        },
+        {
+          "nummer": 32,
+          "nodeId": 1994037,
+          "nodePortNummer": 1,
+          "posisjon": 0.86229721
+        },
+        {
+          "nummer": 33,
+          "nodeId": 2562432,
+          "nodePortNummer": 1,
+          "posisjon": 0.13471814
+        },
+        {
+          "nummer": 17,
+          "nodeId": 95310,
+          "nodePortNummer": 2,
+          "posisjon": 0.44018692
+        },
+        {
+          "nummer": 18,
+          "nodeId": 95314,
+          "nodePortNummer": 2,
+          "posisjon": 0.43169135
+        },
+        {
+          "nummer": 19,
+          "nodeId": 95348,
+          "nodePortNummer": 2,
+          "posisjon": 0.34994706
+        },
+        {
+          "nummer": 20,
+          "nodeId": 95461,
+          "nodePortNummer": 2,
+          "posisjon": 0.23536264
+        },
+        {
+          "nummer": 21,
+          "nodeId": 95468,
+          "nodePortNummer": 2,
+          "posisjon": 0.22918293
+        },
+        {
+          "nummer": 22,
+          "nodeId": 95598,
+          "nodePortNummer": 2,
+          "posisjon": 0.12404743
+        },
+        {
+          "nummer": 23,
+          "nodeId": 95615,
+          "nodePortNummer": 2,
+          "posisjon": 0.10559111
+        },
+        {
+          "nummer": 24,
+          "nodeId": 95648,
+          "nodePortNummer": 2,
+          "posisjon": 0.07149621
+        },
+        {
+          "nummer": 25,
+          "nodeId": 95690,
+          "nodePortNummer": 3,
+          "posisjon": 0.0109957
+        },
+        {
+          "nummer": 27,
+          "nodeId": 2852835,
+          "nodePortNummer": 1,
+          "posisjon": 0.865992
+        },
+        {
+          "nummer": 26,
+          "nodeId": 2852836,
+          "nodePortNummer": 1,
+          "posisjon": 0.87598373
+        },
+        {
+          "nummer": 44,
+          "nodeId": 3938327,
+          "nodePortNummer": 1,
+          "posisjon": 0.45150214
+        },
+        {
+          "nummer": 45,
+          "nodeId": 3938325,
+          "nodePortNummer": 1,
+          "posisjon": 0.15844757
+        },
+        {
+          "nummer": 46,
+          "nodeId": 3938380,
+          "nodePortNummer": 1,
+          "posisjon": 0.62325088
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 44,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-08-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 45,
+          "sluttport": 53,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (273342.506 7040919.627 73.17, 273327.5 7040903.4 74.536, 273309.3 7040884.4 75.236, 273294.214050293 7040868.80082703 75.836)",
+            "srid": 5973,
+            "lengde": 70.17285854294082,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 70.1728585456581,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 52,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-08-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 53,
+          "sluttport": 54,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (273294.214050293 7040868.80082703 75.836, 273277.7 7040851.3 76.636, 273266.1 7040839 76.936, 273261.383247346 7040834.13351078 77.133165966308)",
+            "srid": 5973,
+            "lengde": 47.76539481306393,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 47.765394811653,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 53,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 54,
+          "sluttport": 21,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (273261.383247346 7040834.13351078 77.133165966308, 273254.2 7040826.6 77.436, 273239.5 7040811 78.136, 273229.5 7040799.9 78.636)",
+            "srid": 5973,
+            "lengde": 46.80846092310834,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 46.8084609217609,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 2,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-12-21",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 25,
+          "sluttport": 51,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (273550.4 7041187.8 61.636, 273544.2 7041173.7 62.136, 273538.510343435 7041158.50048889 63.0300888887513)",
+            "srid": 5973,
+            "lengde": 31.665164474621697,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 31.6651644736693,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 50,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 51,
+          "sluttport": 41,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (273538.510343435 7041158.50048889 63.0300888887513, 273537.2 7041155 63.236, 273533.2 7041145.5 63.936, 273527.8 7041134.8 64.636, 273519.1 7041120.3 65.436, 273511.8 7041109.3 65.836, 273500.5 7041093 66.336, 273493 7041082.9 66.536, 273486.533 7041075.144 66.9)",
+            "srid": 5973,
+            "lengde": 98.74413250311343,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 98.7441325040658,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 8,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 19,
+          "sluttport": 52,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272992.3 7040650.1 84.936, 272983.6 7040640.6 85.136, 272978.2 7040633.6 85.436, 272973.9 7040625.5 85.436, 272970 7040617 85.636, 272964.8 7040607.1 85.836, 272960 7040594.4 86.136, 272955.8 7040580 86.336, 272952.807693233 7040569.88600313 86.3958461353345)",
+            "srid": 5973,
+            "lengde": 90.56733532913458,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 90.5673353308546,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 51,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 52,
+          "sluttport": 18,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272952.807693233 7040569.88600313 86.3958461353345, 272950.8 7040563.1 86.436, 272947.2 7040550.4 86.836, 272942.6 7040535.4 87.436, 272938.4 7040520.5 88.137, 272932.2 7040500.7 88.937, 272928.5 7040487.2 89.637, 272926.8 7040478.4 89.937, 272925.2 7040474.2 90.237)",
+            "srid": 5973,
+            "lengde": 99.73171358008997,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 99.7317135783699,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 11,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 16,
+          "sluttport": 48,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272890.751 7040330.7 93.837, 272890.2 7040326.9 94.037, 272886.3 7040300.4 94.737, 272883.8 7040281.1 95.537, 272882.7 7040269.4 96.037, 272881.9 7040254.5 97.037, 272881.4 7040248.6 97.237, 272880.1 7040239.9 97.837, 272878.941499835 7040234.46953048 98.2714375617054)",
+            "srid": 5973,
+            "lengde": 97.14556479165093,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 97.1455647924621,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 47,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 48,
+          "sluttport": 29,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272878.941499835 7040234.46953048 98.2714375617054, 272878.5 7040232.4 98.437, 272875.6 7040222.4 99.337, 272873.91 7040218.91 99.457)",
+            "srid": 5973,
+            "lengde": 16.45291427394243,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 16.4529142731312,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 17,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 10,
+          "sluttport": 49,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272712.6 7039868.7 114.838, 272711.2 7039863 114.938, 272709.2 7039856.1 115.038, 272708.192488863 7039852.48481298 115.097265361003)",
+            "srid": 5973,
+            "lengde": 16.80839090267004,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 16.8083909035827,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 48,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 49,
+          "sluttport": 31,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272708.192488863 7039852.48481298 115.097265361003, 272707.5 7039850 115.138, 272702.7 7039832.1 115.138, 272696.9 7039811.2 115.438, 272689.9 7039784.1 115.638, 272685.3 7039765.1 115.838, 272681.3 7039747.7 115.938, 272679.2 7039734.8 116.038, 272678.1 7039725 116.238, 272677.2 7039714.4 116.138, 272676.8 7039704.5 116.438, 272677.044 7039696.971 116.438, 272677.251 7039694.626 116.438, 272677.736 7039691.357 116.44)",
+            "srid": 5973,
+            "lengde": 164.8752526064747,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 164.875252605562,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 34,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 35,
+          "sluttport": 50,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272663.925 7039601.563 116.91, 272660.02681315 7039596.09407917 117.412569391267)",
+            "srid": 5973,
+            "lengde": 6.734800052877453,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 6.73480005060868,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 49,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 50,
+          "sluttport": 32,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z (272660.02681315 7039596.09407917 117.412569391267, 272654.4 7039588.2 118.138, 272644.4 7039576.8 118.538, 272633.1 7039568 118.738, 272620.9 7039559.3 119.038, 272608.106 7039551.731 119.49)",
+            "srid": 5973,
+            "lengde": 69.07423406899802,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 69.0742340712668,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 16,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 11,
+          "sluttport": 36,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272746.017 7039969.203 113.238, 272743.737 7039963.963 113.338, 272741.228302002 7039957.31534576 113.45)",
+            "srid": 5973,
+            "lengde": 12.821571172196478,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 12.8215711687321,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 19,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 8,
+          "sluttport": 35,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272672 7039613.9 117.538, 272663.925140381 7039601.56295776 116.91)",
+            "srid": 5973,
+            "lengde": 14.758060614762423,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 14.758060611712,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 6,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 21,
+          "sluttport": 20,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273229.5 7040799.9 78.636, 273228.200195312 7040798.39990234 78.736, 273219.1 7040790 79.336)",
+            "srid": 5973,
+            "lengde": 14.3862739552901,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 14.386274102921,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 21,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 26,
+          "sluttport": 7,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272580.7 7039535.5 119.438, 272578.200195313 7039534 119.438, 272562.899902344 7039525.70019531 119.638, 272536.700195313 7039508.5 119.938, 272532.7 7039506.2 119.938)",
+            "srid": 5973,
+            "lengde": 56.2798651670011,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 56.2798651669322,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 22,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 7,
+          "sluttport": 6,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272532.7 7039506.2 119.938, 272521.200195313 7039499.60009766 119.938, 272513.200195313 7039494.5 120.138, 272504.8 7039488.4 120.138)",
+            "srid": 5973,
+            "lengde": 33.1300296984024,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 33.1300296985118,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 23,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 6,
+          "sluttport": 5,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272504.8 7039488.4 120.138, 272501.200195313 7039485.79980469 120.138, 272496.2 7039481.8 120.138)",
+            "srid": 5973,
+            "lengde": 10.8438314348597,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 10.8438314348597,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 24,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 5,
+          "sluttport": 4,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272496.2 7039481.8 120.138, 272491.899902344 7039478.29980469 120.138, 272485.200195313 7039471.70019531 120.338, 272481.5 7039467.29980469 119.938, 272473.799804688 7039458.5 120.138, 272472.399902344 7039456.5 120.138, 272465.899902344 7039447.60009766 120.138, 272461.899902344 7039440.20019531 120.238, 272461.2 7039438.8 120.238)",
+            "srid": 5973,
+            "lengde": 55.848931312475,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 55.8489313125244,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 33,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": true,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 34,
+          "sluttport": 2,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272404.5 7039327.89990234 122.839, 272399.8 7039321.6 123.239)",
+            "srid": 5973,
+            "lengde": 7.870118772842761,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7012,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 7.87011877284276,
+          "feltoversikt": []
+        },
+        {
+          "nummer": 25,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-01-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 4,
+          "sluttport": 47,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272461.2 7039438.8 120.238, 272454.3 7039426.3 120.438, 272447 7039411.2 120.438, 272437.8 7039391.9 120.738, 272435.434875488 7039386.85403442 120.079)",
+            "srid": 5973,
+            "lengde": 58.04564247926353,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 58.0456424757911,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 46,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 47,
+          "sluttport": 3,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272435.434875488 7039386.85403442 120.079, 272429.7 7039374.6 121.039, 272422.8 7039361.5 121.639, 272417.182 7039350.003 122.239)",
+            "srid": 5973,
+            "lengde": 41.19211757119919,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 41.1921175746879,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 26,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-01-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 3,
+          "sluttport": 28,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272417.182 7039350.003 122.239, 272411.423278809 7039338.39657593 122.499472398809, 272410.265777588 7039336.33612061 122.539, 272408.360046387 7039333.66558838 123.056839821005)",
+            "srid": 5973,
+            "lengde": 18.644212173290683,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7012,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 18.6442121745379,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 27,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 28,
+          "sluttport": 34,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272408.360046387 7039333.66558838 123.056839821005, 272404.5 7039327.9 122.839)",
+            "srid": 5973,
+            "lengde": 6.94186010078748,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7012,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 6.94186009985214,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 30,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 31,
+          "sluttport": 9,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272677.735992432 7039691.35748291 116.44, 272678.9 7039685.3 116.438, 272679.9 7039678.8 116.638, 272680.1 7039677.5 116.638, 272680.8 7039670.2 116.738, 272681.1 7039667.7 116.738, 272681 7039658 116.838, 272680.765106201 7039651.08676147 116.838)",
+            "srid": 5973,
+            "lengde": 40.53347682868527,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 40.5334768240913,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 18,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2025-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 9,
+          "sluttport": 8,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272680.765106201 7039651.08676147 116.838, 272680.517822266 7039648.34719849 116.838, 272679.4 7039637.8 117.138, 272676.4 7039626.3 117.238, 272672 7039613.9 117.538)",
+            "srid": 5973,
+            "lengde": 38.4074228042855,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 38.4074228089407,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 45,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 46,
+          "sluttport": 37,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272783.834 7040059.914 110.81, 272777.3 7040045.3 111.437, 272772.3 7040032.8 111.937, 272767.2 7040021.3 112.237, 272760.9 7040006.1 112.637, 272759.1 7040001.8 112.637, 272757.296 7039997.252 112.737, 272754.83001709 7039991.53735924 112.81)",
+            "srid": 5973,
+            "lengde": 74.31483097295362,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 74.3148309755879,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 36,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 37,
+          "sluttport": 12,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272754.83001709 7039991.53735924 112.81, 272753.511 7039988.135 112.837, 272751.567 7039983.337 112.937)",
+            "srid": 5973,
+            "lengde": 8.82702102069202,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 8.82702101802392,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 9,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 18,
+          "sluttport": 39,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272925.2 7040474.2 90.237, 272922 7040464.9 89.907, 272921.335494995 7040463.01782227 89.8395333827383)",
+            "srid": 5973,
+            "lengde": 11.837851709213437,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 11.8378360052095,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 35,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 36,
+          "sluttport": 10,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272741.228302002 7039957.31534576 113.45, 272739.6 7039953 113.538, 272738.1 7039949.2 113.538, 272731.5 7039930.7 113.938, 272726.2 7039912.9 114.238, 272720.3 7039894.6 114.438, 272716.8 7039883.4 114.738, 272715.9 7039879.9 114.738, 272713.8 7039872.4 114.838, 272712.6 7039868.7 114.838)",
+            "srid": 5973,
+            "lengde": 93.17862527660648,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 93.1786252800707,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 13,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 14,
+          "sluttport": 30,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272858 7040194.8 101.337, 272854.049 7040190.464 101.667, 272850.115127563 7040185.96487427 101.997)",
+            "srid": 5973,
+            "lengde": 11.86090366451114,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 11.8609036663052,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 29,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 30,
+          "sluttport": 38,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272850.115127563 7040185.96487427 101.997, 272846.6 7040180.9 102.337, 272844.234832764 7040177.1907959 102.619569850059)",
+            "srid": 5973,
+            "lengde": 10.582698721676508,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 10.5826987214045,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 37,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 38,
+          "sluttport": 13,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272844.234832764 7040177.1907959 102.619569850059, 272842.3 7040174.3 102.737, 272840.6 7040171.6 102.937, 272839 7040169.1 103.137, 272832.5 7040158.8 104.037, 272830.8 7040155.9 104.237, 272829.3 7040153.5 104.337, 272823.7 7040143.8 105.137, 272822.1 7040141 105.237, 272820.5 7040137.7 105.637, 272814.6 7040126.4 106.637, 272813.4 7040123.9 106.837, 272812.3 7040121.6 107.037, 272811.2 7040119.1 107.237, 272805.5 7040108.2 108.037, 272804.7 7040106.4 108.137, 272802.9 7040102.5 108.537)",
+            "srid": 5973,
+            "lengde": 85.68464119389502,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 85.6846411921538,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 15,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 12,
+          "sluttport": 11,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272751.566894531 7039983.33693504 112.937, 272749.861785889 7039979.21974373 112.937, 272748.91847229 7039976.53948975 113.038, 272748.015914917 7039974.24076653 113.138, 272746.017181396 7039969.2025528 113.238)",
+            "srid": 5973,
+            "lengde": 15.192213927531087,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 15.1922139352705,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 14,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 13,
+          "sluttport": 46,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272802.9 7040102.5 108.537, 272794.5 7040084 109.437, 272786.6 7040066.1 110.537, 272783.834 7040059.914 110.81)",
+            "srid": 5973,
+            "lengde": 46.716064624147535,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 46.7160646241238,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 20,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 27,
+          "sluttport": 26,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272600.8 7039547.2 119.338, 272592.899902344 7039542.39990234 119.438, 272580.7 7039535.5 119.438)",
+            "srid": 5973,
+            "lengde": 23.2605211612462,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "medium": 2,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 23.2605211282621,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 28,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 29,
+          "sluttport": 15,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272873.91003418 7040218.90997315 99.457, 272869.100097656 7040207.29980469 100.537, 272863.252029419 7040199.3815918 100.837)",
+            "srid": 5973,
+            "lengde": 22.4616501092193,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 22.4616501092193,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 10,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 17,
+          "sluttport": 44,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272919.371963501 7040455.1920166 90.937, 272915.855926514 7040442.26800537 91.437, 272912.42 7040429.994 90.95)",
+            "srid": 5973,
+            "lengde": 26.1582356364799,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 26.1582356382717,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 43,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 44,
+          "sluttport": 16,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272912.42 7040429.994 90.95, 272906.367935181 7040407.58404541 92.537, 272901.535934448 7040386.80404663 93.137, 272896.991943359 7040365.06802368 93.337, 272893.676971436 7040347.74298096 93.837, 272892.007972717 7040338.19992065 93.937, 272890.751 7040330.7 93.837)",
+            "srid": 5973,
+            "lengde": 101.75664824818766,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 101.756648248201,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 12,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 15,
+          "sluttport": 14,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272863.252029419 7040199.3815918 100.837, 272861.200195312 7040197.30029297 101.137, 272858 7040194.8 101.337)",
+            "srid": 5973,
+            "lengde": 7.00404158517287,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 7.00404173523749,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 31,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 32,
+          "sluttport": 27,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272608.106414795 7039551.73071289 119.49, 272600.8 7039547.2 119.338)",
+            "srid": 5973,
+            "lengde": 8.59849088220624,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 8.59848688952079,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 42,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 43,
+          "sluttport": 25,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273561.193206787 7041202.62167358 59.45, 273558.5 7041199.9 59.905, 273555 7041194.4 60.68, 273550.4 7041187.8 61.636)",
+            "srid": 5973,
+            "lengde": 18.52247495290726,
+            "datafangstdato": "2003-07-14",
+            "temakode": 7012,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 60,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 200,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "gen"
+            }
+          },
+          "lengde": 18.5224749556181,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-19",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 1,
+          "sluttport": 43,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273566.2 7041207.7 60.136, 273561.193206787 7041202.62167358 59.45)",
+            "srid": 5973,
+            "lengde": 7.164354367649631,
+            "datafangstdato": "2003-07-14",
+            "temakode": 7012,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 60,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 200,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "gen"
+            }
+          },
+          "lengde": 7.16435436492767,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 7,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-04-19",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 20,
+          "sluttport": 40,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273219.1 7040790 79.336, 273198.3 7040775.7 79.736, 273184.4 7040767.5 79.736, 273168.5 7040758.4 79.836, 273145.9 7040745.2 80.036, 273129.6 7040735.9 80.236, 273111 7040724.9 80.836, 273094 7040715 81.436, 273082.5 7040708.2 81.936, 273070.2 7040700.8 82.336, 273058 7040693.7 82.736, 273044 7040685.3 83.236, 273029.5 7040676.5 83.836, 273021.7 7040671.2 84.336, 273012.7 7040665 84.536, 273005.9 7040660 84.736, 273001.532 7040657.077 84.15)",
+            "srid": 5973,
+            "lengde": 255.2056841197082,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 255.205684119193,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 39,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 40,
+          "sluttport": 19,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273001.532 7040657.077 84.15, 272996.2 7040653.2 84.936, 272992.3 7040650.1 84.936)",
+            "srid": 5973,
+            "lengde": 11.62118046330875,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 11.6211804638526,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 40,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-12-21",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 41,
+          "sluttport": 24,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273486.532653809 7041075.14399719 66.9, 273484.639190674 7041072.69865417 66.9864527464978, 273483.149981035 7041070.64593729 67.027610894738, 273481.580255638 7041068.39197262 67.0896907487013, 273480.477996826 7041066.66162109 67.136)",
+            "srid": 5973,
+            "lengde": 10.429816141334253,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 10.4298161402059,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 3,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-12-21",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 24,
+          "sluttport": 42,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273480.477996826 7041066.66162109 67.136, 273479.165313721 7041064.50790405 67.1646940111864, 273478.179168701 7041062.95830536 67.208979436082, 273477.037139893 7041061.43962479 67.236, 273475.925231934 7041060.06035233 67.103733352789, 273472.291 7041055.922 66.622)",
+            "srid": 5973,
+            "lengde": 13.565254018675574,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 13.5652540221573,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 41,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-12-21",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 42,
+          "sluttport": 23,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273472.291 7041055.922 66.622, 273470.8 7041054.3 66.791, 273463.3 7041046.2 67.639, 273460.21862793 7041043.54891968 67.9590852063832, 273457.271118164 7041041.1590538 68.2172621087871, 273454.642364502 7041038.79577637 68.536, 273445.3 7041028.9 69.136, 273436.1 7041019.2 69.936, 273434.5 7041017.6 70.136, 273433.3 7041016.4 70.136, 273425.6 7041009.7 70.136)",
+            "srid": 5973,
+            "lengde": 65.90192486756689,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 65.9019248675387,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 4,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 23,
+          "sluttport": 22,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273425.6 7041009.7 70.136, 273419.255279541 7041003.6246953 71.036, 273410.796478271 7040994.3517642 71.536, 273404.156524658 7040986.32944202 72.136, 273400.958831787 7040982.73175049 72.136, 273398.364 7040979.219 72.44)",
+            "srid": 5973,
+            "lengde": 41.01393109373779,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 41.0139310928709,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 5,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "1950-01-01",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 22,
+          "sluttport": 33,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273398.364 7040979.219 72.44, 273393.2 7040973.7 72.536, 273384.2 7040964.1 72.936, 273380.3 7040959.85 73.136)",
+            "srid": 5973,
+            "lengde": 26.495604612207433,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 26.4956046128874,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 32,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 33,
+          "sluttport": 45,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(273380.3 7040959.85 73.136, 273364 7040942.2 73.536, 273345.6 7040922.8 73.936, 273342.506 7040919.627 73.17)",
+            "srid": 5973,
+            "lengde": 55.267058163754704,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 55.2670581637547,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 38,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2024-11-03",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 39,
+          "sluttport": 17,
+          "kommune": 5001,
+          "geometri": {
+            "wkt": "LINESTRING Z(272921.335 7040463.018 89.84, 272919.371963501 7040455.1920166 90.937)",
+            "srid": 5973,
+            "lengde": 8.14266157228721,
+            "datafangstdato": "1993-04-24",
+            "temakode": 7001,
+            "kommune": 5001,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 36,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 8.142661570497,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 2327.97928790374,
+      "sistEndret": "2025-08-05T11:12:22.871228Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 2,
+    "sidestorrelse": 500
+  }
+}

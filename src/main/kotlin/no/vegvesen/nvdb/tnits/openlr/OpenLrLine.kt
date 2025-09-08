@@ -41,6 +41,7 @@ data class OpenLrLine private constructor(
     val frc: FunctionalRoadClass,
     val fow: FormOfWay,
     val cachedVegnett: CachedVegnett,
+    val tillattRetning: TillattRetning,
 ) : Line<OpenLrLine> {
     override fun getId(): String = id.toString()
 
@@ -48,9 +49,9 @@ data class OpenLrLine private constructor(
 
     override fun getEndNode(): Node = sluttnode
 
-    override fun getIncomingLines(): List<OpenLrLine> = cachedVegnett.getIncomingLines(startnode.id)
+    override fun getIncomingLines(): List<OpenLrLine> = cachedVegnett.getIncomingLines(startnode.id, tillattRetning)
 
-    override fun getOutgoingLines(): List<OpenLrLine> = cachedVegnett.getOutgoingLines(sluttnode.id)
+    override fun getOutgoingLines(): List<OpenLrLine> = cachedVegnett.getOutgoingLines(sluttnode.id, tillattRetning)
 
     override fun getFunctionalRoadClass(): FunctionalRoadClass = frc
 
@@ -60,19 +61,13 @@ data class OpenLrLine private constructor(
 
     override fun getLength(): Double = lengde
 
-    fun reverse(): OpenLrLine =
-        copy(
-            startnode = sluttnode,
-            sluttnode = startnode,
-            geometri = geometri.reverse() as LineString,
-        )
-
     companion object {
         fun fromVeglenke(
             veglenke: Veglenke,
             frc: FunctionalRoadClass,
             fow: FormOfWay,
             cachedVegnett: CachedVegnett,
+            tillattRetning: TillattRetning,
         ): OpenLrLine {
             val geometry = veglenke.geometri
 
@@ -80,20 +75,33 @@ data class OpenLrLine private constructor(
                 error("Expected LineString geometry, but got ${geometry.geometryType} for VeglenkeId: ${veglenke.veglenkeId}")
             }
 
-            val startNode = cachedVegnett.getNode(veglenke.startnode) { geometry.startPoint }
+            val startNode = cachedVegnett.getNode(veglenke.startnode, tillattRetning) { geometry.startPoint }
 
-            val endNode = cachedVegnett.getNode(veglenke.sluttnode) { geometry.endPoint }
+            val endNode = cachedVegnett.getNode(veglenke.sluttnode, tillattRetning) { geometry.endPoint }
 
             val line =
                 OpenLrLine(
                     id = veglenke.veglenkeId,
                     lengde = veglenke.lengde,
-                    startnode = startNode,
-                    sluttnode = endNode,
-                    geometri = geometry,
+                    startnode =
+                        when (tillattRetning) {
+                            TillattRetning.Med -> startNode
+                            TillattRetning.Mot -> endNode
+                        },
+                    sluttnode =
+                        when (tillattRetning) {
+                            TillattRetning.Med -> endNode
+                            TillattRetning.Mot -> startNode
+                        },
+                    geometri =
+                        when (tillattRetning) {
+                            TillattRetning.Med -> geometry
+                            TillattRetning.Mot -> geometry.reverse()
+                        },
                     frc = frc,
                     fow = fow,
                     cachedVegnett = cachedVegnett,
+                    tillattRetning = tillattRetning,
                 )
 
             return line
