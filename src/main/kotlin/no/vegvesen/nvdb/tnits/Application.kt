@@ -27,7 +27,7 @@ suspend fun main() {
         println("Veglenkesekvenser-innstillinger nullstilt. Backfill vil starte på nytt.")
     }
 
-    val vegobjektTyper = listOf(105, 821)
+    val vegobjektTyper = listOf(105, 821, 616)
 
     coroutineScope {
         launch {

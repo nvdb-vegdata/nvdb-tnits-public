@@ -5,7 +5,6 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.RocksDBException
-import java.nio.ByteBuffer
 
 @OptIn(ExperimentalSerializationApi::class)
 class VeglenkerRocksDbStore(
@@ -77,10 +76,10 @@ class VeglenkerRocksDbStore(
             updates.map { (id, veglenker) ->
                 val key = id.toByteArray()
                 if (veglenker == null) {
-                    RocksDbConfiguration.BatchOperation.Delete(key)
+                    BatchOperation.Delete(key)
                 } else {
                     val value = serializeVeglenker(veglenker)
-                    RocksDbConfiguration.BatchOperation.Put(key, value)
+                    BatchOperation.Put(key, value)
                 }
             }
 
@@ -102,11 +101,4 @@ class VeglenkerRocksDbStore(
 
     private fun deserializeVeglenker(data: ByteArray): List<Veglenke> =
         ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)
-
-    private fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(8).putLong(this).array()
-
-    private fun ByteArray.toLong(): Long {
-        require(size >= 8) { "ByteArray must be at least 8 bytes long" }
-        return ByteBuffer.wrap(this).getLong()
-    }
 }

@@ -35,4 +35,7 @@ data class Veglenke(
 ) {
     val veglenkeId: VeglenkeId
         get() = VeglenkeId(veglenkesekvensId, veglenkenummer)
+
+    val isTopLevel: Boolean
+        get() = detaljniva in setOf(Detaljniva.VEGTRASE, Detaljniva.VEGTRASE_OG_KJOREBANE)
 }

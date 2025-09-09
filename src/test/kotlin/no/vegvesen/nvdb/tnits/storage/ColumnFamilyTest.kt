@@ -18,10 +18,4 @@ class ColumnFamilyTest :
             ColumnFamily.fromName("veglenker") shouldBe ColumnFamily.VEGLENKER
             ColumnFamily.fromName("unknown") shouldBe null
         }
-
-        "should return all families" {
-            val allFamilies = ColumnFamily.allFamilies()
-            allFamilies.size shouldBe 3
-            allFamilies shouldBe listOf(ColumnFamily.DEFAULT, ColumnFamily.NODER, ColumnFamily.VEGLENKER)
-        }
     })

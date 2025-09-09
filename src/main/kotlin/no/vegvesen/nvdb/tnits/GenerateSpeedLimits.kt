@@ -22,7 +22,7 @@ import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.nio.file.Files
 import kotlin.time.Instant
 import kotlin.time.measureTime
@@ -204,6 +204,22 @@ private fun XmlStreamDsl.writeSpeedLimit(speedLimit: SpeedLimit) {
                 }
             }
         }
+        for (locationReference in speedLimit.locationReferences) {
+            "locationReference" {
+                "OpenLRLocationReference" {
+                    "binaryLocationReference" {
+                        "BinaryLocationReference" {
+                            "base64String" {
+                                marshaller.marshallToBase64String(locationReference)
+                            }
+                            "openLRBinaryVersion" {
+                                attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -230,7 +246,7 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
         var totalCount = 0
         while (true) {
             val vegobjekter =
-                newSuspendedTransaction {
+                transaction {
                     Vegobjekter
                         .select(Vegobjekter.data)
                         .where {
@@ -288,11 +304,16 @@ fun generateSpeedLimitsSequential(): Flow<SpeedLimit> =
                     mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
                         ?: continue // Skip if we can't create geometry
 
+                val locationReferences =
+                    openLrService.toOpenLr(
+                        vegobjekt.getStedfestingLinjer().map { it.utstrekning },
+                    )
+
                 val speedLimit =
                     SpeedLimit(
                         id = vegobjekt.id,
                         kmh = kmh,
-                        locationReferences = emptyList(),
+                        locationReferences = locationReferences,
                         validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
                         validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
                         geometry = geometry,

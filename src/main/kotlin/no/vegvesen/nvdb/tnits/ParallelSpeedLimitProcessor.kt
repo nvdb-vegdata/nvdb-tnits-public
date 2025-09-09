@@ -244,10 +244,15 @@ class ParallelSpeedLimitProcessor(
             mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
                 ?: return null
 
+        val locationReferences =
+            openLrService.toOpenLr(
+                workItem.stedfestingLinjer.map { it.utstrekning },
+            )
+
         return SpeedLimit(
             id = workItem.id,
             kmh = workItem.kmh,
-            locationReferences = emptyList(),
+            locationReferences = locationReferences,
             validFrom = workItem.validFrom,
             validTo = workItem.validTo,
             geometry = geometry,

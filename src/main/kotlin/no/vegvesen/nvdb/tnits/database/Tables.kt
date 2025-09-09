@@ -10,7 +10,6 @@ import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 
 object Vegobjekter : Table("vegobjekter") {
     val vegobjektId = long("vegobjekt_id")
-    val vegobjektVersjon = integer("vegobjekt_versjon")
     val vegobjektType = integer("vegobjekt_type")
     val data = jacksonJsonb<Vegobjekt>("data")
     val sistEndret = timestampWithTimeZone("sist_endret")
@@ -24,21 +23,14 @@ object Vegobjekter : Table("vegobjekter") {
 }
 
 object Stedfestinger : Table("vegobjekter_stedfestinger") {
-    val vegobjektId = long("vegobjekt_id")
+    val vegobjektId = long("vegobjekt_id").references(Vegobjekter.vegobjektId, onDelete = ReferenceOption.CASCADE)
     val vegobjektType = integer("vegobjekt_type")
     val veglenkesekvensId = long("veglenkesekvens_id")
-    val startposisjon = decimal("startposisjon", precision = 9, scale = 8)
-    val sluttposisjon = decimal("sluttposisjon", precision = 9, scale = 8)
+    val startposisjon = double("startposisjon")
+    val sluttposisjon = double("sluttposisjon")
     val retning = enumeration<Retning>("retning").nullable()
     val sideposisjon = enumeration<Sideposisjon>("sideposisjon").nullable()
     val kjorefelt = jacksonJsonb<List<String>>("kjorefelt")
-
-    val vegobjektFk =
-        foreignKey(
-            vegobjektId,
-            target = Vegobjekter.primaryKey,
-            onDelete = ReferenceOption.CASCADE,
-        )
 
     init {
         index(isUnique = false, veglenkesekvensId)

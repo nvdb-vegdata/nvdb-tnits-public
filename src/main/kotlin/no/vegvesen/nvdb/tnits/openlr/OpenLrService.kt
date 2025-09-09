@@ -28,15 +28,14 @@ class OpenLrService(
         posisjon: Double,
         isStart: Boolean,
     ): Double {
-        require(posisjon in veglenke.startposisjon..veglenke.sluttposisjon) {
-            "Posisjon $posisjon er utenfor veglenke ${veglenke.veglenkeId} som går fra ${veglenke.startposisjon} til ${veglenke.sluttposisjon}"
-        }
-        if (isStart && posisjon == veglenke.startposisjon || !isStart && posisjon == veglenke.sluttposisjon) {
+        val clamped = if (isStart) maxOf(veglenke.startposisjon, posisjon) else minOf(veglenke.sluttposisjon, posisjon)
+
+        if (isStart && clamped == veglenke.startposisjon || !isStart && clamped == veglenke.sluttposisjon) {
             return 0.0
         }
 
         val posisjonRelativeToVeglenke =
-            (posisjon - veglenke.startposisjon) / (veglenke.sluttposisjon - veglenke.startposisjon)
+            (clamped - veglenke.startposisjon) / (veglenke.sluttposisjon - veglenke.startposisjon)
 
         val offset =
             if (isStart) {
@@ -68,59 +67,98 @@ class OpenLrService(
                     it.utstrekning.overlaps(stedfesting)
                 }
 
-            createPath(veglenker, stedfesting, TillattRetning.Med)?.let {
-                forwardPaths.add(it)
-            }
-            createPath(veglenker, stedfesting, TillattRetning.Mot)?.let {
-                reversePaths.add(it)
-            }
+            createPaths(veglenker, stedfesting, TillattRetning.Med).let(forwardPaths::addAll)
+            createPaths(veglenker, stedfesting, TillattRetning.Mot).let(reversePaths::addAll)
         }
 
         return listOfNotNull(forwardPaths.ifEmpty { null }, reversePaths.asReversed().ifEmpty { null })
     }
 
-    private fun createPath(
+    private fun createPaths(
         veglenker: List<Veglenke>,
         stedfesting: StedfestingUtstrekning,
         retning: TillattRetning,
-    ): Path<OpenLrLine>? {
+    ): List<Path<OpenLrLine>> {
         val directed =
             veglenker.filter {
                 cachedVegnett.hasRetning(it, retning)
             }
 
         if (directed.isEmpty()) {
-            return null
+            return emptyList()
         }
 
-        directed.forEachIndexed { i, veglenke ->
-            check(i == 0 || (veglenke.geometri as LineString).startPoint == (directed[i - 1].geometri as LineString).endPoint) {
-                "Veglenker er ikke sammenhengende i retning for stedfesting $stedfesting"
+        // Group veglenker by connectivity
+        val connectedGroups = groupConnectedVeglenker(directed)
+
+        val paths = mutableListOf<Path<OpenLrLine>>()
+
+        for (group in connectedGroups) {
+            if (group.isEmpty()) continue
+
+            val lines =
+                cachedVegnett.getLines(
+                    group.let {
+                        if (retning == TillattRetning.Med) it else it.asReversed()
+                    },
+                    retning,
+                )
+
+            // Find offsets for this connected group (direction-agnostic)
+            val positiveOffset = findOffsetInMeters(group.first(), stedfesting.startposisjon, true)
+            val negativeOffset = findOffsetInMeters(group.last(), stedfesting.sluttposisjon, false)
+
+            val path =
+                pathFactory.create(
+                    lines,
+                    when (retning) {
+                        TillattRetning.Med -> positiveOffset
+                        TillattRetning.Mot -> negativeOffset
+                    },
+                    when (retning) {
+                        TillattRetning.Med -> negativeOffset
+                        TillattRetning.Mot -> positiveOffset
+                    },
+                )
+
+            paths.add(path)
+        }
+
+        return paths
+    }
+
+    private fun groupConnectedVeglenker(veglenker: List<Veglenke>): List<List<Veglenke>> {
+        if (veglenker.isEmpty()) return emptyList()
+
+        val groups = mutableListOf<List<Veglenke>>()
+        val currentGroup = mutableListOf<Veglenke>()
+
+        veglenker.forEachIndexed { i, veglenke ->
+            if (i == 0) {
+                currentGroup.add(veglenke)
+            } else {
+                val previous = veglenker[i - 1]
+                val previousEnd = (previous.geometri as LineString).endPoint
+                val currentStart = (veglenke.geometri as LineString).startPoint
+
+                if (previousEnd == currentStart) {
+                    // Connected - add to current group
+                    currentGroup.add(veglenke)
+                } else {
+                    // Not connected - finish current group and start new one
+                    groups.add(currentGroup.toList())
+                    currentGroup.clear()
+                    currentGroup.add(veglenke)
+                }
             }
         }
 
-        val lines =
-            cachedVegnett.getLines(
-                directed.let {
-                    if (retning == TillattRetning.Med) it else it.asReversed()
-                },
-                retning,
-            )
+        // Add the final group
+        if (currentGroup.isNotEmpty()) {
+            groups.add(currentGroup.toList())
+        }
 
-        val positiveOffset = findOffsetInMeters(veglenker.first(), stedfesting.startposisjon, true)
-        val negativeOffset = findOffsetInMeters(veglenker.last(), stedfesting.sluttposisjon, false)
-
-        return pathFactory.create(
-            lines,
-            when (retning) {
-                TillattRetning.Med -> positiveOffset
-                TillattRetning.Mot -> negativeOffset
-            },
-            when (retning) {
-                TillattRetning.Med -> negativeOffset
-                TillattRetning.Mot -> positiveOffset
-            },
-        )
+        return groups
     }
 
     private fun mergeConnectedPaths(paths: List<Path<OpenLrLine>>): MutableList<Path<OpenLrLine>> {

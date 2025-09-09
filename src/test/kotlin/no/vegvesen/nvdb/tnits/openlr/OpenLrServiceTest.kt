@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.openlr
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.apiles.uberiket.Retning
@@ -109,6 +110,35 @@ class OpenLrServiceTest :
                     listOf(
                         "Cwd3py0adgMIBgKc/4UDGg==",
                         "Cwd43i0aPQMaBv1kAHsDCA==",
+                    )
+            }
+        }
+
+        "should handle speed limits with gaps in veglenkesekvens" {
+            withTempDb { config ->
+                // Arrange
+                val openLrService =
+                    setupOpenLrService(
+                        config,
+                        "veglenkesekvens-365652.json",
+                    )
+                val stedfestinger = loadStedfestinger("speedlimit-78712521-v1.json")
+
+                // Act
+                val openLrReferences = openLrService.toOpenLr(stedfestinger)
+                val binary = openLrReferences.map(marshaller::marshallToBase64String)
+
+                // Assert
+                openLrReferences shouldHaveSize 3
+                openLrReferences.shouldForAll {
+                    it.relativeNegativeOffset shouldBe 0
+                    it.relativePositiveOffset shouldBe 0
+                }
+                binary shouldBe
+                    listOf(
+                        "CwOZ4iuf5gMeAP/dACwDDg==",
+                        "CwOZwiugDQMCBgI7AKEDFw==",
+                        "CwOazCugWAMXCP4K/wsDHg==",
                     )
             }
         }

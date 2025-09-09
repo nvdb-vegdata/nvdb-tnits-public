@@ -6,6 +6,7 @@ enum class ColumnFamily(
     DEFAULT("default"),
     NODER("noder"),
     VEGLENKER("veglenker"),
+    FELTSTREKNINGER("feltstrekninger"),
     ;
 
     companion object {

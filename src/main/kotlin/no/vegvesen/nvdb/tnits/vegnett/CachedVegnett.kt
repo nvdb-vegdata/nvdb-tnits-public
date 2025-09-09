@@ -1,15 +1,24 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
+import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
+import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.database.Stedfestinger
+import no.vegvesen.nvdb.tnits.database.Vegobjekter
+import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
 import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
 import no.vegvesen.nvdb.tnits.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.openlr.toFormOfWay
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.locationtech.jts.geom.Point
 import org.openlr.map.FunctionalRoadClass
 import java.util.concurrent.ConcurrentHashMap
+
+const val FeltoversiktIVeglenkeretning = "5528"
 
 class CachedVegnett(
     private val veglenkerRepository: VeglenkerRepository,
@@ -40,6 +49,24 @@ class CachedVegnett(
         )
     }
 
+    fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> =
+        transaction {
+            val feltstrekning =
+                Vegobjekter
+                    .innerJoin(Stedfestinger)
+                    .select(Vegobjekter.data)
+                    .where {
+                        (Vegobjekter.vegobjektType eq 616) and
+                            (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
+                            (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
+                            (Stedfestinger.startposisjon less veglenke.sluttposisjon)
+                    }.limit(1)
+                    .map { it[Vegobjekter.data] }
+                    .first()
+
+            (feltstrekning.egenskaper!![FeltoversiktIVeglenkeretning] as TekstEgenskap).verdi.split("#")
+        }
+
     @Synchronized
     fun initialize() {
         if (initialized) return
@@ -48,35 +75,47 @@ class CachedVegnett(
         veglenkerLookup.forEach { (_, veglenker) ->
             veglenker
                 .filter {
-                    it.detaljniva in setOf(Detaljniva.VEGTRASE, Detaljniva.VEGTRASE_OG_KJOREBANE)
+                    it.isRelevant()
                 }.forEach { veglenke ->
 
                     val feltoversikt =
                         if (veglenke.konnektering) {
                             findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
+                                ?: findFeltoversiktFromFeltstrekning(veglenke)
                         } else {
                             veglenke.feltoversikt
                         }
 
-                    check(feltoversikt != null && feltoversikt.isNotEmpty()) {
-                        "Mangler feltoversikt for veglenke ${veglenke.veglenkeId}"
-                    }
-
-                    val tillattRetning = getTillattRetning(feltoversikt)
-
-                    tillattRetningByVeglenke[veglenke] = tillattRetning
-
-                    if (TillattRetning.Med in tillattRetning) {
-                        outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
-                        incomingVeglenkerForward.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }.add(veglenke)
-                    }
-                    if (TillattRetning.Mot in tillattRetning) {
-                        outgoingVeglenkerReverse.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }.add(veglenke)
-                        incomingVeglenkerReverse.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
-                    }
+                    addVeglenke(veglenke, feltoversikt)
                 }
         }
         initialized = true
+    }
+
+    private fun addVeglenke(
+        veglenke: Veglenke,
+        feltoversikt: List<String>,
+    ) {
+        val tillattRetning = getTillattRetning(feltoversikt)
+
+        tillattRetningByVeglenke[veglenke] = tillattRetning
+
+        if (TillattRetning.Med in tillattRetning) {
+            outgoingVeglenkerForward
+                .computeIfAbsent(veglenke.startnode) { mutableSetOf() }
+                .add(veglenke)
+            incomingVeglenkerForward
+                .computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }
+                .add(veglenke)
+        }
+        if (TillattRetning.Mot in tillattRetning) {
+            outgoingVeglenkerReverse
+                .computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }
+                .add(veglenke)
+            incomingVeglenkerReverse
+                .computeIfAbsent(veglenke.startnode) { mutableSetOf() }
+                .add(veglenke)
+        }
     }
 
     private fun getTillattRetning(feltoversikt: List<String>): Set<TillattRetning> {
@@ -104,9 +143,24 @@ class CachedVegnett(
     fun getVeglenker(veglenkesekvensId: Long): List<Veglenke> {
         initialize()
         return veglenkerLookup[veglenkesekvensId]?.filter {
-            it.detaljniva in setOf(Detaljniva.VEGTRASE_OG_KJOREBANE, Detaljniva.VEGTRASE)
+            it.isRelevant()
         } ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
     }
+
+    fun Veglenke.isRelevant(): Boolean =
+        isTopLevel &&
+            typeVeg in
+            setOf(
+                TypeVeg.KANALISERT_VEG,
+                TypeVeg.ENKEL_BILVEG,
+                TypeVeg.GATETUN,
+                TypeVeg.RAMPE,
+                TypeVeg.RUNDKJORING,
+                TypeVeg.TRAKTORVEG,
+                TypeVeg.GAGATE,
+            ) &&
+            startdato <= today &&
+            (sluttdato == null || sluttdato > today)
 
     fun getOutgoingVeglenker(
         nodeId: Long,
@@ -157,16 +211,21 @@ class CachedVegnett(
     ): OpenLrNode {
         require(initialized)
         return nodes.computeIfAbsent(nodeId) {
+            val incomingVeglenker = getIncomingVeglenker(nodeId, retning)
+            val outgoingVeglenker = getOutgoingVeglenker(nodeId, retning)
             OpenLrNode(
                 id = nodeId,
-                valid = getIncomingVeglenker(nodeId, retning).size + getOutgoingVeglenker(nodeId, retning).size != 2,
+                valid =
+                    incomingVeglenker.size + outgoingVeglenker.size != 2 ||
+                        incomingVeglenker.size == 1 &&
+                        outgoingVeglenker.size == 1 &&
+                        incomingVeglenker.first().lengde > 100 &&
+                        outgoingVeglenker.first().lengde > 100,
                 point = getPoint(),
             )
         }
     }
 
-    // TODO: Add lines with reversed geometry and start/end nodes for bidirectional veglenker
-    // (check feltoversikt or superstedfesting.kjorefelt - odd numbers are in geometric direction)
     fun getLines(
         veglenker: List<Veglenke>,
         retning: TillattRetning,

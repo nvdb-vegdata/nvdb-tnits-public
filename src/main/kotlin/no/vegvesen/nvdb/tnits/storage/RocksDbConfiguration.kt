@@ -249,19 +249,7 @@ open class RocksDbConfiguration(
             WriteOptions().use { writeOpts ->
                 db.write(writeOpts, writeBatch)
             }
-
         }
-    }
-
-    sealed class BatchOperation {
-        class Put(
-            val key: ByteArray,
-            val value: ByteArray,
-        ) : BatchOperation()
-
-        class Delete(
-            val key: ByteArray,
-        ) : BatchOperation()
     }
 
     override fun close() {
@@ -283,4 +271,15 @@ open class RocksDbConfiguration(
             options.close()
         }
     }
+}
+
+sealed class BatchOperation {
+    class Put(
+        val key: ByteArray,
+        val value: ByteArray,
+    ) : BatchOperation()
+
+    class Delete(
+        val key: ByteArray,
+    ) : BatchOperation()
 }

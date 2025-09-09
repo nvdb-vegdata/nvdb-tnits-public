@@ -139,7 +139,6 @@ val MAX_DATE = LocalDate(9999, 12, 31)
 private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
     Vegobjekter.batchInsert(vegobjekter, shouldReturnGeneratedValues = false) { vegobjekt ->
         this[Vegobjekter.vegobjektId] = vegobjekt.id
-        this[Vegobjekter.vegobjektVersjon] = vegobjekt.versjon
         this[Vegobjekter.vegobjektType] = vegobjekt.typeId
         this[Vegobjekter.data] = vegobjekt
         this[Vegobjekter.sistEndret] = Clock.System.nowOffsetDateTime()
@@ -152,8 +151,8 @@ private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
         this[Stedfestinger.vegobjektId] = stedfesting.vegobjektId
         this[Stedfestinger.vegobjektType] = stedfesting.vegobjektType
         this[Stedfestinger.veglenkesekvensId] = stedfesting.veglenkesekvensId
-        this[Stedfestinger.startposisjon] = stedfesting.startposisjon.toBigDecimal()
-        this[Stedfestinger.sluttposisjon] = stedfesting.sluttposisjon.toBigDecimal()
+        this[Stedfestinger.startposisjon] = stedfesting.startposisjon
+        this[Stedfestinger.sluttposisjon] = stedfesting.sluttposisjon
         this[Stedfestinger.retning] = stedfesting.retning
         this[Stedfestinger.sideposisjon] = stedfesting.sideposisjon
         this[Stedfestinger.kjorefelt] = stedfesting.kjorefelt

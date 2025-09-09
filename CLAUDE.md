@@ -196,3 +196,4 @@ The console application includes interactive TN-ITS speed limit export and can b
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803/2?inkluder=alle to fetch a vegobjekt with a given type, id and version
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424 to fetch multiple veglenkesekvenser
 - Don't try to run tests with wildcards
+- test resources are to be placed in src/test/resources

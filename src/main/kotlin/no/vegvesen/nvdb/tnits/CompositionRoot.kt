@@ -9,12 +9,15 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
+import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
+import org.openlr.binary.BinaryMarshaller
+import org.openlr.binary.BinaryMarshallerFactory
 
 private fun ObjectMapper.initialize(): ObjectMapper =
     apply {
@@ -81,3 +84,7 @@ val veglenkerRepository: VeglenkerRepository =
     VeglenkerRocksDbStore(rocksDbConfiguration)
 
 val cachedVegnett = CachedVegnett(veglenkerRepository)
+
+val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
+
+val openLrService: OpenLrService = OpenLrService(cachedVegnett)
