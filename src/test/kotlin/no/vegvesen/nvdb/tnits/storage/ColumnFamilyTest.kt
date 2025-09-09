@@ -24,10 +24,4 @@ class ColumnFamilyTest :
             allFamilies.size shouldBe 3
             allFamilies shouldBe listOf(ColumnFamily.DEFAULT, ColumnFamily.NODER, ColumnFamily.VEGLENKER)
         }
-
-        "should return all family names" {
-            val allNames = ColumnFamily.allFamilyNames()
-            allNames.size shouldBe 3
-            allNames shouldBe listOf("default", "noder", "veglenker")
-        }
     })

@@ -4,21 +4,17 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
-import org.rocksdb.ColumnFamilyHandle
-import org.rocksdb.RocksDB
 import org.rocksdb.RocksDBException
-import org.rocksdb.WriteBatch
-import org.rocksdb.WriteOptions
 import java.nio.ByteBuffer
 
 @OptIn(ExperimentalSerializationApi::class)
 class VeglenkerRocksDbStore(
-    private val db: RocksDB,
-    private val columnFamily: ColumnFamilyHandle,
+    private val rocksDbConfig: RocksDbConfiguration,
+    private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER,
 ) : VeglenkerRepository {
     override fun get(veglenkesekvensId: Long): List<Veglenke>? {
         val key = veglenkesekvensId.toByteArray()
-        val value = db.get(columnFamily, key)
+        val value = rocksDbConfig.get(columnFamily, key)
 
         return value?.let { deserializeVeglenker(it) }
     }
@@ -28,9 +24,8 @@ class VeglenkerRocksDbStore(
             return emptyMap()
         }
 
-        val columnFamilyHandleList = veglenkesekvensIds.map { columnFamily }
         val keys = veglenkesekvensIds.map { it.toByteArray() }
-        val values = db.multiGetAsList(columnFamilyHandleList, keys)
+        val values = rocksDbConfig.batchGet(columnFamily, keys)
 
         val result = mutableMapOf<Long, List<Veglenke>>()
         veglenkesekvensIds.zip(values).forEach { (id, value) ->
@@ -45,7 +40,7 @@ class VeglenkerRocksDbStore(
     override fun getAll(): Map<Long, List<Veglenke>> {
         val result = mutableMapOf<Long, List<Veglenke>>()
 
-        db.newIterator(columnFamily).use { iterator ->
+        rocksDbConfig.newIterator(columnFamily).use { iterator ->
             iterator.seekToFirst()
             while (iterator.isValid) {
                 val key =
@@ -69,45 +64,38 @@ class VeglenkerRocksDbStore(
         val key = veglenkesekvensId.toByteArray()
         val value = serializeVeglenker(veglenker)
 
-        db.put(columnFamily, key, value)
+        rocksDbConfig.put(columnFamily, key, value)
     }
 
     override fun delete(veglenkesekvensId: Long) {
         val key = veglenkesekvensId.toByteArray()
-        db.delete(columnFamily, key)
+        rocksDbConfig.delete(columnFamily, key)
     }
 
     override fun batchUpdate(updates: Map<Long, List<Veglenke>?>) {
-        val writeBatch = WriteBatch()
-
-        try {
-            for ((id, veglenker) in updates) {
+        val operations =
+            updates.map { (id, veglenker) ->
                 val key = id.toByteArray()
                 if (veglenker == null) {
-                    writeBatch.delete(columnFamily, key)
+                    RocksDbConfiguration.BatchOperation.Delete(key)
                 } else {
                     val value = serializeVeglenker(veglenker)
-                    writeBatch.put(columnFamily, key, value)
+                    RocksDbConfiguration.BatchOperation.Put(key, value)
                 }
             }
 
-            WriteOptions().use { writeOpts ->
-                db.write(writeOpts, writeBatch)
-            }
-        } finally {
-            writeBatch.close()
-        }
+        rocksDbConfig.batchWrite(columnFamily, operations)
     }
 
     fun clear() {
         try {
-            db.deleteRange(columnFamily, ByteArray(0), ByteArray(8) { 0xFF.toByte() })
+            rocksDbConfig.deleteRange(columnFamily, ByteArray(0), ByteArray(8) { 0xFF.toByte() })
         } catch (e: RocksDBException) {
             throw RuntimeException("Failed to clear veglenker data", e)
         }
     }
 
-    override fun size(): Long = db.getProperty(columnFamily, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
+    override fun size(): Long = rocksDbConfig.getEstimatedKeys(columnFamily)
 
     private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray =
         ProtoBuf.encodeToByteArray(ListSerializer(Veglenke.serializer()), veglenker)

@@ -23,21 +23,13 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-veglenker-test").toString()
         configuration = RocksDbConfiguration(tempDir, enableCompression = true)
-        store =
-            VeglenkerRocksDbStore(
-                configuration.getDatabase(),
-                configuration.getVeglenkerColumnFamily(),
-            )
+        store = VeglenkerRocksDbStore(configuration)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {
         configuration.clear()
         // Recreate the store with fresh references after clearing
-        store =
-            VeglenkerRocksDbStore(
-                configuration.getDatabase(),
-                configuration.getVeglenkerColumnFamily(),
-            )
+        store = VeglenkerRocksDbStore(configuration)
     }
 
     override suspend fun afterSpec(spec: Spec) {

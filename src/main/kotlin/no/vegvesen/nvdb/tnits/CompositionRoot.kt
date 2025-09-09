@@ -78,9 +78,6 @@ val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
 val rocksDbConfiguration = RocksDbConfiguration()
 
 val veglenkerRepository: VeglenkerRepository =
-    VeglenkerRocksDbStore(
-        rocksDbConfiguration.getDatabase(),
-        rocksDbConfiguration.getVeglenkerColumnFamily(),
-    )
+    VeglenkerRocksDbStore(rocksDbConfiguration)
 
 val cachedVegnett = CachedVegnett(veglenkerRepository)

@@ -118,11 +118,7 @@ private fun setupOpenLrService(
     config: RocksDbConfiguration,
     vararg paths: String,
 ): OpenLrService {
-    val veglenkerStore =
-        VeglenkerRocksDbStore(
-            config.getDatabase(),
-            config.getVeglenkerColumnFamily(),
-        )
+    val veglenkerStore = VeglenkerRocksDbStore(config)
     val veglenkesekvenser =
         paths.flatMap { path ->
             objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser

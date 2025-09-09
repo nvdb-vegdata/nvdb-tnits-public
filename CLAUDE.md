@@ -97,7 +97,9 @@ Tests use Kotest 6.0 framework and can be run individually or as a suite. The ap
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlStreamDslTest.kt` - XML streaming DSL tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/GeometryHelpersTest.kt` - Geometry projection and transformation tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/CalculateIntersectingGeometryTest.kt` - Geometry intersection calculation tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/RocksDbVeglenkerStoreTest.kt` - RocksDB storage layer tests with Protocol Buffers serialization
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/VeglenkerRocksDbStoreTest.kt` - RocksDB storage layer tests with Protocol Buffers serialization
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/VeglenkerRocksDbStoreClearTest.kt` - RocksDB database clearing and reinitialization tests
+- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/RocksDbConfigurationTest.kt` - RocksDB configuration and wrapper method tests
 - `src/test/kotlin/no/vegvesen/nvdb/tnits/model/JtsGeometrySerializerTest.kt` - JTS geometry serialization tests
 
 The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
@@ -144,14 +146,28 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - **Batch Operations**: Optimized batch read/write operations for handling large datasets
 - **Bulk Loading**: Configured for high-throughput bulk data loading operations
 - **Thread Safety**: Safe for concurrent read operations across multiple threads
+- **Column Families**: Uses typed column families (DEFAULT, NODER, VEGLENKER) for logical data separation
+
+#### Storage Architecture:
+- `RocksDbConfiguration`: Encapsulates all RocksDB operations with wrapper methods
+- `VeglenkerRocksDbStore`: High-level storage implementation using RocksDbConfiguration
+- **Wrapper Methods**: All RocksDB operations go through type-safe wrapper methods that accept `ColumnFamily` enum
+- **Encapsulation**: Raw RocksDB and ColumnFamilyHandle instances are fully encapsulated
 
 #### Storage Interface:
-- `RocksDbVeglenkerStore`: Main storage implementation with embedded RocksDB
 - `get(veglenkesekvensId)`: Retrieve veglenker list for a specific sequence ID
-- `batchGet(ids)`: Efficient batch retrieval for multiple sequence IDs
+- `batchGet(ids)`: Efficient batch retrieval for multiple sequence IDs (eliminates multiGetAsList complexity)
 - `upsert(id, veglenker)`: Insert or update veglenker data
-- `batchUpdate(updates)`: Atomic batch updates with WriteBatch optimization
+- `batchUpdate(updates)`: Atomic batch updates using BatchOperation sealed class
 - `clear()`: Complete database reset and reinitialization
+
+#### RocksDbConfiguration Wrapper Methods:
+- `get(columnFamily, key)`: Single key retrieval
+- `put(columnFamily, key, value)`: Single key insertion/update
+- `batchGet(columnFamily, keys)`: Batch retrieval with simplified API
+- `batchWrite(columnFamily, operations)`: Type-safe batch operations using BatchOperation.Put/Delete
+- `newIterator(columnFamily)`: Iterator for full data traversal
+- `deleteRange(columnFamily, start, end)`: Range deletion operations
 
 ### Thread Safety
 
@@ -172,7 +188,11 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - **Embedded Storage**: RocksDB-based storage with LZ4 compression for optimal performance and data density
 - **Serialization**: Uses kotlinx.serialization with Protocol Buffers for type-safe, efficient binary serialization
 - **Storage Architecture**: Separates ephemeral road network data (RocksDB) from persistent application state (SQL database)
+- **RocksDB Encapsulation**: All RocksDB operations are encapsulated through wrapper methods in RocksDbConfiguration
+- **Type Safety**: Uses ColumnFamily enum instead of raw ColumnFamilyHandle instances for type-safe database operations
+- **Simplified API**: Complex operations like multiGetAsList are abstracted away with clean batchGet wrapper methods
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803/2?inkluder=alle to fetch a vegobjekt with a given type, id and version
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424 to fetch multiple veglenkesekvenser
+- Don't try to run tests with wildcards

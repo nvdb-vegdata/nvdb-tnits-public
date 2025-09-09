@@ -5,11 +5,15 @@ import java.io.File
 
 open class RocksDbConfiguration(
     protected val dbPath: String = "veglenker.db",
-    private val enableCompression: Boolean = true,
+    enableCompression: Boolean = true,
 ) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options
+    private lateinit var dbOptions: DBOptions
+    private lateinit var columnFamilyOptions: ColumnFamilyOptions
     private lateinit var columnFamilies: Map<ColumnFamily, ColumnFamilyHandle>
+
+    private val compression = if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION
 
     companion object {
         private var libraryLoaded = false
@@ -39,15 +43,15 @@ open class RocksDbConfiguration(
     private fun initialize() =
         try {
             options = createDatabaseOptions()
-            val columnFamilyOptions = createColumnFamilyOptions()
+            columnFamilyOptions = createColumnFamilyOptions()
 
             val existingColumnFamilyNames = detectExistingColumnFamilies(options)
 
             val columnFamilyDescriptors = createColumnFamilyDescriptors(existingColumnFamilyNames, columnFamilyOptions)
 
             val columnFamilyHandles = mutableListOf<ColumnFamilyHandle>()
-            val dbOptionsForOpening = DBOptions(options)
-            db = RocksDB.open(dbOptionsForOpening, dbPath, columnFamilyDescriptors, columnFamilyHandles)
+            dbOptions = DBOptions(options)
+            db = RocksDB.open(dbOptions, dbPath, columnFamilyDescriptors, columnFamilyHandles)
 
             columnFamilies = mapColumnFamilyHandles(db, columnFamilyHandles, columnFamilyOptions)
         } catch (e: RocksDBException) {
@@ -59,12 +63,12 @@ open class RocksDbConfiguration(
             prepareForBulkLoad()
             setCreateIfMissing(true)
             setCreateMissingColumnFamilies(true)
-            setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
+            setCompressionType(compression)
         }
 
     private fun createColumnFamilyOptions(): ColumnFamilyOptions =
         ColumnFamilyOptions().apply {
-            setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
+            setCompressionType(compression)
         }
 
     private fun detectExistingColumnFamilies(options: Options): Set<String> =
@@ -151,16 +155,6 @@ open class RocksDbConfiguration(
         columnFamilies[columnFamily]
             ?: throw IllegalArgumentException("Column family '${columnFamily.familyName}' not found")
 
-    fun getColumnFamily(name: String): ColumnFamilyHandle =
-        ColumnFamily.fromName(name)?.let { getColumnFamily(it) }
-            ?: throw IllegalArgumentException("Column family '$name' not found")
-
-    fun getDefaultColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.DEFAULT)
-
-    fun getNoderColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.NODER)
-
-    fun getVeglenkerColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.VEGLENKER)
-
     fun existsAndHasData(): Boolean =
         try {
             File(dbPath).exists() && getTotalSize() > 0
@@ -180,6 +174,96 @@ open class RocksDbConfiguration(
         initialize()
     }
 
+    // Wrapper methods to encapsulate RocksDB operations
+    fun get(
+        columnFamily: ColumnFamily,
+        key: ByteArray,
+    ): ByteArray? {
+        val handle = getColumnFamily(columnFamily)
+        return db.get(handle, key)
+    }
+
+    fun put(
+        columnFamily: ColumnFamily,
+        key: ByteArray,
+        value: ByteArray,
+    ) {
+        val handle = getColumnFamily(columnFamily)
+        db.put(handle, key, value)
+    }
+
+    fun delete(
+        columnFamily: ColumnFamily,
+        key: ByteArray,
+    ) {
+        val handle = getColumnFamily(columnFamily)
+        db.delete(handle, key)
+    }
+
+    fun batchGet(
+        columnFamily: ColumnFamily,
+        keys: Collection<ByteArray>,
+    ): List<ByteArray?> {
+        if (keys.isEmpty()) {
+            return emptyList()
+        }
+        val handle = getColumnFamily(columnFamily)
+        val columnFamilyHandleList = keys.map { handle }
+        return db.multiGetAsList(columnFamilyHandleList, keys.toList())
+    }
+
+    fun newIterator(columnFamily: ColumnFamily): RocksIterator {
+        val handle = getColumnFamily(columnFamily)
+        return db.newIterator(handle)
+    }
+
+    fun deleteRange(
+        columnFamily: ColumnFamily,
+        start: ByteArray,
+        end: ByteArray,
+    ) {
+        val handle = getColumnFamily(columnFamily)
+        db.deleteRange(handle, start, end)
+    }
+
+    fun getEstimatedKeys(columnFamily: ColumnFamily): Long {
+        val handle = getColumnFamily(columnFamily)
+        return db.getProperty(handle, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
+    }
+
+    fun batchWrite(
+        columnFamily: ColumnFamily,
+        operations: List<BatchOperation>,
+    ) {
+        WriteBatch().use { writeBatch ->
+
+            val handle = getColumnFamily(columnFamily)
+
+            for (operation in operations) {
+                when (operation) {
+                    is BatchOperation.Put -> writeBatch.put(handle, operation.key, operation.value)
+                    is BatchOperation.Delete -> writeBatch.delete(handle, operation.key)
+                }
+            }
+
+            WriteOptions().use { writeOpts ->
+                db.write(writeOpts, writeBatch)
+            }
+
+        }
+    }
+
+    sealed class BatchOperation {
+        class Put(
+            val key: ByteArray,
+            val value: ByteArray,
+        ) : BatchOperation()
+
+        class Delete(
+            val key: ByteArray,
+        ) : BatchOperation()
+    }
+
     override fun close() {
         if (::columnFamilies.isInitialized) {
             columnFamilies.values.forEach { columnFamily ->
@@ -188,6 +272,12 @@ open class RocksDbConfiguration(
         }
         if (::db.isInitialized) {
             db.close()
+        }
+        if (::dbOptions.isInitialized) {
+            dbOptions.close()
+        }
+        if (::columnFamilyOptions.isInitialized) {
+            columnFamilyOptions.close()
         }
         if (::options.isInitialized) {
             options.close()

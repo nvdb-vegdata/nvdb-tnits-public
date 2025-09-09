@@ -13,7 +13,6 @@ import no.vegvesen.nvdb.tnits.geometry.projectTo
 import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
-import no.vegvesen.nvdb.tnits.rocksDbConfiguration
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.veglenkerRepository
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -32,7 +31,6 @@ suspend fun backfillVeglenkesekvenser() {
 
     if (lastId == null) {
         println("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
-        rocksDbConfiguration.clear()
         val now = Clock.System.now()
         KeyValue.put("veglenkesekvenser_backfill_started", now)
     } else {
