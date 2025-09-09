@@ -5,7 +5,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
@@ -14,6 +17,7 @@ import no.vegvesen.nvdb.tnits.objectMapper
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
+import no.vegvesen.nvdb.tnits.v.FeltstrekningRepository
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
@@ -142,11 +146,42 @@ class OpenLrServiceTest :
                     )
             }
         }
+
+        "should handle speed limit stedfestet MOT lenkeretning" {
+            withTempDb { config ->
+                // Arrange
+                val openLrService =
+                    setupOpenLrService(
+                        config,
+                        "veglenkesekvenser_2518522_413032_2518519.json",
+                        feltstrekningRepository =
+                            mockk {
+                                every { findFeltoversiktFromFeltstrekning(any()) }
+                                    .returns(listOf("2"))
+                            },
+                    )
+                val stedfestinger = loadStedfestinger("speed_limit_589421130_v2.json")
+
+                // Act
+                val openLrReferences = openLrService.toOpenLr(stedfestinger)
+                val binary = openLrReferences.map(marshaller::marshallToBase64String)
+
+                // Assert
+                openLrReferences shouldHaveSize 1
+                openLrReferences[0].should {
+                    it.relativeNegativeOffset shouldBe 0
+                    it.relativePositiveOffset shouldBe 0
+                }
+
+                binary shouldBe listOf("Cweq+ip17AMSAwB6/1kDGQ==")
+            }
+        }
     })
 
 private fun setupOpenLrService(
     config: RocksDbConfiguration,
     vararg paths: String,
+    feltstrekningRepository: FeltstrekningRepository = mockk<FeltstrekningRepository>(),
 ): OpenLrService {
     val veglenkerStore = VeglenkerRocksDbStore(config)
     val veglenkesekvenser =
@@ -158,7 +193,8 @@ private fun setupOpenLrService(
         val veglenker = convertToDomainVeglenker(veglenkesekvens)
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
-    val openLrService = OpenLrService(CachedVegnett(veglenkerStore))
+
+    val openLrService = OpenLrService(CachedVegnett(veglenkerStore, feltstrekningRepository))
     return openLrService
 }
 

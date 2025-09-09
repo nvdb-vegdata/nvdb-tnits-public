@@ -1,9 +1,6 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.database.Stedfestinger
-import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
@@ -11,9 +8,7 @@ import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
 import no.vegvesen.nvdb.tnits.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.openlr.toFormOfWay
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import no.vegvesen.nvdb.tnits.v.FeltstrekningRepository
 import org.locationtech.jts.geom.Point
 import org.openlr.map.FunctionalRoadClass
 import java.util.concurrent.ConcurrentHashMap
@@ -22,6 +17,7 @@ const val FeltoversiktIVeglenkeretning = "5528"
 
 class CachedVegnett(
     private val veglenkerRepository: VeglenkerRepository,
+    private val feltstrekningRepository: FeltstrekningRepository,
 ) {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
     private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
@@ -49,24 +45,6 @@ class CachedVegnett(
         )
     }
 
-    fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> =
-        transaction {
-            val feltstrekning =
-                Vegobjekter
-                    .innerJoin(Stedfestinger)
-                    .select(Vegobjekter.data)
-                    .where {
-                        (Vegobjekter.vegobjektType eq 616) and
-                            (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
-                            (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
-                            (Stedfestinger.startposisjon less veglenke.sluttposisjon)
-                    }.limit(1)
-                    .map { it[Vegobjekter.data] }
-                    .first()
-
-            (feltstrekning.egenskaper!![FeltoversiktIVeglenkeretning] as TekstEgenskap).verdi.split("#")
-        }
-
     @Synchronized
     fun initialize() {
         if (initialized) return
@@ -81,7 +59,7 @@ class CachedVegnett(
                     val feltoversikt =
                         if (veglenke.konnektering) {
                             findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
-                                ?: findFeltoversiktFromFeltstrekning(veglenke)
+                                ?: feltstrekningRepository.findFeltoversiktFromFeltstrekning(veglenke)
                         } else {
                             veglenke.feltoversikt
                         }

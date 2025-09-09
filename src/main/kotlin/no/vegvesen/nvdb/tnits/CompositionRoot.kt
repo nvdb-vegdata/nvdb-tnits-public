@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
+import no.vegvesen.nvdb.tnits.v.FeltstrekningRepository
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import org.openlr.binary.BinaryMarshaller
 import org.openlr.binary.BinaryMarshallerFactory
@@ -83,7 +84,9 @@ val rocksDbConfiguration = RocksDbConfiguration()
 val veglenkerRepository: VeglenkerRepository =
     VeglenkerRocksDbStore(rocksDbConfiguration)
 
-val cachedVegnett = CachedVegnett(veglenkerRepository)
+val feltstrekningRepository: FeltstrekningRepository = FeltstrekningRepository()
+
+val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository)
 
 val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
 

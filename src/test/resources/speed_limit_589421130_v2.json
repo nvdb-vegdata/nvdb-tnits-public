@@ -1,0 +1,39 @@
+{
+  "id": 589421130,
+  "versjon": 2,
+  "typeId": 105,
+  "gyldighetsperiode": {
+    "startdato": "2024-11-14"
+  },
+  "egenskaper": {
+    "2021": {
+      "type": "EnumEgenskap",
+      "verdi": 2730
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 2518522,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MOT"
+      },
+      {
+        "id": 413032,
+        "startposisjon": 0.36971529,
+        "sluttposisjon": 0.77288576,
+        "retning": "MOT"
+      },
+      {
+        "id": 2518519,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MOT"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T13:33:46.716539Z"
+}

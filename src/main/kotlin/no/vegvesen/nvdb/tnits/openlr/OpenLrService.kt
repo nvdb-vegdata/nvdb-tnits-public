@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.openlr
 
+import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
@@ -71,7 +72,16 @@ class OpenLrService(
             createPaths(veglenker, stedfesting, TillattRetning.Mot).let(reversePaths::addAll)
         }
 
-        return listOfNotNull(forwardPaths.ifEmpty { null }, reversePaths.asReversed().ifEmpty { null })
+        val stedfestetRetning = stedfestinger.mapTo(mutableSetOf()) { it.retning }
+        if (stedfestetRetning.size > 1) {
+            error("Stedfestinger har blandet retning: $stedfestetRetning")
+        }
+        val retning = stedfestetRetning.firstOrNull() ?: Retning.MED
+
+        return listOfNotNull(
+            forwardPaths.let { if (retning == Retning.MED) it else it.asReversed() }.ifEmpty { null },
+            reversePaths.let { if (retning == Retning.MED) it.asReversed() else it }.ifEmpty { null },
+        )
     }
 
     private fun createPaths(
