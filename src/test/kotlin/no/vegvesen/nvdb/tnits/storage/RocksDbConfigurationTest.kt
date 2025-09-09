@@ -54,10 +54,10 @@ class RocksDbConfigurationTest : StringSpec() {
             configuration.existsAndHasData() shouldBe false
         }
 
-        "should provide access to column families by name" {
-            val defaultCF = configuration.getColumnFamily(RocksDbConfiguration.DEFAULT_COLUMN_FAMILY)
-            val noderCF = configuration.getColumnFamily(RocksDbConfiguration.NODER_COLUMN_FAMILY)
-            val veglenkerCF = configuration.getColumnFamily(RocksDbConfiguration.VEGLENKER_COLUMN_FAMILY)
+        "should provide access to column families by name and enum" {
+            val defaultCF = configuration.getColumnFamily(ColumnFamily.DEFAULT)
+            val noderCF = configuration.getColumnFamily(ColumnFamily.NODER)
+            val veglenkerCF = configuration.getColumnFamily(ColumnFamily.VEGLENKER)
 
             defaultCF shouldBe configuration.getDefaultColumnFamily()
             noderCF shouldBe configuration.getNoderColumnFamily()
@@ -66,6 +66,11 @@ class RocksDbConfigurationTest : StringSpec() {
             String(defaultCF.name) shouldBe "default"
             String(noderCF.name) shouldBe "noder"
             String(veglenkerCF.name) shouldBe "veglenker"
+
+            // Test string-based access as well
+            configuration.getColumnFamily("default") shouldBe defaultCF
+            configuration.getColumnFamily("noder") shouldBe noderCF
+            configuration.getColumnFamily("veglenker") shouldBe veglenkerCF
         }
 
         "should throw exception for unknown column family" {

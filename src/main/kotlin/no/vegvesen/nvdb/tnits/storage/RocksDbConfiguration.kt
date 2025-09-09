@@ -9,14 +9,10 @@ open class RocksDbConfiguration(
 ) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options
-    private lateinit var columnFamilies: Map<String, ColumnFamilyHandle>
+    private lateinit var columnFamilies: Map<ColumnFamily, ColumnFamilyHandle>
 
     companion object {
         private var libraryLoaded = false
-
-        const val DEFAULT_COLUMN_FAMILY = "default"
-        const val NODER_COLUMN_FAMILY = "noder"
-        const val VEGLENKER_COLUMN_FAMILY = "veglenker"
 
         @Synchronized
         private fun loadLibraryOnce() {
@@ -42,89 +38,128 @@ open class RocksDbConfiguration(
 
     private fun initialize() =
         try {
-            options =
-                Options().apply {
-                    prepareForBulkLoad()
-                    setCreateIfMissing(true)
-                    setCreateMissingColumnFamilies(true)
-                    setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
-                }
+            options = createDatabaseOptions()
+            val columnFamilyOptions = createColumnFamilyOptions()
 
-            val columnFamilyOptions =
-                ColumnFamilyOptions().apply {
-                    setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
-                }
+            val existingColumnFamilyNames = detectExistingColumnFamilies(options)
 
-            val existingColumnFamilies =
-                try {
-                    if (File(dbPath).exists()) {
-                        RocksDB
-                            .listColumnFamilies(options, dbPath)
-                            .map { String(it) }
-                            .toSet()
-                    } else {
-                        emptySet()
-                    }
-                } catch (e: RocksDBException) {
-                    emptySet()
-                }
-
-            // Define all column families we want to support
-            val requiredColumnFamilies =
-                listOf(
-                    DEFAULT_COLUMN_FAMILY,
-                    NODER_COLUMN_FAMILY,
-                    VEGLENKER_COLUMN_FAMILY,
-                )
-
-            val columnFamilyDescriptors = mutableListOf<ColumnFamilyDescriptor>()
-
-            // Always add default column family first
-            columnFamilyDescriptors.add(ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, columnFamilyOptions))
-
-            // Add other column families if they exist or if it's a new database
-            requiredColumnFamilies.drop(1).forEach { columnFamilyName ->
-                if (existingColumnFamilies.contains(columnFamilyName) || !File(dbPath).exists()) {
-                    columnFamilyDescriptors.add(ColumnFamilyDescriptor(columnFamilyName.toByteArray(), columnFamilyOptions))
-                }
-            }
+            val columnFamilyDescriptors = createColumnFamilyDescriptors(existingColumnFamilyNames, columnFamilyOptions)
 
             val columnFamilyHandles = mutableListOf<ColumnFamilyHandle>()
-            val dbOptions = DBOptions(options)
-            db = RocksDB.open(dbOptions, dbPath, columnFamilyDescriptors, columnFamilyHandles)
+            val dbOptionsForOpening = DBOptions(options)
+            db = RocksDB.open(dbOptionsForOpening, dbPath, columnFamilyDescriptors, columnFamilyHandles)
 
-            // Build map of column family names to handles
-            val columnFamilyMap = mutableMapOf<String, ColumnFamilyHandle>()
-
-            // Map existing handles
-            columnFamilyHandles.forEach { handle ->
-                val name = String(handle.name)
-                columnFamilyMap[name] = handle
-            }
-
-            // Create missing column families
-            requiredColumnFamilies.forEach { columnFamilyName ->
-                if (!columnFamilyMap.containsKey(columnFamilyName) && columnFamilyName != DEFAULT_COLUMN_FAMILY) {
-                    val handle = db.createColumnFamily(ColumnFamilyDescriptor(columnFamilyName.toByteArray(), columnFamilyOptions))
-                    columnFamilyMap[columnFamilyName] = handle
-                }
-            }
-
-            columnFamilies = columnFamilyMap.toMap()
+            columnFamilies = mapColumnFamilyHandles(db, columnFamilyHandles, columnFamilyOptions)
         } catch (e: RocksDBException) {
             throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
         }
 
+    private fun createDatabaseOptions(): Options =
+        Options().apply {
+            prepareForBulkLoad()
+            setCreateIfMissing(true)
+            setCreateMissingColumnFamilies(true)
+            setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
+        }
+
+    private fun createColumnFamilyOptions(): ColumnFamilyOptions =
+        ColumnFamilyOptions().apply {
+            setCompressionType(if (enableCompression) CompressionType.LZ4_COMPRESSION else CompressionType.NO_COMPRESSION)
+        }
+
+    private fun detectExistingColumnFamilies(options: Options): Set<String> =
+        try {
+            if (File(dbPath).exists()) {
+                RocksDB
+                    .listColumnFamilies(options, dbPath)
+                    .map { String(it) }
+                    .toSet()
+            } else {
+                emptySet()
+            }
+        } catch (e: RocksDBException) {
+            emptySet()
+        }
+
+    private fun createColumnFamilyDescriptors(
+        existingColumnFamilyNames: Set<String>,
+        columnFamilyOptions: ColumnFamilyOptions,
+    ): List<ColumnFamilyDescriptor> {
+        val descriptors = mutableListOf<ColumnFamilyDescriptor>()
+
+        // Always add default column family first
+        descriptors.add(ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, columnFamilyOptions))
+
+        // Add all existing column families (required by RocksDB)
+        existingColumnFamilyNames.forEach { familyName ->
+            if (familyName != "default") { // Skip default as it's already added
+                descriptors.add(ColumnFamilyDescriptor(familyName.toByteArray(), columnFamilyOptions))
+            }
+        }
+
+        // Add any required column families that don't exist yet (will be auto-created)
+        ColumnFamily.allFamilies().drop(1).forEach { columnFamily ->
+            if (!existingColumnFamilyNames.contains(columnFamily.familyName)) {
+                descriptors.add(
+                    ColumnFamilyDescriptor(
+                        columnFamily.familyName.toByteArray(),
+                        columnFamilyOptions,
+                    ),
+                )
+            }
+        }
+
+        return descriptors
+    }
+
+    private fun mapColumnFamilyHandles(
+        db: RocksDB,
+        columnFamilyHandles: List<ColumnFamilyHandle>,
+        columnFamilyOptions: ColumnFamilyOptions,
+    ): Map<ColumnFamily, ColumnFamilyHandle> {
+        val requiredColumnFamilies = ColumnFamily.allFamilies()
+        val columnFamilyMap = mutableMapOf<ColumnFamily, ColumnFamilyHandle>()
+
+        // Map existing handles
+        columnFamilyHandles.forEach { handle ->
+            val name = String(handle.name)
+            ColumnFamily.fromName(name)?.let { columnFamily ->
+                columnFamilyMap[columnFamily] = handle
+            }
+        }
+
+        // Create missing column families
+        requiredColumnFamilies.forEach { columnFamily ->
+            if (!columnFamilyMap.containsKey(columnFamily) && columnFamily != ColumnFamily.DEFAULT) {
+                val handle =
+                    db.createColumnFamily(
+                        ColumnFamilyDescriptor(
+                            columnFamily.familyName.toByteArray(),
+                            columnFamilyOptions,
+                        ),
+                    )
+                columnFamilyMap[columnFamily] = handle
+            }
+        }
+
+        return columnFamilyMap.toMap()
+    }
+
     fun getDatabase(): RocksDB = db
 
+    fun getColumnFamily(columnFamily: ColumnFamily): ColumnFamilyHandle =
+        columnFamilies[columnFamily]
+            ?: throw IllegalArgumentException("Column family '${columnFamily.familyName}' not found")
+
     fun getColumnFamily(name: String): ColumnFamilyHandle =
-        columnFamilies[name] ?: throw IllegalArgumentException("Column family '$name' not found")
+        ColumnFamily.fromName(name)?.let { getColumnFamily(it) }
+            ?: throw IllegalArgumentException("Column family '$name' not found")
 
-    fun getDefaultColumnFamily(): ColumnFamilyHandle = getColumnFamily(DEFAULT_COLUMN_FAMILY)
+    fun getDefaultColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.DEFAULT)
 
-    fun getNoderColumnFamily(): ColumnFamilyHandle = getColumnFamily(NODER_COLUMN_FAMILY)
+    fun getNoderColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.NODER)
 
-    fun getVeglenkerColumnFamily(): ColumnFamilyHandle = getColumnFamily(VEGLENKER_COLUMN_FAMILY)
+    fun getVeglenkerColumnFamily(): ColumnFamilyHandle = getColumnFamily(ColumnFamily.VEGLENKER)
 
     fun existsAndHasData(): Boolean =
         try {
@@ -138,19 +173,11 @@ open class RocksDbConfiguration(
             db.getProperty(columnFamily, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
         }
 
+    @Synchronized
     fun clear() {
         close()
         File(dbPath).deleteRecursively()
         initialize()
-    }
-
-    fun clearVeglenkerColumnFamily() {
-        try {
-            val veglenkerColumnFamily = getVeglenkerColumnFamily()
-            db.deleteRange(veglenkerColumnFamily, ByteArray(0), ByteArray(8) { 0xFF.toByte() })
-        } catch (e: RocksDBException) {
-            throw RuntimeException("Failed to clear veglenker column family", e)
-        }
     }
 
     override fun close() {
