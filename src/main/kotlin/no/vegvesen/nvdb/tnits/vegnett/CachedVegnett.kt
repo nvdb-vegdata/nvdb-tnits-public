@@ -63,8 +63,11 @@ class CachedVegnett(
                         } else {
                             veglenke.feltoversikt
                         }
-
-                    addVeglenke(veglenke, feltoversikt)
+                    if (feltoversikt.isNotEmpty()) {
+                        addVeglenke(veglenke, feltoversikt)
+                    } else {
+                        // Sannsynligvis gangveg uten fartsgrense
+                    }
                 }
         }
         initialized = true
@@ -136,6 +139,8 @@ class CachedVegnett(
                 TypeVeg.RUNDKJORING,
                 TypeVeg.TRAKTORVEG,
                 TypeVeg.GAGATE,
+                TypeVeg.GANG_OG_SYKKELVEG,
+                TypeVeg.GANGVEG,
             ) &&
             startdato <= today &&
             (sluttdato == null || sluttdato > today)
@@ -189,8 +194,10 @@ class CachedVegnett(
     ): OpenLrNode {
         require(initialized)
         return nodes.computeIfAbsent(nodeId) {
-            val incomingVeglenker = getIncomingVeglenker(nodeId, retning)
-            val outgoingVeglenker = getOutgoingVeglenker(nodeId, retning)
+            val incomingVeglenker =
+                getIncomingVeglenker(nodeId, retning) + getOutgoingVeglenker(nodeId, retning.reverse())
+            val outgoingVeglenker =
+                getOutgoingVeglenker(nodeId, retning) + getIncomingVeglenker(nodeId, retning.reverse())
             OpenLrNode(
                 id = nodeId,
                 valid =

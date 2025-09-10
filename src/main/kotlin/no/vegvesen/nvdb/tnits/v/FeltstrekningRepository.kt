@@ -23,7 +23,7 @@ class FeltstrekningRepository {
                             (Stedfestinger.startposisjon less veglenke.sluttposisjon)
                     }.limit(1)
                     .map { it[Vegobjekter.data] }
-                    .first()
+                    .firstOrNull() ?: return@transaction emptyList<String>()
 
             (feltstrekning.egenskaper!![FeltoversiktIVeglenkeretning] as TekstEgenskap).verdi.split("#")
         }

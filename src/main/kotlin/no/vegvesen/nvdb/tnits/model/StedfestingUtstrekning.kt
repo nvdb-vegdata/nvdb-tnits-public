@@ -6,7 +6,7 @@ data class StedfestingUtstrekning(
     val veglenkesekvensId: Long,
     val startposisjon: Double,
     val sluttposisjon: Double,
-    val retning: Retning = Retning.MED,
+    val retning: Retning? = null,
     val kjorefelt: List<String> = emptyList(),
 ) {
     init {

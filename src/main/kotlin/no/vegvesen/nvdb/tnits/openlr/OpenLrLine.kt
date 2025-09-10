@@ -49,9 +49,9 @@ data class OpenLrLine private constructor(
 
     override fun getEndNode(): Node = sluttnode
 
-    override fun getIncomingLines(): List<OpenLrLine> = cachedVegnett.getIncomingLines(startnode.id, tillattRetning)
+    override fun getIncomingLines(): List<OpenLrLine> = cachedVegnett.getIncomingLines(startnode.id, tillattRetning).filter { it != this }
 
-    override fun getOutgoingLines(): List<OpenLrLine> = cachedVegnett.getOutgoingLines(sluttnode.id, tillattRetning)
+    override fun getOutgoingLines(): List<OpenLrLine> = cachedVegnett.getOutgoingLines(sluttnode.id, tillattRetning).filter { it != this }
 
     override fun getFunctionalRoadClass(): FunctionalRoadClass = frc
 

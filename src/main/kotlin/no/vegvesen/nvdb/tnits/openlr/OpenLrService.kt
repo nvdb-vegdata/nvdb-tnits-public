@@ -59,6 +59,8 @@ class OpenLrService(
             .map(encoder::encode)
 
     private fun createPaths(stedfestinger: List<StedfestingUtstrekning>): List<List<Path<OpenLrLine>>> {
+        if (stedfestinger.isEmpty()) return emptyList()
+
         val forwardPaths = mutableListOf<Path<OpenLrLine>>()
         val reversePaths = mutableListOf<Path<OpenLrLine>>()
 
@@ -72,11 +74,7 @@ class OpenLrService(
             createPaths(veglenker, stedfesting, TillattRetning.Mot).let(reversePaths::addAll)
         }
 
-        val stedfestetRetning = stedfestinger.mapTo(mutableSetOf()) { it.retning }
-        if (stedfestetRetning.size > 1) {
-            error("Stedfestinger har blandet retning: $stedfestetRetning")
-        }
-        val retning = stedfestetRetning.firstOrNull() ?: Retning.MED
+        val retning = stedfestinger.first().retning
 
         return listOfNotNull(
             forwardPaths.let { if (retning == Retning.MED) it else it.asReversed() }.ifEmpty { null },
@@ -201,4 +199,11 @@ class OpenLrService(
 enum class TillattRetning {
     Med,
     Mot,
+    ;
+
+    fun reverse(): TillattRetning =
+        when (this) {
+            Med -> Mot
+            Mot -> Med
+        }
 }

@@ -224,7 +224,7 @@ class ParallelSpeedLimitProcessor(
             }
         }
 
-    private fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit? {
+    private fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
         val overlappendeVeglenker = veglenkerBatchLookup(veglenkesekvensIds)
@@ -242,7 +242,7 @@ class ParallelSpeedLimitProcessor(
 
         val geometry =
             mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
-                ?: return null
+                ?: error("Could not determine geometry for fartsgrense ${workItem.id}")
 
         val locationReferences =
             openLrService.toOpenLr(

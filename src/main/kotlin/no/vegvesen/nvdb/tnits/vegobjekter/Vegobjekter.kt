@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.vegobjekter
 
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
@@ -133,8 +132,6 @@ suspend fun backfillVegobjekter(typeId: Int) {
         }
     } while (vegobjekter.isNotEmpty())
 }
-
-val MAX_DATE = LocalDate(9999, 12, 31)
 
 private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
     Vegobjekter.batchInsert(vegobjekter, shouldReturnGeneratedValues = false) { vegobjekt ->
