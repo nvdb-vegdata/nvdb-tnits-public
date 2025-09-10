@@ -8,8 +8,10 @@ import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.toRounded
+import no.vegvesen.nvdb.tnits.model.EgenskapsTyper
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
+import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
@@ -18,11 +20,6 @@ import kotlin.time.Instant
 import kotlin.time.measureTime
 
 val OsloZone = TimeZone.of("Europe/Oslo")
-
-object VegobjektTyper {
-    const val FARTSGRENSE = 105
-    const val FUNKSJONELL_VEGKLASSE = 821
-}
 
 inline fun <T> measure(
     label: String,
@@ -44,13 +41,13 @@ suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
         .getVegobjekttype(VegobjektTyper.FARTSGRENSE)
         .egenskapstyper!!
         .filterIsInstance<EgenskapstypeHeltallenum>()
-        .single { it.id == FartsgrenseEgenskapTypeId }
+        .single { it.id == EgenskapsTyper.FARTSGRENSE }
         .tillatteVerdier
         .associate { it.id to it.verdi!! }
 
 fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
 
-val rootQName = "RoadFeatureDataset"
+const val rootQName = "RoadFeatureDataset"
 
 val namespaces =
     mapOf(
@@ -244,6 +241,4 @@ val VegobjektStedfesting.utstrekning
             kjorefelt,
         )
 
-const val FartsgrenseEgenskapTypeId = 2021
-
-const val FartsgrenseEgenskapTypeIdString = FartsgrenseEgenskapTypeId.toString()
+const val FartsgrenseEgenskapTypeIdString = EgenskapsTyper.FARTSGRENSE.toString()

@@ -4,18 +4,18 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 
 @OptIn(ExperimentalSerializationApi::class)
-class FeltstrekningerRocksDbStore(
+class VegobjekterRocksDbStore(
     private val rocksDbConfig: RocksDbConfiguration,
-) : FeltstrekningerRepository {
-    private val columnFamily: ColumnFamily = ColumnFamily.FELTSTREKNINGER
+) : VegobjekterRepository {
+    private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 
     override fun batchUpdate(updates: Map<Long, Vegobjekt?>) {
-//        val operations = updates.map { (id, vegobjekt) ->
-//
-//            // For every vegobjekt:
-//            // if deleted, delete it and reverse index
-//
-//
+        val operations =
+            updates.map { (id, vegobjekt) ->
+
+                // For every vegobjekt:
+                // if deleted, delete it and reverse index
+
 //
 //            val key = id.toByteArray()
 //            if (vegobjekt == null) {
@@ -23,10 +23,10 @@ class FeltstrekningerRocksDbStore(
 //            } else {
 //                BatchOperation.Put(key, value)
 //            }
-//        }
+            }
     }
 }
 
-interface FeltstrekningerRepository {
+interface VegobjekterRepository {
     fun batchUpdate(updates: Map<Long, Vegobjekt?>)
 }

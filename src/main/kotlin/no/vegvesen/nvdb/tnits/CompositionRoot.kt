@@ -12,10 +12,7 @@ import io.ktor.serialization.jackson.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
-import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
-import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
-import no.vegvesen.nvdb.tnits.v.FeltstrekningRepository
+import no.vegvesen.nvdb.tnits.storage.*
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import org.openlr.binary.BinaryMarshaller
 import org.openlr.binary.BinaryMarshallerFactory
@@ -86,7 +83,9 @@ val veglenkerRepository: VeglenkerRepository =
 
 val feltstrekningRepository: FeltstrekningRepository = FeltstrekningRepository()
 
-val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository)
+val funksjonellVegklasseRepository = FunksjonellVegklasseRepository()
+
+val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository, funksjonellVegklasseRepository)
 
 val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
 

@@ -5,7 +5,6 @@ import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
-import no.vegvesen.nvdb.tnits.VegobjektTyper
 import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
@@ -13,6 +12,7 @@ import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.nowOffsetDateTime
 import no.vegvesen.nvdb.tnits.extensions.put
+import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList

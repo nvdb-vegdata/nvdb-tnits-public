@@ -15,13 +15,15 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.objectMapper
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
+import no.vegvesen.nvdb.tnits.storage.FeltstrekningRepository
+import no.vegvesen.nvdb.tnits.storage.FunksjonellVegklasseRepository
 import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
-import no.vegvesen.nvdb.tnits.v.FeltstrekningRepository
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.openlr.binary.BinaryMarshallerFactory
+import org.openlr.map.FunctionalRoadClass
 import java.io.InputStream
 
 private val marshaller = BinaryMarshallerFactory().create()
@@ -182,6 +184,10 @@ private fun setupOpenLrService(
     config: RocksDbConfiguration,
     vararg paths: String,
     feltstrekningRepository: FeltstrekningRepository = mockk<FeltstrekningRepository>(),
+    funksjonellVegklasseRepository: FunksjonellVegklasseRepository =
+        mockk {
+            every { findFunksjonellVegklasse(any()) } returns FunctionalRoadClass.FRC_0
+        },
 ): OpenLrService {
     val veglenkerStore = VeglenkerRocksDbStore(config)
     val veglenkesekvenser =
@@ -194,7 +200,8 @@ private fun setupOpenLrService(
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
-    val openLrService = OpenLrService(CachedVegnett(veglenkerStore, feltstrekningRepository))
+    val openLrService =
+        OpenLrService(CachedVegnett(veglenkerStore, feltstrekningRepository, funksjonellVegklasseRepository))
     return openLrService
 }
 
