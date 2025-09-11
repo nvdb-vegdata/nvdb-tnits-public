@@ -32,9 +32,9 @@ fun configureDatabase(config: AppConfig) {
     Database.connect(
         dataSource,
         databaseConfig =
-            DatabaseConfig {
-                defaultFetchSize = FETCH_SIZE
-            },
+        DatabaseConfig {
+            defaultFetchSize = FETCH_SIZE
+        },
     )
 
     transaction {

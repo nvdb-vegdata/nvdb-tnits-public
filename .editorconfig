@@ -1,8 +1,15 @@
 [*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_standard_enum-entry-name-case = disabled
+ktlint_standard_no-wildcard-imports = disabled
 ktlint_standard_no-wildcard-imports = disabled
 ktlint_standard_property-naming = disabled
+max_line_length = 160
 
 [*.md]
 trim_trailing_whitespace = false
 max_line_length = off
 ij_markdown_wrap_text_if_long = false
+
+[*.xml]
+max_line_length = off

@@ -13,36 +13,34 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.openlr.map.FunctionalRoadClass
 
 class FunksjonellVegklasseRepository {
-    fun findFunksjonellVegklasse(veglenke: Veglenke): FunctionalRoadClass =
-        transaction {
-            // Laveste viktighet er den høyeste numeriske verdien
-            val lowestFrc =
-                Vegobjekter
-                    .innerJoin(Stedfestinger)
-                    .select(Vegobjekter.data)
-                    .where {
-                        (Vegobjekter.vegobjektType eq VegobjektTyper.FUNKSJONELL_VEGKLASSE) and
-                            (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
-                            (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
-                            (Stedfestinger.startposisjon less veglenke.sluttposisjon)
-                    }.maxOfOrNull { (it[Vegobjekter.data].egenskaper!![EgenskapsTyper.VEGKLASSE.toString()] as EnumEgenskap).verdi }
-
-            when (lowestFrc) {
-                0 -> FunctionalRoadClass.FRC_0
-                1 -> FunctionalRoadClass.FRC_1
-                2 -> FunctionalRoadClass.FRC_2
-                3 -> FunctionalRoadClass.FRC_3
-                4 -> FunctionalRoadClass.FRC_4
-                5 -> FunctionalRoadClass.FRC_5
-                6 -> FunctionalRoadClass.FRC_6
-                else -> FunctionalRoadClass.FRC_7
-            }
-        }
-
-    fun getAll(): List<Vegobjekt> =
-        transaction {
+    fun findFunksjonellVegklasse(veglenke: Veglenke): FunctionalRoadClass = transaction {
+        // Laveste viktighet er den høyeste numeriske verdien
+        val lowestFrc =
             Vegobjekter
+                .innerJoin(Stedfestinger)
                 .select(Vegobjekter.data)
-                .map { it[Vegobjekter.data] }
+                .where {
+                    (Vegobjekter.vegobjektType eq VegobjektTyper.FUNKSJONELL_VEGKLASSE) and
+                        (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
+                        (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
+                        (Stedfestinger.startposisjon less veglenke.sluttposisjon)
+                }.maxOfOrNull { (it[Vegobjekter.data].egenskaper!![EgenskapsTyper.VEGKLASSE.toString()] as EnumEgenskap).verdi }
+
+        when (lowestFrc) {
+            0 -> FunctionalRoadClass.FRC_0
+            1 -> FunctionalRoadClass.FRC_1
+            2 -> FunctionalRoadClass.FRC_2
+            3 -> FunctionalRoadClass.FRC_3
+            4 -> FunctionalRoadClass.FRC_4
+            5 -> FunctionalRoadClass.FRC_5
+            6 -> FunctionalRoadClass.FRC_6
+            else -> FunctionalRoadClass.FRC_7
         }
+    }
+
+    fun getAll(): List<Vegobjekt> = transaction {
+        Vegobjekter
+            .select(Vegobjekter.data)
+            .map { it[Vegobjekter.data] }
+    }
 }

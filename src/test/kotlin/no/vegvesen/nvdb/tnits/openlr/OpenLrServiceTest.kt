@@ -157,10 +157,10 @@ class OpenLrServiceTest :
                         config,
                         "veglenkesekvenser_2518522_413032_2518519.json",
                         feltstrekningRepository =
-                            mockk {
-                                every { findFeltoversiktFromFeltstrekning(any()) }
-                                    .returns(listOf("2"))
-                            },
+                        mockk {
+                            every { findFeltoversiktFromFeltstrekning(any()) }
+                                .returns(listOf("2"))
+                        },
                     )
                 val stedfestinger = loadStedfestinger("speed_limit_589421130_v2.json")
 
@@ -219,10 +219,9 @@ private fun loadStedfestinger(path: String): List<StedfestingUtstrekning> {
     return stedfestinger
 }
 
-inline fun <reified T> ObjectMapper.readJson(name: String): T =
-    streamFile(name).use { inputStream ->
-        readValue(inputStream)
-    }
+inline fun <reified T> ObjectMapper.readJson(name: String): T = streamFile(name).use { inputStream ->
+    readValue(inputStream)
+}
 
 fun streamFile(name: String): InputStream {
     val function = { }

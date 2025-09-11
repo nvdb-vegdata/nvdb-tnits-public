@@ -24,29 +24,27 @@ class GeometryWkbColumnType : ColumnType<Geometry>() {
 
     private fun createWriter() = WKBWriter(2, false)
 
-    override fun sqlType(): String =
-        when (currentDialect) {
-            is OracleDialect -> "BLOB"
-            else -> "BYTEA" // PostgreSQL, H2, and others
+    override fun sqlType(): String = when (currentDialect) {
+        is OracleDialect -> "BLOB"
+        else -> "BYTEA" // PostgreSQL, H2, and others
+    }
+
+    override fun valueFromDB(value: Any): Geometry = when (value) {
+        is Geometry -> value
+        is ByteArray -> createReader().read(value)
+        is ByteBuffer -> {
+            val arr = ByteArray(value.remaining())
+            value.get(arr)
+            createReader().read(arr)
         }
 
-    override fun valueFromDB(value: Any): Geometry =
-        when (value) {
-            is Geometry -> value
-            is ByteArray -> createReader().read(value)
-            is ByteBuffer -> {
-                val arr = ByteArray(value.remaining())
-                value.get(arr)
-                createReader().read(arr)
+        is Blob ->
+            value.getBytes(1, value.length().toInt()).also { value.free() }.let {
+                createReader().read(it)
             }
 
-            is Blob ->
-                value.getBytes(1, value.length().toInt()).also { value.free() }.let {
-                    createReader().read(it)
-                }
-
-            else -> error("Unsupported DB value for Geometry WKB: ${value::class} ($value)")
-        }
+        else -> error("Unsupported DB value for Geometry WKB: ${value::class} ($value)")
+    }
 
     override fun notNullValueToDB(value: Geometry): Any = writeWkb(value)
 

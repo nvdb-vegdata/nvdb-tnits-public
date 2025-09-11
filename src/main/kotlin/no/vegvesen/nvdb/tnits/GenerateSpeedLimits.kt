@@ -21,11 +21,7 @@ import kotlin.time.measureTime
 
 val OsloZone = TimeZone.of("Europe/Oslo")
 
-inline fun <T> measure(
-    label: String,
-    logStart: Boolean = false,
-    block: () -> T,
-): T {
+inline fun <T> measure(label: String, logStart: Boolean = false, block: () -> T): T {
     if (logStart) {
         println("Start: $label")
     }
@@ -36,14 +32,13 @@ inline fun <T> measure(
     return result
 }
 
-suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> =
-    datakatalogApi
-        .getVegobjekttype(VegobjektTyper.FARTSGRENSE)
-        .egenskapstyper!!
-        .filterIsInstance<EgenskapstypeHeltallenum>()
-        .single { it.id == EgenskapsTyper.FARTSGRENSE }
-        .tillatteVerdier
-        .associate { it.id to it.verdi!! }
+suspend fun getKmhByEgenskapVerdi(): Map<Int, Int> = datakatalogApi
+    .getVegobjekttype(VegobjektTyper.FARTSGRENSE)
+    .egenskapstyper!!
+    .filterIsInstance<EgenskapstypeHeltallenum>()
+    .single { it.id == EgenskapsTyper.FARTSGRENSE }
+    .tillatteVerdier
+    .associate { it.id to it.verdi!! }
 
 fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
 

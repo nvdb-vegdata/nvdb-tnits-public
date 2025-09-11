@@ -156,24 +156,23 @@ private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
     }
 }
 
-fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> =
-    when (val stedfesting = this.stedfesting) {
-        is StedfestingLinjer ->
-            stedfesting.linjer.map {
-                VegobjektStedfesting(
-                    veglenkesekvensId = it.id,
-                    startposisjon = it.startposisjon,
-                    sluttposisjon = it.sluttposisjon,
-                    retning = it.retning,
-                    sideposisjon = it.sideposisjon,
-                    kjorefelt = it.kjorefelt,
-                    vegobjektId = this.id,
-                    vegobjektType = this.typeId,
-                )
-            }
+fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val stedfesting = this.stedfesting) {
+    is StedfestingLinjer ->
+        stedfesting.linjer.map {
+            VegobjektStedfesting(
+                veglenkesekvensId = it.id,
+                startposisjon = it.startposisjon,
+                sluttposisjon = it.sluttposisjon,
+                retning = it.retning,
+                sideposisjon = it.sideposisjon,
+                kjorefelt = it.kjorefelt,
+                vegobjektId = this.id,
+                vegobjektType = this.typeId,
+            )
+        }
 
-        else -> error("Forventet StedfestingLinjer, fikk ${stedfesting::class.simpleName}")
-    }
+    else -> error("Forventet StedfestingLinjer, fikk ${stedfesting::class.simpleName}")
+}
 
 data class VegobjektStedfesting(
     val vegobjektId: Long,

@@ -9,10 +9,7 @@ interface VeglenkerRepository {
 
     fun getAll(): Map<Long, List<Veglenke>>
 
-    fun upsert(
-        veglenkesekvensId: Long,
-        veglenker: List<Veglenke>,
-    )
+    fun upsert(veglenkesekvensId: Long, veglenker: List<Veglenke>)
 
     fun delete(veglenkesekvensId: Long)
 

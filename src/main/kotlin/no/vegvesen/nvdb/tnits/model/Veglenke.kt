@@ -7,12 +7,7 @@ import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import org.locationtech.jts.geom.Geometry
 
 @Serializable
-data class Superstedfesting(
-    val veglenksekvensId: Long,
-    val startposisjon: Double,
-    val sluttposisjon: Double,
-    val kjorefelt: List<String> = emptyList(),
-)
+data class Superstedfesting(val veglenksekvensId: Long, val startposisjon: Double, val sluttposisjon: Double, val kjorefelt: List<String> = emptyList())
 
 @Serializable
 data class Veglenke(

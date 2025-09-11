@@ -32,10 +32,7 @@ data class SpeedLimitWorkItem(
     val validTo: kotlinx.datetime.LocalDate?,
 )
 
-data class IdRange(
-    val startId: Long,
-    val endId: Long,
-)
+data class IdRange(val startId: Long, val endId: Long)
 
 class ParallelSpeedLimitProcessor(
     private val veglenkerBatchLookup: VeglenkerBatchLookup,
@@ -43,85 +40,79 @@ class ParallelSpeedLimitProcessor(
 ) {
     private val superBatchSize = workerCount * FETCH_SIZE
 
-    fun generateSpeedLimitsUpdate(since: Instant): Flow<SpeedLimit> =
-        flow {
-            val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
+    fun generateSpeedLimitsUpdate(since: Instant): Flow<SpeedLimit> = flow {
+        val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
 
-            var paginationId = 0L
-            var totalCount = 0
+        var paginationId = 0L
+        var totalCount = 0
 
-            val sinceOffset = since.toOffsetDateTime()
+        val sinceOffset = since.toOffsetDateTime()
 
-            while (true) {
-                val changedIds =
-                    transaction {
-                        Vegobjekter
-                            .select(Vegobjekter.vegobjektId)
-                            .where {
-                                (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-                                    (Vegobjekter.sistEndret greaterEq sinceOffset) and
-                                    (Vegobjekter.vegobjektId greater paginationId)
-                            }.orderBy(Vegobjekter.vegobjektId)
-                            .limit(superBatchSize)
-                            .map { it[Vegobjekter.vegobjektId] }
-                    }
-                if (changedIds.isEmpty()) {
-                    break
+        while (true) {
+            val changedIds =
+                transaction {
+                    Vegobjekter
+                        .select(Vegobjekter.vegobjektId)
+                        .where {
+                            (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
+                                (Vegobjekter.sistEndret greaterEq sinceOffset) and
+                                (Vegobjekter.vegobjektId greater paginationId)
+                        }.orderBy(Vegobjekter.vegobjektId)
+                        .limit(superBatchSize)
+                        .map { it[Vegobjekter.vegobjektId] }
                 }
-                paginationId = changedIds.last()
+            if (changedIds.isEmpty()) {
+                break
             }
+            paginationId = changedIds.last()
         }
+    }
 
-    fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> =
-        flow {
-            val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
+    fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> = flow {
+        val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
 
-            var paginationId = 0L
-            var totalCount = 0
+        var paginationId = 0L
+        var totalCount = 0
 
-            while (true) {
-                // Fetch only IDs for the next batch in a single lightweight query
-                val ids = fetchNextSpeedLimitIds(paginationId, superBatchSize)
+        while (true) {
+            // Fetch only IDs for the next batch in a single lightweight query
+            val ids = fetchNextSpeedLimitIds(paginationId, superBatchSize)
 
-                if (ids.isEmpty()) {
-                    break
-                }
-
-                paginationId = ids.last()
-
-                // Create ranges of work for parallel processing
-                val idRanges = createIdRanges(ids)
-
-                // Process ranges in parallel - each worker fetches and processes its range
-                val speedLimits: List<SpeedLimit>
-                val processingTime =
-                    measureTime {
-                        speedLimits = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
-                    }
-
-                totalCount += speedLimits.size
-                speedLimits.sortedBy { it.id }.forEach { speedLimit ->
-                    emit(speedLimit)
-                }
-
-                println("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
+            if (ids.isEmpty()) {
+                break
             }
-        }
 
-    private fun fetchNextSpeedLimitIds(
-        paginationId: Long,
-        batchSize: Int,
-    ): List<Long> =
-        transaction {
-            Vegobjekter
-                .select(Vegobjekter.vegobjektId)
-                .where {
-                    (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-                        (Vegobjekter.vegobjektId greater paginationId)
-                }.orderBy(Vegobjekter.vegobjektId)
-                .limit(batchSize)
-                .map { it[Vegobjekter.vegobjektId] }
+            paginationId = ids.last()
+
+            // Create ranges of work for parallel processing
+            val idRanges = createIdRanges(ids)
+
+            // Process ranges in parallel - each worker fetches and processes its range
+            val speedLimits: List<SpeedLimit>
+            val processingTime =
+                measureTime {
+                    speedLimits = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
+                }
+
+            totalCount += speedLimits.size
+            speedLimits.sortedBy { it.id }.forEach { speedLimit ->
+                emit(speedLimit)
+            }
+
+            println("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
         }
+    }
+
+    private fun fetchNextSpeedLimitIds(paginationId: Long, batchSize: Int): List<Long> = transaction {
+        Vegobjekter
+            .select(Vegobjekter.vegobjektId)
+            .where {
+                (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
+                    (Vegobjekter.vegobjektId greater paginationId)
+            }.orderBy(Vegobjekter.vegobjektId)
+            .limit(batchSize)
+            .map { it[Vegobjekter.vegobjektId] }
+    }
 
     private fun createIdRanges(ids: List<Long>): List<IdRange> {
         if (ids.isEmpty()) return emptyList()
@@ -145,85 +136,73 @@ class ParallelSpeedLimitProcessor(
         }
     }
 
-    private suspend fun processIdRangesInParallel(
-        idRanges: List<IdRange>,
-        kmhByEgenskapVerdi: Map<Int, Int>,
-    ): List<SpeedLimit> =
-        coroutineScope {
-            idRanges
-                .map { idRange ->
-                    async {
-                        processIdRange(idRange, kmhByEgenskapVerdi)
-                    }
-                }.awaitAll()
-                .flatten()
-        }
-
-    private fun processIdRange(
-        idRange: IdRange,
-        kmhByEgenskapVerdi: Map<Int, Int>,
-    ): List<SpeedLimit> =
-        try {
-            // Each worker fetches and processes its own data range
-            val workItems = fetchSpeedLimitWorkItemsForRange(idRange, kmhByEgenskapVerdi)
-
-            workItems.mapNotNull { workItem ->
-                try {
-                    processSpeedLimitWorkItem(workItem)
-                } catch (e: CancellationException) {
-                    throw e // Re-throw cancellation exceptions
-                } catch (e: Exception) {
-                    println("Warning: Error processing speed limit ${workItem.id}: ${e.message}")
-                    null // Skip this item but continue processing others
+    private suspend fun processIdRangesInParallel(idRanges: List<IdRange>, kmhByEgenskapVerdi: Map<Int, Int>): List<SpeedLimit> = coroutineScope {
+        idRanges
+            .map { idRange ->
+                async {
+                    processIdRange(idRange, kmhByEgenskapVerdi)
                 }
-            }
-        } catch (e: CancellationException) {
-            throw e // Propagate cancellation
-        } catch (e: Exception) {
-            println("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.message}")
-            emptyList() // Return empty list for this range but don't fail the entire process
-        }
+            }.awaitAll()
+            .flatten()
+    }
 
-    private fun fetchSpeedLimitWorkItemsForRange(
-        idRange: IdRange,
-        kmhByEgenskapVerdi: Map<Int, Int>,
-    ): List<SpeedLimitWorkItem> =
-        transaction {
-            val vegobjekter =
-                Vegobjekter
-                    .select(Vegobjekter.data)
-                    .where {
-                        (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-                            (Vegobjekter.vegobjektId greaterEq idRange.startId) and
-                            (Vegobjekter.vegobjektId lessEq idRange.endId)
-                    }.orderBy(Vegobjekter.vegobjektId)
-                    .map { it[Vegobjekter.data] }
+    private fun processIdRange(idRange: IdRange, kmhByEgenskapVerdi: Map<Int, Int>): List<SpeedLimit> = try {
+        // Each worker fetches and processes its own data range
+        val workItems = fetchSpeedLimitWorkItemsForRange(idRange, kmhByEgenskapVerdi)
 
-            vegobjekter.mapNotNull { vegobjekt ->
-                val kmh =
-                    vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
-                        when (egenskap) {
-                            is EnumEgenskap ->
-                                kmhByEgenskapVerdi[egenskap.verdi]
-                                    ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
-
-                            else -> error("Expected EnumEgenskap, got ${egenskap::class.simpleName}")
-                        }
-                    }
-
-                if (kmh != null) {
-                    SpeedLimitWorkItem(
-                        id = vegobjekt.id,
-                        kmh = kmh,
-                        stedfestingLinjer = vegobjekt.getStedfestingLinjer(),
-                        validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
-                        validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
-                    )
-                } else {
-                    null
-                }
+        workItems.mapNotNull { workItem ->
+            try {
+                processSpeedLimitWorkItem(workItem)
+            } catch (e: CancellationException) {
+                throw e // Re-throw cancellation exceptions
+            } catch (e: Exception) {
+                println("Warning: Error processing speed limit ${workItem.id}: ${e.message}")
+                null // Skip this item but continue processing others
             }
         }
+    } catch (e: CancellationException) {
+        throw e // Propagate cancellation
+    } catch (e: Exception) {
+        println("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.message}")
+        emptyList() // Return empty list for this range but don't fail the entire process
+    }
+
+    private fun fetchSpeedLimitWorkItemsForRange(idRange: IdRange, kmhByEgenskapVerdi: Map<Int, Int>): List<SpeedLimitWorkItem> = transaction {
+        val vegobjekter =
+            Vegobjekter
+                .select(Vegobjekter.data)
+                .where {
+                    (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
+                        (Vegobjekter.vegobjektId greaterEq idRange.startId) and
+                        (Vegobjekter.vegobjektId lessEq idRange.endId)
+                }.orderBy(Vegobjekter.vegobjektId)
+                .map { it[Vegobjekter.data] }
+
+        vegobjekter.mapNotNull { vegobjekt ->
+            val kmh =
+                vegobjekt.egenskaper?.get(FartsgrenseEgenskapTypeIdString)?.let { egenskap ->
+                    when (egenskap) {
+                        is EnumEgenskap ->
+                            kmhByEgenskapVerdi[egenskap.verdi]
+                                ?: error("Ukjent verdi for fartsgrense: ${egenskap.verdi}")
+
+                        else -> error("Expected EnumEgenskap, got ${egenskap::class.simpleName}")
+                    }
+                }
+
+            if (kmh != null) {
+                SpeedLimitWorkItem(
+                    id = vegobjekt.id,
+                    kmh = kmh,
+                    stedfestingLinjer = vegobjekt.getStedfestingLinjer(),
+                    validFrom = vegobjekt.gyldighetsperiode!!.startdato.toKotlinLocalDate(),
+                    validTo = vegobjekt.gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
+                )
+            } else {
+                null
+            }
+        }
+    }
 
     private fun processSpeedLimitWorkItem(workItem: SpeedLimitWorkItem): SpeedLimit {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()

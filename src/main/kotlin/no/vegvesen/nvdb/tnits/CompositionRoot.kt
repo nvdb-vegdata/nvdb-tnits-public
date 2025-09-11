@@ -17,14 +17,13 @@ import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import org.openlr.binary.BinaryMarshaller
 import org.openlr.binary.BinaryMarshallerFactory
 
-private fun ObjectMapper.initialize(): ObjectMapper =
-    apply {
-        findAndRegisterModules()
-        configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
-        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-    }
+private fun ObjectMapper.initialize(): ObjectMapper = apply {
+    findAndRegisterModules()
+    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
+    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+}
 
 val objectMapper: ObjectMapper = ObjectMapper().initialize()
 

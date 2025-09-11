@@ -4,10 +4,7 @@ import kotlinx.serialization.Serializable
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkeMedId
 
 @Serializable
-data class VeglenkeId(
-    val veglenkesekvensId: Long,
-    val veglenkenummer: Int,
-) {
+data class VeglenkeId(val veglenkesekvensId: Long, val veglenkenummer: Int) {
     override fun toString(): String = "$veglenkesekvensId-$veglenkenummer"
 
     companion object {

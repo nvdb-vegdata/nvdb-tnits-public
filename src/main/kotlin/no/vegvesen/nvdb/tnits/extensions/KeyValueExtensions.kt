@@ -12,23 +12,15 @@ import org.jetbrains.exposed.v1.jdbc.upsert
 
 private val json = Json { ignoreUnknownKeys = true }
 
-fun <T : Any> KeyValue.get(
-    key: String,
-    serializer: KSerializer<T>,
-): T? =
-    transaction {
-        selectAll()
-            .where { KeyValue.key eq key }
-            .map { it[KeyValue.value] }
-            .singleOrNull()
-            ?.let { json.decodeFromString(serializer, it) }
-    }
+fun <T : Any> KeyValue.get(key: String, serializer: KSerializer<T>): T? = transaction {
+    selectAll()
+        .where { KeyValue.key eq key }
+        .map { it[KeyValue.value] }
+        .singleOrNull()
+        ?.let { json.decodeFromString(serializer, it) }
+}
 
-fun <T : Any> KeyValue.put(
-    key: String,
-    value: T,
-    serializer: KSerializer<T>,
-) = transaction {
+fun <T : Any> KeyValue.put(key: String, value: T, serializer: KSerializer<T>) = transaction {
     val serializedValue = json.encodeToString(serializer, value)
     upsert {
         it[KeyValue.key] = key
@@ -39,10 +31,7 @@ fun <T : Any> KeyValue.put(
 // Convenience inline functions
 inline fun <reified T : Any> KeyValue.get(key: String): T? = get(key, serializer())
 
-inline fun <reified T : Any> KeyValue.put(
-    key: String,
-    value: T,
-) = put(key, value, serializer())
+inline fun <reified T : Any> KeyValue.put(key: String, value: T) = put(key, value, serializer())
 
 fun KeyValue.clearVeglenkesekvensSettings() {
     transaction {
@@ -50,24 +39,21 @@ fun KeyValue.clearVeglenkesekvensSettings() {
     }
 }
 
-fun KeyValue.getWorkerLastIdCount(): Int =
-    transaction {
-        selectAll()
-            .where { KeyValue.key like "veglenkesekvenser_backfill_last_id_%" }
-            .count()
-            .toInt()
-    }
+fun KeyValue.getWorkerLastIdCount(): Int = transaction {
+    selectAll()
+        .where { KeyValue.key like "veglenkesekvenser_backfill_last_id_%" }
+        .count()
+        .toInt()
+}
 
-fun KeyValue.getRangeWorkerCount(): Int =
-    transaction {
-        selectAll()
-            .where { KeyValue.key like "veglenkesekvenser_backfill_range_%_completed" }
-            .count()
-            .toInt()
-    }
+fun KeyValue.getRangeWorkerCount(): Int = transaction {
+    selectAll()
+        .where { KeyValue.key like "veglenkesekvenser_backfill_range_%_completed" }
+        .count()
+        .toInt()
+}
 
-fun KeyValue.isRangeCompleted(workerIndex: Int): Boolean =
-    get<Boolean>("veglenkesekvenser_backfill_range_${workerIndex}_completed") ?: false
+fun KeyValue.isRangeCompleted(workerIndex: Int): Boolean = get<Boolean>("veglenkesekvenser_backfill_range_${workerIndex}_completed") ?: false
 
 fun KeyValue.markRangeCompleted(workerIndex: Int) {
     put("veglenkesekvenser_backfill_range_${workerIndex}_completed", true)

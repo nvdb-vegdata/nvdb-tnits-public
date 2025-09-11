@@ -3,10 +3,7 @@ package no.vegvesen.nvdb.tnits.storage
 import org.rocksdb.*
 import java.io.File
 
-open class RocksDbConfiguration(
-    protected val dbPath: String = "veglenker.db",
-    enableCompression: Boolean = true,
-) : AutoCloseable {
+open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions
@@ -40,55 +37,48 @@ open class RocksDbConfiguration(
         initialize()
     }
 
-    private fun initialize() =
-        try {
-            options = createDatabaseOptions()
-            columnFamilyOptions = createColumnFamilyOptions()
+    private fun initialize() = try {
+        options = createDatabaseOptions()
+        columnFamilyOptions = createColumnFamilyOptions()
 
-            val existingColumnFamilyNames = detectExistingColumnFamilies(options)
+        val existingColumnFamilyNames = detectExistingColumnFamilies(options)
 
-            val columnFamilyDescriptors = createColumnFamilyDescriptors(existingColumnFamilyNames, columnFamilyOptions)
+        val columnFamilyDescriptors = createColumnFamilyDescriptors(existingColumnFamilyNames, columnFamilyOptions)
 
-            val columnFamilyHandles = mutableListOf<ColumnFamilyHandle>()
-            dbOptions = DBOptions(options)
-            db = RocksDB.open(dbOptions, dbPath, columnFamilyDescriptors, columnFamilyHandles)
+        val columnFamilyHandles = mutableListOf<ColumnFamilyHandle>()
+        dbOptions = DBOptions(options)
+        db = RocksDB.open(dbOptions, dbPath, columnFamilyDescriptors, columnFamilyHandles)
 
-            columnFamilies = mapColumnFamilyHandles(db, columnFamilyHandles, columnFamilyOptions)
-        } catch (e: RocksDBException) {
-            throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
-        }
+        columnFamilies = mapColumnFamilyHandles(db, columnFamilyHandles, columnFamilyOptions)
+    } catch (e: RocksDBException) {
+        throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
+    }
 
-    private fun createDatabaseOptions(): Options =
-        Options().apply {
-            prepareForBulkLoad()
-            setCreateIfMissing(true)
-            setCreateMissingColumnFamilies(true)
-            setCompressionType(compression)
-        }
+    private fun createDatabaseOptions(): Options = Options().apply {
+        prepareForBulkLoad()
+        setCreateIfMissing(true)
+        setCreateMissingColumnFamilies(true)
+        setCompressionType(compression)
+    }
 
-    private fun createColumnFamilyOptions(): ColumnFamilyOptions =
-        ColumnFamilyOptions().apply {
-            setCompressionType(compression)
-        }
+    private fun createColumnFamilyOptions(): ColumnFamilyOptions = ColumnFamilyOptions().apply {
+        setCompressionType(compression)
+    }
 
-    private fun detectExistingColumnFamilies(options: Options): Set<String> =
-        try {
-            if (File(dbPath).exists()) {
-                RocksDB
-                    .listColumnFamilies(options, dbPath)
-                    .map { String(it) }
-                    .toSet()
-            } else {
-                emptySet()
-            }
-        } catch (e: RocksDBException) {
+    private fun detectExistingColumnFamilies(options: Options): Set<String> = try {
+        if (File(dbPath).exists()) {
+            RocksDB
+                .listColumnFamilies(options, dbPath)
+                .map { String(it) }
+                .toSet()
+        } else {
             emptySet()
         }
+    } catch (e: RocksDBException) {
+        emptySet()
+    }
 
-    private fun createColumnFamilyDescriptors(
-        existingColumnFamilyNames: Set<String>,
-        columnFamilyOptions: ColumnFamilyOptions,
-    ): List<ColumnFamilyDescriptor> {
+    private fun createColumnFamilyDescriptors(existingColumnFamilyNames: Set<String>, columnFamilyOptions: ColumnFamilyOptions): List<ColumnFamilyDescriptor> {
         val descriptors = mutableListOf<ColumnFamilyDescriptor>()
 
         // Always add default column family first
@@ -151,21 +141,18 @@ open class RocksDbConfiguration(
 
     fun getDatabase(): RocksDB = db
 
-    fun getColumnFamily(columnFamily: ColumnFamily): ColumnFamilyHandle =
-        columnFamilies[columnFamily]
-            ?: throw IllegalArgumentException("Column family '${columnFamily.familyName}' not found")
+    fun getColumnFamily(columnFamily: ColumnFamily): ColumnFamilyHandle = columnFamilies[columnFamily]
+        ?: throw IllegalArgumentException("Column family '${columnFamily.familyName}' not found")
 
-    fun existsAndHasData(): Boolean =
-        try {
-            File(dbPath).exists() && getTotalSize() > 0
-        } catch (e: Exception) {
-            false
-        }
+    fun existsAndHasData(): Boolean = try {
+        File(dbPath).exists() && getTotalSize() > 0
+    } catch (e: Exception) {
+        false
+    }
 
-    fun getTotalSize(): Long =
-        columnFamilies.values.sumOf { columnFamily ->
-            db.getProperty(columnFamily, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
-        }
+    fun getTotalSize(): Long = columnFamilies.values.sumOf { columnFamily ->
+        db.getProperty(columnFamily, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
+    }
 
     @Synchronized
     fun clear() {
@@ -175,35 +162,22 @@ open class RocksDbConfiguration(
     }
 
     // Wrapper methods to encapsulate RocksDB operations
-    fun get(
-        columnFamily: ColumnFamily,
-        key: ByteArray,
-    ): ByteArray? {
+    fun get(columnFamily: ColumnFamily, key: ByteArray): ByteArray? {
         val handle = getColumnFamily(columnFamily)
         return db.get(handle, key)
     }
 
-    fun put(
-        columnFamily: ColumnFamily,
-        key: ByteArray,
-        value: ByteArray,
-    ) {
+    fun put(columnFamily: ColumnFamily, key: ByteArray, value: ByteArray) {
         val handle = getColumnFamily(columnFamily)
         db.put(handle, key, value)
     }
 
-    fun delete(
-        columnFamily: ColumnFamily,
-        key: ByteArray,
-    ) {
+    fun delete(columnFamily: ColumnFamily, key: ByteArray) {
         val handle = getColumnFamily(columnFamily)
         db.delete(handle, key)
     }
 
-    fun batchGet(
-        columnFamily: ColumnFamily,
-        keys: Collection<ByteArray>,
-    ): List<ByteArray?> {
+    fun batchGet(columnFamily: ColumnFamily, keys: Collection<ByteArray>): List<ByteArray?> {
         if (keys.isEmpty()) {
             return emptyList()
         }
@@ -217,11 +191,7 @@ open class RocksDbConfiguration(
         return db.newIterator(handle)
     }
 
-    fun deleteRange(
-        columnFamily: ColumnFamily,
-        start: ByteArray,
-        end: ByteArray,
-    ) {
+    fun deleteRange(columnFamily: ColumnFamily, start: ByteArray, end: ByteArray) {
         val handle = getColumnFamily(columnFamily)
         db.deleteRange(handle, start, end)
     }
@@ -231,10 +201,7 @@ open class RocksDbConfiguration(
         return db.getProperty(handle, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
     }
 
-    fun batchWrite(
-        columnFamily: ColumnFamily,
-        operations: List<BatchOperation>,
-    ) {
+    fun batchWrite(columnFamily: ColumnFamily, operations: List<BatchOperation>) {
         WriteBatch().use { writeBatch ->
 
             val handle = getColumnFamily(columnFamily)
@@ -274,12 +241,7 @@ open class RocksDbConfiguration(
 }
 
 sealed class BatchOperation {
-    class Put(
-        val key: ByteArray,
-        val value: ByteArray,
-    ) : BatchOperation()
+    class Put(val key: ByteArray, val value: ByteArray) : BatchOperation()
 
-    class Delete(
-        val key: ByteArray,
-    ) : BatchOperation()
+    class Delete(val key: ByteArray) : BatchOperation()
 }

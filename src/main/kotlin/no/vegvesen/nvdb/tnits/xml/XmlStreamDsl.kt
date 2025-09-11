@@ -18,10 +18,7 @@ internal val xmlOutputFactory: XMLOutputFactory by lazy { XMLOutputFactory.newFa
  * - namespace("gml", uri)       -> declare prefix->URI
  * - -"text"                     -> text node
  */
-class XmlStreamDsl(
-    val writer: XMLStreamWriter,
-    private val indent: String? = null,
-) {
+class XmlStreamDsl(val writer: XMLStreamWriter, private val indent: String? = null) {
     @PublishedApi
     internal val namespaces = mutableMapOf<String, String>()
 
@@ -31,10 +28,7 @@ class XmlStreamDsl(
     @PublishedApi
     internal var hasChildElements = false
 
-    fun startDocument(
-        encoding: String = "UTF-8",
-        version: String = "1.0",
-    ) = writer.writeStartDocument(encoding, version)
+    fun startDocument(encoding: String = "UTF-8", version: String = "1.0") = writer.writeStartDocument(encoding, version)
 
     fun endDocument() = writer.writeEndDocument()
 
@@ -46,11 +40,7 @@ class XmlStreamDsl(
         }
     }
 
-    inline fun element(
-        qName: String,
-        namespaceDeclarations: Map<String, String> = emptyMap(),
-        block: XmlStreamDsl.() -> Any?,
-    ) {
+    inline fun element(qName: String, namespaceDeclarations: Map<String, String> = emptyMap(), block: XmlStreamDsl.() -> Any?) {
         writeIndent()
         hasChildElements = true // Mark that this element exists, so parent knows it has child elements
 
@@ -92,10 +82,7 @@ class XmlStreamDsl(
 
     inline operator fun String.invoke(block: XmlStreamDsl.() -> Any?) = element(this, block = block)
 
-    fun attribute(
-        qName: String,
-        value: String,
-    ) {
+    fun attribute(qName: String, value: String) {
         val (prefix, localName, namespace) = splitQName(qName)
         if (prefix != null && namespace != null) {
             writer.writeAttribute(prefix, namespace, localName, value)
@@ -126,12 +113,7 @@ class XmlStreamDsl(
 }
 
 /** Generic entry point over an OutputStream. */
-inline fun writeXmlStream(
-    outputStream: OutputStream,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    block: XmlStreamDsl.() -> Unit,
-) {
+inline fun writeXmlStream(outputStream: OutputStream, encoding: String = "UTF-8", indent: String? = null, block: XmlStreamDsl.() -> Unit) {
     val writer = xmlOutputFactory.createXMLStreamWriter(outputStream, encoding)
     val xml = XmlStreamDsl(writer, indent)
     try {

@@ -7,10 +7,8 @@ import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
-class VeglenkerRocksDbStore(
-    private val rocksDbConfig: RocksDbConfiguration,
-    private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER,
-) : VeglenkerRepository {
+class VeglenkerRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER) :
+    VeglenkerRepository {
     override fun get(veglenkesekvensId: Long): List<Veglenke>? {
         val key = veglenkesekvensId.toByteArray()
         val value = rocksDbConfig.get(columnFamily, key)
@@ -56,10 +54,7 @@ class VeglenkerRocksDbStore(
         return result
     }
 
-    override fun upsert(
-        veglenkesekvensId: Long,
-        veglenker: List<Veglenke>,
-    ) {
+    override fun upsert(veglenkesekvensId: Long, veglenker: List<Veglenke>) {
         val key = veglenkesekvensId.toByteArray()
         val value = serializeVeglenker(veglenker)
 
@@ -96,9 +91,7 @@ class VeglenkerRocksDbStore(
 
     override fun size(): Long = rocksDbConfig.getEstimatedKeys(columnFamily)
 
-    private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray =
-        ProtoBuf.encodeToByteArray(ListSerializer(Veglenke.serializer()), veglenker)
+    private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray = ProtoBuf.encodeToByteArray(ListSerializer(Veglenke.serializer()), veglenker)
 
-    private fun deserializeVeglenker(data: ByteArray): List<Veglenke> =
-        ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)
+    private fun deserializeVeglenker(data: ByteArray): List<Veglenke> = ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)
 }

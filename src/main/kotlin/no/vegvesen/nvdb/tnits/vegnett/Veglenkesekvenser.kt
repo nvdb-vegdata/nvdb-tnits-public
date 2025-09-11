@@ -98,25 +98,25 @@ fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
                 startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
                 sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
                 geometri =
-                    parseWkt(
-                        veglenke.geometri.wkt,
-                        veglenke.geometri.srid.value
-                            .toInt(),
-                    ).projectTo(SRID.WGS84),
+                parseWkt(
+                    veglenke.geometri.wkt,
+                    veglenke.geometri.srid.value
+                        .toInt(),
+                ).projectTo(SRID.WGS84),
                 typeVeg = veglenke.typeVeg,
                 detaljniva = veglenke.detaljniva,
                 feltoversikt = veglenke.feltoversikt,
                 lengde = veglenke.geometri.lengde ?: 0.0,
                 konnektering = veglenke.konnektering,
                 superstedfesting =
-                    veglenke.superstedfesting?.let { stedfesting ->
-                        Superstedfesting(
-                            veglenksekvensId = stedfesting.id,
-                            startposisjon = stedfesting.startposisjon,
-                            sluttposisjon = stedfesting.sluttposisjon,
-                            kjorefelt = stedfesting.kjorefelt,
-                        )
-                    },
+                veglenke.superstedfesting?.let { stedfesting ->
+                    Superstedfesting(
+                        veglenksekvensId = stedfesting.id,
+                        startposisjon = stedfesting.startposisjon,
+                        sluttposisjon = stedfesting.sluttposisjon,
+                        kjorefelt = stedfesting.kjorefelt,
+                    )
+                },
             )
         }.filter { it.sluttdato == null }
         .sortedBy { it.startposisjon }

@@ -38,55 +38,44 @@ val wktReaders =
         SRID.EPSG5973 to WKTReader(geometryFactories[SRID.UTM33]),
     )
 
-fun parseWkt(
-    wkt: String,
-    srid: Int,
-): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
+fun parseWkt(wkt: String, srid: Int): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
 
 // OpenLR library expects coordinates in longitude/latitude order for WGS84. For other CRSs, it does not matter.
 fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", true)
 
-fun Geometry.projectTo(srid: Int): Geometry =
-    if (this.srid == srid) {
-        this
-    } else {
-        try {
-            val sourceCrs = getCrs(this.srid)
-            val targetCrs = getCrs(srid)
-            val transform = CRS.findMathTransform(sourceCrs, targetCrs, true)
-            val transformedGeometry = JTS.transform(this, transform)
+fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
+    this
+} else {
+    try {
+        val sourceCrs = getCrs(this.srid)
+        val targetCrs = getCrs(srid)
+        val transform = CRS.findMathTransform(sourceCrs, targetCrs, true)
+        val transformedGeometry = JTS.transform(this, transform)
 
-            val factory = geometryFactories[srid] ?: error("Unsupported SRID: $srid")
-            factory.createGeometry(transformedGeometry)
-        } catch (e: NoSuchAuthorityCodeException) {
-            error("Invalid SRID: ${e.message}")
-        } catch (e: FactoryException) {
-            error("Error creating CRS: ${e.message}")
-        } catch (e: TransformException) {
-            error("Error transforming coordinates: ${e.message}")
-        }
+        val factory = geometryFactories[srid] ?: error("Unsupported SRID: $srid")
+        factory.createGeometry(transformedGeometry)
+    } catch (e: NoSuchAuthorityCodeException) {
+        error("Invalid SRID: ${e.message}")
+    } catch (e: FactoryException) {
+        error("Error creating CRS: ${e.message}")
+    } catch (e: TransformException) {
+        error("Error transforming coordinates: ${e.message}")
     }
+}
 
-fun Geometry.simplify(distanceTolerance: Double): Geometry =
-    DouglasPeuckerSimplifier
-        .simplify(this, distanceTolerance)
-        .let {
-            if (it.isEmpty) {
-                TopologyPreservingSimplifier.simplify(this, distanceTolerance)
-            } else {
-                it
-            }
-        }.also { it.srid = this.srid }
+fun Geometry.simplify(distanceTolerance: Double): Geometry = DouglasPeuckerSimplifier
+    .simplify(this, distanceTolerance)
+    .let {
+        if (it.isEmpty) {
+            TopologyPreservingSimplifier.simplify(this, distanceTolerance)
+        } else {
+            it
+        }
+    }.also { it.srid = this.srid }
 
-data class UtstrekningGeometri(
-    val utstrekning: StedfestingUtstrekning,
-    val geometri: Geometry,
-)
+data class UtstrekningGeometri(val utstrekning: StedfestingUtstrekning, val geometri: Geometry)
 
-fun calculateIntersectingGeometry(
-    utstrekningGeometri: UtstrekningGeometri,
-    stedfestingUtstrekning: StedfestingUtstrekning,
-): UtstrekningGeometri? {
+fun calculateIntersectingGeometry(utstrekningGeometri: UtstrekningGeometri, stedfestingUtstrekning: StedfestingUtstrekning): UtstrekningGeometri? {
     val veglenkeUtstrekning = utstrekningGeometri.utstrekning
     val veglenkeGeometri = utstrekningGeometri.geometri
 
@@ -123,11 +112,10 @@ fun calculateIntersectingGeometry(
     veglenkeGeometri: Geometry,
     veglenkeUtstrekning: StedfestingUtstrekning,
     stedfestingUtstrekning: StedfestingUtstrekning,
-): Geometry? =
-    calculateIntersectingGeometry(
-        UtstrekningGeometri(veglenkeUtstrekning, veglenkeGeometri),
-        stedfestingUtstrekning,
-    )?.geometri
+): Geometry? = calculateIntersectingGeometry(
+    UtstrekningGeometri(veglenkeUtstrekning, veglenkeGeometri),
+    stedfestingUtstrekning,
+)?.geometri
 
 fun mergeGeometries(geometries: List<Geometry>): Geometry? {
     if (geometries.isEmpty()) {

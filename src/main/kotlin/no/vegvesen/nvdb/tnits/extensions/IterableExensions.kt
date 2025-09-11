@@ -1,9 +1,6 @@
 package no.vegvesen.nvdb.tnits.extensions
 
-inline fun <reified T> Iterable<T>.forEachChunked(
-    size: Int,
-    block: (List<T>) -> Unit,
-) {
+inline fun <reified T> Iterable<T>.forEachChunked(size: Int, block: (List<T>) -> Unit) {
     require(size > 0) { "size must be > 0" }
     val it = iterator()
     while (it.hasNext()) {

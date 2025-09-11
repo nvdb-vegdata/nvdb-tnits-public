@@ -16,75 +16,52 @@ const val VEGOBJEKTER_PAGE_SIZE = 1000
 
 const val NODER_PAGE_SIZE = 1000
 
-class UberiketApi(
-    private val httpClient: HttpClient,
-) {
-    suspend fun getNoder(
-        start: Long? = null,
-        ider: Collection<Long>? = null,
-        antall: Int = NODER_PAGE_SIZE,
-    ): NoderSide =
-        httpClient
-            .get("vegnett/noder") {
-                parameter("start", start?.toString())
-                parameter("ider", ider?.joinToString(","))
-                parameter("antall", antall)
-            }.body()
+class UberiketApi(private val httpClient: HttpClient) {
+    suspend fun getNoder(start: Long? = null, ider: Collection<Long>? = null, antall: Int = NODER_PAGE_SIZE): NoderSide = httpClient
+        .get("vegnett/noder") {
+            parameter("start", start?.toString())
+            parameter("ider", ider?.joinToString(","))
+            parameter("antall", antall)
+        }.body()
 
-    suspend fun getLatestNodeHendelseId(tidspunkt: Instant): Long =
-        httpClient
-            .get("hendelser/noder/siste") {
-                parameter("tidspunkt", tidspunkt.toString())
-            }.body<VegnettNotifikasjon>()
-            .hendelseId
+    suspend fun getLatestNodeHendelseId(tidspunkt: Instant): Long = httpClient
+        .get("hendelser/noder/siste") {
+            parameter("tidspunkt", tidspunkt.toString())
+        }.body<VegnettNotifikasjon>()
+        .hendelseId
 
-    suspend fun getNodeHendelser(
-        start: Long? = null,
-        antall: Int = HENDELSER_PAGE_SIZE,
-    ): VegnettHendelserSide =
-        httpClient
-            .get("hendelser/noder") {
-                parameter("start", start?.toString())
-                parameter("antall", antall)
-            }.body()
+    suspend fun getNodeHendelser(start: Long? = null, antall: Int = HENDELSER_PAGE_SIZE): VegnettHendelserSide = httpClient
+        .get("hendelser/noder") {
+            parameter("start", start?.toString())
+            parameter("antall", antall)
+        }.body()
 
     suspend fun streamVeglenkesekvenser(
         start: Long? = null,
         slutt: Long? = null,
         ider: Collection<Long>? = null,
         antall: Int = VEGLENKER_PAGE_SIZE,
-    ): Flow<Veglenkesekvens> =
-        httpClient
-            .prepareGet("vegnett/veglenkesekvenser/stream") {
-                parameter("start", start?.toString())
-                parameter("slutt", slutt?.toString())
-                parameter("ider", ider?.joinToString(","))
-                parameter("antall", antall)
-            }.executeAsNdjsonFlow<Veglenkesekvens>()
+    ): Flow<Veglenkesekvens> = httpClient
+        .prepareGet("vegnett/veglenkesekvenser/stream") {
+            parameter("start", start?.toString())
+            parameter("slutt", slutt?.toString())
+            parameter("ider", ider?.joinToString(","))
+            parameter("antall", antall)
+        }.executeAsNdjsonFlow<Veglenkesekvens>()
 
-    suspend fun getLatestVeglenkesekvensHendelseId(tidspunkt: Instant): Long =
-        httpClient
-            .get("hendelser/veglenkesekvenser/siste") {
-                parameter("tidspunkt", tidspunkt.toString())
-            }.body<VegnettNotifikasjon>()
-            .hendelseId
+    suspend fun getLatestVeglenkesekvensHendelseId(tidspunkt: Instant): Long = httpClient
+        .get("hendelser/veglenkesekvenser/siste") {
+            parameter("tidspunkt", tidspunkt.toString())
+        }.body<VegnettNotifikasjon>()
+        .hendelseId
 
-    suspend fun getVeglenkesekvensHendelser(
-        start: Long? = null,
-        antall: Int = HENDELSER_PAGE_SIZE,
-    ): VegnettHendelserSide =
-        httpClient
-            .get("hendelser/veglenkesekvenser") {
-                parameter("start", start?.toString())
-                parameter("antall", antall)
-            }.body()
+    suspend fun getVeglenkesekvensHendelser(start: Long? = null, antall: Int = HENDELSER_PAGE_SIZE): VegnettHendelserSide = httpClient
+        .get("hendelser/veglenkesekvenser") {
+            parameter("start", start?.toString())
+            parameter("antall", antall)
+        }.body()
 
-    suspend fun streamVegobjekter(
-        typeId: Int,
-        ider: Collection<Long>? = null,
-        start: Long? = null,
-        antall: Int = VEGOBJEKTER_PAGE_SIZE,
-    ): Flow<Vegobjekt> =
+    suspend fun streamVegobjekter(typeId: Int, ider: Collection<Long>? = null, start: Long? = null, antall: Int = VEGOBJEKTER_PAGE_SIZE): Flow<Vegobjekt> =
         httpClient
             .prepareGet("vegobjekter/$typeId/stream") {
                 parameter("start", start?.toString())
@@ -92,24 +69,15 @@ class UberiketApi(
                 parameter("ider", ider?.joinToString(","))
             }.executeAsNdjsonFlow<Vegobjekt>()
 
-    suspend fun getLatestVegobjektHendelseId(
-        typeId: Int,
-        tidspunkt: Instant,
-    ): Long =
-        httpClient
-            .get("hendelser/vegobjekter/$typeId/siste") {
-                parameter("tidspunkt", tidspunkt.toString())
-            }.body<VegobjektNotifikasjon>()
-            .hendelseId
+    suspend fun getLatestVegobjektHendelseId(typeId: Int, tidspunkt: Instant): Long = httpClient
+        .get("hendelser/vegobjekter/$typeId/siste") {
+            parameter("tidspunkt", tidspunkt.toString())
+        }.body<VegobjektNotifikasjon>()
+        .hendelseId
 
-    suspend fun getVegobjektHendelser(
-        typeId: Int,
-        start: Long? = null,
-        antall: Int = HENDELSER_PAGE_SIZE,
-    ): VegobjektHendelserSide =
-        httpClient
-            .get("hendelser/vegobjekter/$typeId") {
-                parameter("start", start?.toString())
-                parameter("antall", antall)
-            }.body()
+    suspend fun getVegobjektHendelser(typeId: Int, start: Long? = null, antall: Int = HENDELSER_PAGE_SIZE): VegobjektHendelserSide = httpClient
+        .get("hendelser/vegobjekter/$typeId") {
+            parameter("start", start?.toString())
+            parameter("antall", antall)
+        }.body()
 }

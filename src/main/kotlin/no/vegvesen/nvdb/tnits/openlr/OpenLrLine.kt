@@ -10,26 +10,25 @@ import org.openlr.map.FunctionalRoadClass
 import org.openlr.map.Line
 import org.openlr.map.Node
 
-fun TypeVeg.toFormOfWay(): FormOfWay =
-    when (this) {
-        TypeVeg.KANALISERT_VEG -> FormOfWay.MULTIPLE_CARRIAGEWAY
-        TypeVeg.ENKEL_BILVEG -> FormOfWay.SINGLE_CARRIAGEWAY
-        TypeVeg.RAMPE -> FormOfWay.SLIP_ROAD
-        TypeVeg.RUNDKJORING -> FormOfWay.ROUNDABOUT
-        TypeVeg.BILFERJE -> FormOfWay.OTHER
-        TypeVeg.PASSASJERFERJE -> FormOfWay.OTHER
-        TypeVeg.GANG_OG_SYKKELVEG -> FormOfWay.OTHER
-        TypeVeg.SYKKELVEG -> FormOfWay.OTHER
-        TypeVeg.GANGVEG -> FormOfWay.OTHER
-        TypeVeg.GAGATE -> FormOfWay.SINGLE_CARRIAGEWAY
-        TypeVeg.FORTAU -> FormOfWay.OTHER
-        TypeVeg.TRAPP -> FormOfWay.OTHER
-        TypeVeg.GANGFELT -> FormOfWay.OTHER
-        TypeVeg.GATETUN -> FormOfWay.TRAFFIC_SQUARE
-        TypeVeg.TRAKTORVEG -> FormOfWay.OTHER
-        TypeVeg.STI -> FormOfWay.OTHER
-        TypeVeg.ANNET -> FormOfWay.OTHER
-    }
+fun TypeVeg.toFormOfWay(): FormOfWay = when (this) {
+    TypeVeg.KANALISERT_VEG -> FormOfWay.MULTIPLE_CARRIAGEWAY
+    TypeVeg.ENKEL_BILVEG -> FormOfWay.SINGLE_CARRIAGEWAY
+    TypeVeg.RAMPE -> FormOfWay.SLIP_ROAD
+    TypeVeg.RUNDKJORING -> FormOfWay.ROUNDABOUT
+    TypeVeg.BILFERJE -> FormOfWay.OTHER
+    TypeVeg.PASSASJERFERJE -> FormOfWay.OTHER
+    TypeVeg.GANG_OG_SYKKELVEG -> FormOfWay.OTHER
+    TypeVeg.SYKKELVEG -> FormOfWay.OTHER
+    TypeVeg.GANGVEG -> FormOfWay.OTHER
+    TypeVeg.GAGATE -> FormOfWay.SINGLE_CARRIAGEWAY
+    TypeVeg.FORTAU -> FormOfWay.OTHER
+    TypeVeg.TRAPP -> FormOfWay.OTHER
+    TypeVeg.GANGFELT -> FormOfWay.OTHER
+    TypeVeg.GATETUN -> FormOfWay.TRAFFIC_SQUARE
+    TypeVeg.TRAKTORVEG -> FormOfWay.OTHER
+    TypeVeg.STI -> FormOfWay.OTHER
+    TypeVeg.ANNET -> FormOfWay.OTHER
+}
 
 @ConsistentCopyVisibility
 data class OpenLrLine private constructor(
@@ -84,20 +83,20 @@ data class OpenLrLine private constructor(
                     id = veglenke.veglenkeId,
                     lengde = veglenke.lengde,
                     startnode =
-                        when (tillattRetning) {
-                            TillattRetning.Med -> startNode
-                            TillattRetning.Mot -> endNode
-                        },
+                    when (tillattRetning) {
+                        TillattRetning.Med -> startNode
+                        TillattRetning.Mot -> endNode
+                    },
                     sluttnode =
-                        when (tillattRetning) {
-                            TillattRetning.Med -> endNode
-                            TillattRetning.Mot -> startNode
-                        },
+                    when (tillattRetning) {
+                        TillattRetning.Med -> endNode
+                        TillattRetning.Mot -> startNode
+                    },
                     geometri =
-                        when (tillattRetning) {
-                            TillattRetning.Med -> geometry
-                            TillattRetning.Mot -> geometry.reverse()
-                        },
+                    when (tillattRetning) {
+                        TillattRetning.Med -> geometry
+                        TillattRetning.Mot -> geometry.reverse()
+                    },
                     frc = frc,
                     fow = fow,
                     cachedVegnett = cachedVegnett,

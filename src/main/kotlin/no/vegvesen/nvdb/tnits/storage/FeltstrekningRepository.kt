@@ -11,23 +11,22 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class FeltstrekningRepository {
-    fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> =
-        transaction {
-            val feltstrekning =
-                Vegobjekter
-                    .innerJoin(Stedfestinger)
-                    .select(Vegobjekter.data)
-                    .where {
-                        (Vegobjekter.vegobjektType eq VegobjektTyper.FELTSTREKNING) and
-                            (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
-                            (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
-                            (Stedfestinger.startposisjon less veglenke.sluttposisjon)
-                    }.limit(1)
-                    .map { it[Vegobjekter.data] }
-                    .firstOrNull() ?: return@transaction emptyList<String>()
+    fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> = transaction {
+        val feltstrekning =
+            Vegobjekter
+                .innerJoin(Stedfestinger)
+                .select(Vegobjekter.data)
+                .where {
+                    (Vegobjekter.vegobjektType eq VegobjektTyper.FELTSTREKNING) and
+                        (Stedfestinger.veglenkesekvensId eq veglenke.veglenkesekvensId) and
+                        (Stedfestinger.sluttposisjon greater veglenke.startposisjon) and
+                        (Stedfestinger.startposisjon less veglenke.sluttposisjon)
+                }.limit(1)
+                .map { it[Vegobjekter.data] }
+                .firstOrNull() ?: return@transaction emptyList<String>()
 
-            (feltstrekning.egenskaper!![EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING.toString()] as TekstEgenskap).verdi.split(
-                "#",
-            )
-        }
+        (feltstrekning.egenskaper!![EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING.toString()] as TekstEgenskap).verdi.split(
+            "#",
+        )
+    }
 }

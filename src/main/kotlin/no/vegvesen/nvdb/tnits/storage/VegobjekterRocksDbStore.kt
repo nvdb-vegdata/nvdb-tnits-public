@@ -4,9 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 
 @OptIn(ExperimentalSerializationApi::class)
-class VegobjekterRocksDbStore(
-    private val rocksDbConfig: RocksDbConfiguration,
-) : VegobjekterRepository {
+class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbConfiguration) : VegobjekterRepository {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 
     override fun batchUpdate(updates: Map<Long, Vegobjekt?>) {

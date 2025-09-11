@@ -15,20 +15,14 @@ import org.openlr.map.MapOperations
 import org.openlr.map.Path
 import org.openlr.map.PathFactory
 
-class OpenLrService(
-    private val cachedVegnett: CachedVegnett,
-) {
+class OpenLrService(private val cachedVegnett: CachedVegnett) {
     private val encoder = EncoderFactory().create()
 
     val locationFactory = LocationFactory()
 
     val pathFactory = PathFactory()
 
-    fun findOffsetInMeters(
-        veglenke: Veglenke,
-        posisjon: Double,
-        isStart: Boolean,
-    ): Double {
+    fun findOffsetInMeters(veglenke: Veglenke, posisjon: Double, isStart: Boolean): Double {
         val clamped = if (isStart) maxOf(veglenke.startposisjon, posisjon) else minOf(veglenke.sluttposisjon, posisjon)
 
         if (isStart && clamped == veglenke.startposisjon || !isStart && clamped == veglenke.sluttposisjon) {
@@ -50,13 +44,12 @@ class OpenLrService(
 
     private val operations = MapOperations()
 
-    fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> =
-        stedfestinger
-            .let(::createPaths)
-            .map(::mergeConnectedPaths)
-            .flatten()
-            .map(locationFactory::createLineLocation)
-            .map(encoder::encode)
+    fun toOpenLr(stedfestinger: List<StedfestingUtstrekning>): List<LineLocationReference> = stedfestinger
+        .let(::createPaths)
+        .map(::mergeConnectedPaths)
+        .flatten()
+        .map(locationFactory::createLineLocation)
+        .map(encoder::encode)
 
     private fun createPaths(stedfestinger: List<StedfestingUtstrekning>): List<List<Path<OpenLrLine>>> {
         if (stedfestinger.isEmpty()) return emptyList()
@@ -82,11 +75,7 @@ class OpenLrService(
         )
     }
 
-    private fun createPaths(
-        veglenker: List<Veglenke>,
-        stedfesting: StedfestingUtstrekning,
-        retning: TillattRetning,
-    ): List<Path<OpenLrLine>> {
+    private fun createPaths(veglenker: List<Veglenke>, stedfesting: StedfestingUtstrekning, retning: TillattRetning): List<Path<OpenLrLine>> {
         val directed =
             veglenker.filter {
                 cachedVegnett.hasRetning(it, retning)
@@ -201,9 +190,8 @@ enum class TillattRetning {
     Mot,
     ;
 
-    fun reverse(): TillattRetning =
-        when (this) {
-            Med -> Mot
-            Mot -> Med
-        }
+    fun reverse(): TillattRetning = when (this) {
+        Med -> Mot
+        Mot -> Med
+    }
 }

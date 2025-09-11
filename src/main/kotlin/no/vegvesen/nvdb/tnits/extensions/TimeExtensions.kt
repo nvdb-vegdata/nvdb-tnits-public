@@ -10,17 +10,15 @@ import kotlin.time.toJavaInstant
 
 val OsloZoneId: ZoneId = ZoneId.of("Europe/Oslo")
 
-fun Clock.nowOffsetDateTime(): OffsetDateTime =
-    this
-        .now()
-        .toJavaInstant()
-        .atZone(OsloZoneId)
-        .toOffsetDateTime()
+fun Clock.nowOffsetDateTime(): OffsetDateTime = this
+    .now()
+    .toJavaInstant()
+    .atZone(OsloZoneId)
+    .toOffsetDateTime()
 
-fun Instant.toOffsetDateTime(): OffsetDateTime =
-    this
-        .toJavaInstant()
-        .atZone(OsloZoneId)
-        .toOffsetDateTime()
+fun Instant.toOffsetDateTime(): OffsetDateTime = this
+    .toJavaInstant()
+    .atZone(OsloZoneId)
+    .toOffsetDateTime()
 
 val today by lazy { Clock.System.todayIn(OsloZone) }

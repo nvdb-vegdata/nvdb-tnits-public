@@ -20,22 +20,20 @@ data class StedfestingUtstrekning(
     val relativeLength get() = sluttposisjon - startposisjon
 }
 
-fun StedfestingUtstrekning.intersect(other: StedfestingUtstrekning): StedfestingUtstrekning? =
-    if (overlaps(other)) {
-        StedfestingUtstrekning(
-            veglenkesekvensId,
-            maxOf(startposisjon, other.startposisjon),
-            minOf(sluttposisjon, other.sluttposisjon),
-        )
-    } else {
-        null
-    }
+fun StedfestingUtstrekning.intersect(other: StedfestingUtstrekning): StedfestingUtstrekning? = if (overlaps(other)) {
+    StedfestingUtstrekning(
+        veglenkesekvensId,
+        maxOf(startposisjon, other.startposisjon),
+        minOf(sluttposisjon, other.sluttposisjon),
+    )
+} else {
+    null
+}
 
-fun StedfestingUtstrekning.overlaps(other: StedfestingUtstrekning): Boolean =
-    veglenkesekvensId == other.veglenkesekvensId &&
-        (
-            startposisjon < other.sluttposisjon &&
-                sluttposisjon > other.startposisjon ||
-                startposisjon == other.startposisjon ||
-                sluttposisjon == other.sluttposisjon
+fun StedfestingUtstrekning.overlaps(other: StedfestingUtstrekning): Boolean = veglenkesekvensId == other.veglenkesekvensId &&
+    (
+        startposisjon < other.sluttposisjon &&
+            sluttposisjon > other.startposisjon ||
+            startposisjon == other.startposisjon ||
+            sluttposisjon == other.sluttposisjon
         )

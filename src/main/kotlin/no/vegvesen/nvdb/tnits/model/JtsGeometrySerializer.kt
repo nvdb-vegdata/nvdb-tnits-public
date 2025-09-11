@@ -21,10 +21,7 @@ object JtsGeometrySerializer : KSerializer<Geometry> {
 
     private val byteArraySerializer = ByteArraySerializer()
 
-    override fun serialize(
-        encoder: Encoder,
-        value: Geometry,
-    ) {
+    override fun serialize(encoder: Encoder, value: Geometry) {
         check(value.srid == SRID.WGS84) {
             "Only SRID ${SRID.WGS84} is supported, but got ${value.srid}"
         }

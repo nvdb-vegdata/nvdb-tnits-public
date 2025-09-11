@@ -3,11 +3,7 @@ package no.vegvesen.nvdb.tnits.openlr
 import org.locationtech.jts.geom.Point
 import org.openlr.map.Node
 
-data class OpenLrNode(
-    val id: Long,
-    val valid: Boolean,
-    val point: Point,
-) : Node {
+data class OpenLrNode(val id: Long, val valid: Boolean, val point: Point) : Node {
     override fun isValid(): Boolean = valid
 
     override fun getGeometry(): Point = point
