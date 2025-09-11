@@ -3,13 +3,13 @@ package no.vegvesen.nvdb.tnits.vegnett
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
-import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.geometry.projectTo
+import no.vegvesen.nvdb.tnits.keyValueStore
 import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
@@ -20,19 +20,19 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 suspend fun backfillVeglenkesekvenser() {
-    val backfillCompleted = KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
+    val backfillCompleted = keyValueStore.get<Instant>("veglenkesekvenser_backfill_completed")
 
     if (backfillCompleted != null) {
         println("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
         return
     }
 
-    var lastId = KeyValue.get<Long>("veglenkesekvenser_backfill_last_id")
+    var lastId = keyValueStore.get<Long>("veglenkesekvenser_backfill_last_id")
 
     if (lastId == null) {
         println("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
         val now = Clock.System.now()
-        KeyValue.put("veglenkesekvenser_backfill_started", now)
+        keyValueStore.put("veglenkesekvenser_backfill_started", now)
     } else {
         println("Veglenkesekvenser backfill pågår. Gjenopptar fra siste ID: $lastId")
     }
@@ -46,7 +46,7 @@ suspend fun backfillVeglenkesekvenser() {
 
         if (veglenkesekvenser.isEmpty()) {
             println("Ingen veglenkesekvenser å sette inn, backfill fullført.")
-            KeyValue.put("veglenkesekvenser_backfill_completed", Clock.System.now())
+            keyValueStore.put("veglenkesekvenser_backfill_completed", Clock.System.now())
         } else {
             measure("Behandler ${veglenkesekvenser.size} veglenkesekvenser") {
                 // Process veglenkesekvenser in batches for RocksDB storage
@@ -60,7 +60,7 @@ suspend fun backfillVeglenkesekvenser() {
                 updates.clear()
 
                 // Update progress in SQL (outside RocksDB transaction)
-                KeyValue.put("veglenkesekvenser_backfill_last_id", lastId!!)
+                keyValueStore.put("veglenkesekvenser_backfill_last_id", lastId!!)
             }
 
             totalCount += veglenkesekvenser.size
@@ -124,8 +124,8 @@ fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
 
 suspend fun updateVeglenkesekvenser(): Int {
     var lastHendelseId =
-        KeyValue.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestVeglenkesekvensHendelseId(
-            KeyValue.get<Instant>("veglenkesekvenser_backfill_completed")
+        keyValueStore.get<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestVeglenkesekvensHendelseId(
+            keyValueStore.get<Instant>("veglenkesekvenser_backfill_completed")
                 ?: error("Veglenkesekvenser backfill er ikke ferdig"),
         )
 
@@ -173,7 +173,7 @@ suspend fun updateVeglenkesekvenser(): Int {
 
             transaction {
                 publishChangedVeglenkesekvensIds(changedIds)
-                KeyValue.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
+                keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
             }
 
             println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")

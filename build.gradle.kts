@@ -96,6 +96,7 @@ tasks.withType<KotlinCompile> {
             "kotlinx.coroutines.ExperimentalCoroutinesApi",
         )
         freeCompilerArgs.add("-Xsuppress-warning=DEPRECATION")
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }
 

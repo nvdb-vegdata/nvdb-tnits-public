@@ -5,7 +5,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.config.configureDatabase
 import no.vegvesen.nvdb.tnits.config.loadConfig
-import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.clearVeglenkesekvensSettings
 import no.vegvesen.nvdb.tnits.vegnett.backfillVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.vegnett.updateVeglenkesekvenser
@@ -23,7 +22,7 @@ suspend fun main() {
     // Check if RocksDB exists and has data
     if (!rocksDbConfiguration.existsAndHasData()) {
         println("RocksDB-database eksisterer ikke eller er tom. Nullstiller veglenkesekvenser-innstillinger...")
-        KeyValue.clearVeglenkesekvensSettings()
+        keyValueStore.clearVeglenkesekvensSettings()
         println("Veglenkesekvenser-innstillinger nullstilt. Backfill vil starte på nytt.")
     }
 

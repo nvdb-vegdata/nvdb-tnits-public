@@ -89,3 +89,7 @@ val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository, 
 val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
 
 val openLrService: OpenLrService = OpenLrService(cachedVegnett)
+
+val keyValueStore: KeyValueStore = KeyValueRocksDbStore(rocksDbConfiguration)
+
+val vegobjekterRepository: VegobjekterRepository = VegobjekterRocksDbStore(rocksDbConfiguration)

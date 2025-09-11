@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
-import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.toRounded
@@ -58,8 +57,8 @@ suspend fun generateSpeedLimitsDeltaUpdate(now: Instant) {
     println("Lagrer endringsdata for fartsgrenser til ${path.toAbsolutePath()}")
 
     val since =
-        KeyValue.get<Instant>("last_speedlimit_snapshot")
-            ?: KeyValue.get<Instant>("last_speedlimit_update")
+        keyValueStore.get<Instant>("last_speedlimit_snapshot")
+            ?: keyValueStore.get<Instant>("last_speedlimit_update")
             ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
 
     val speedLimitsFlow = parallelSpeedLimitProcessor.generateSpeedLimitsUpdate(since)
@@ -83,7 +82,7 @@ suspend fun generateSpeedLimitsDeltaUpdate(now: Instant) {
             }
         }
     }
-    KeyValue.put("last_speedlimit_update", now)
+    keyValueStore.put("last_speedlimit_update", now)
 }
 
 suspend fun generateSpeedLimitsFullSnapshot(now: Instant) {
@@ -117,7 +116,7 @@ suspend fun generateSpeedLimitsFullSnapshot(now: Instant) {
             }
         }
     }
-    KeyValue.put("last_speedlimit_snapshot", now)
+    keyValueStore.put("last_speedlimit_snapshot", now)
 }
 
 private fun XmlStreamDsl.writeSpeedLimit(speedLimit: SpeedLimit) {

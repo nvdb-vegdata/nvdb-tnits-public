@@ -5,6 +5,7 @@ enum class ColumnFamily(val familyName: String) {
     NODER("noder"),
     VEGLENKER("veglenker"),
     VEGOBJEKTER("vegobjekter"),
+    KEY_VALUE("key_value"),
     ;
 
     companion object {
