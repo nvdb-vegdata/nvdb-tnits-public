@@ -7,10 +7,7 @@ import kotlinx.serialization.serializer
 import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
-class KeyValueRocksDbStore(
-    private val rocksDbConfig: RocksDbConfiguration,
-    private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE
-) : KeyValueStore {
+class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) : KeyValueStore {
     override fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
         val keyBytes = key.toByteArray()
         val valueBytes = rocksDbConfig.get(columnFamily, keyBytes)
@@ -36,7 +33,7 @@ class KeyValueRocksDbStore(
 
         if (keysToDelete.isNotEmpty()) {
             val deleteOperations = keysToDelete.map { key -> BatchOperation.Delete(key) }
-            rocksDbConfig.batchWrite(columnFamily, deleteOperations)
+            rocksDbConfig.writeBatch(columnFamily, deleteOperations)
         }
     }
 
@@ -76,7 +73,7 @@ class KeyValueRocksDbStore(
 
             if (keysToDelete.isNotEmpty()) {
                 val deleteOperations = keysToDelete.map { key -> BatchOperation.Delete(key) }
-                rocksDbConfig.batchWrite(columnFamily, deleteOperations)
+                rocksDbConfig.writeBatch(columnFamily, deleteOperations)
             }
         } catch (e: RocksDBException) {
             throw RuntimeException("Failed to clear key-value data", e)
@@ -89,11 +86,9 @@ class KeyValueRocksDbStore(
     inline fun <reified T : Any> get(key: String): T? = get(key, serializer())
     inline fun <reified T : Any> put(key: String, value: T) = put(key, value, serializer())
 
-    private fun <T : Any> serializeValue(value: T, serializer: KSerializer<T>): ByteArray =
-        ProtoBuf.encodeToByteArray(serializer, value)
+    private fun <T : Any> serializeValue(value: T, serializer: KSerializer<T>): ByteArray = ProtoBuf.encodeToByteArray(serializer, value)
 
-    private fun <T : Any> deserializeValue(data: ByteArray, serializer: KSerializer<T>): T =
-        ProtoBuf.decodeFromByteArray(serializer, data)
+    private fun <T : Any> deserializeValue(data: ByteArray, serializer: KSerializer<T>): T = ProtoBuf.decodeFromByteArray(serializer, data)
 
     private fun ByteArray.endsWith(suffix: ByteArray): Boolean {
         if (this.size < suffix.size) return false

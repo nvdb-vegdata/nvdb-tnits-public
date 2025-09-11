@@ -15,12 +15,12 @@ import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import kotlin.collections.flatMap
-import kotlin.collections.map
 import kotlin.time.Instant
 import kotlin.time.measureTime
 
@@ -38,12 +38,14 @@ data class IdRange(val startId: Long, val endId: Long)
 
 class ParallelSpeedLimitProcessor(
     private val veglenkerBatchLookup: VeglenkerBatchLookup,
+    private val datakatalogApi: DatakatalogApi,
+    private val openLrService: OpenLrService,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
 ) {
     private val superBatchSize = workerCount * FETCH_SIZE
 
     fun generateSpeedLimitsUpdate(since: Instant): Flow<SpeedLimit> = flow {
-        val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
+        val kmhByEgenskapVerdi = datakatalogApi.getKmhByEgenskapVerdi()
 
         var paginationId = 0L
         var totalCount = 0
@@ -71,7 +73,7 @@ class ParallelSpeedLimitProcessor(
     }
 
     fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> = flow {
-        val kmhByEgenskapVerdi = getKmhByEgenskapVerdi()
+        val kmhByEgenskapVerdi = datakatalogApi.getKmhByEgenskapVerdi()
 
         var paginationId = 0L
         var totalCount = 0

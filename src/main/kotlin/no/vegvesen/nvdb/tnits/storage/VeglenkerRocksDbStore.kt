@@ -22,7 +22,7 @@ class VeglenkerRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, pri
         }
 
         val keys = veglenkesekvensIds.map { it.toByteArray() }
-        val values = rocksDbConfig.batchGet(columnFamily, keys)
+        val values = rocksDbConfig.getBatch(columnFamily, keys)
 
         val result = mutableMapOf<Long, List<Veglenke>>()
         veglenkesekvensIds.zip(values).forEach { (id, value) ->
@@ -78,7 +78,7 @@ class VeglenkerRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, pri
                 }
             }
 
-        rocksDbConfig.batchWrite(columnFamily, operations)
+        rocksDbConfig.writeBatch(columnFamily, operations)
     }
 
     fun clear() {

@@ -1,0 +1,119 @@
+package no.vegvesen.nvdb.tnits
+
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
+import no.vegvesen.nvdb.tnits.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.services.DatakatalogApi
+import no.vegvesen.nvdb.tnits.services.UberiketApi
+import no.vegvesen.nvdb.tnits.storage.*
+import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
+import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService
+import no.vegvesen.nvdb.tnits.vegobjekter.VegobjekterService
+import org.openlr.binary.BinaryMarshaller
+import org.openlr.binary.BinaryMarshallerFactory
+
+fun ObjectMapper.initialize(): ObjectMapper = apply {
+    findAndRegisterModules()
+    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
+    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+}
+
+class Services {
+
+    val objectMapper: ObjectMapper = ObjectMapper().initialize()
+
+    val uberiketHttpClient =
+        HttpClient(CIO) {
+            expectSuccess = true
+            install(ContentNegotiation) {
+                jackson {
+                    initialize()
+                }
+            }
+            install(HttpRequestRetry) {
+                retryOnServerErrors(maxRetries = 5)
+                retryOnException(maxRetries = 5, retryOnTimeout = true)
+                exponentialDelay(base = 2.0, maxDelayMs = 30_000)
+
+                modifyRequest { request ->
+                    println("Retrying API request to ${request.url}")
+                }
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 60_000
+                connectTimeoutMillis = 10_000
+                socketTimeoutMillis = 60_000
+            }
+            defaultRequest {
+                url("https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/")
+                headers.append("Accept", "application/json, application/x-ndjson")
+                headers.append("X-Client", "nvdb-tnits-console")
+            }
+        }
+
+    val uberiketApi = UberiketApi(uberiketHttpClient)
+
+    val datakatalogHttpClient =
+        HttpClient(CIO) {
+            expectSuccess = true
+            install(ContentNegotiation) {
+                jackson {
+                    initialize()
+                }
+            }
+            defaultRequest {
+                url("https://nvdbapiles.atlas.vegvesen.no/datakatalog/api/v1/")
+                headers.append("Accept", "application/json")
+                headers.append("X-Client", "nvdb-tnits-console")
+            }
+        }
+
+    val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
+
+    val rocksDbConfiguration = RocksDbConfiguration()
+
+    val veglenkerRepository: VeglenkerRepository =
+        VeglenkerRocksDbStore(rocksDbConfiguration)
+
+    val feltstrekningRepository: FeltstrekningRepository = FeltstrekningRepository()
+
+    val funksjonellVegklasseRepository = FunksjonellVegklasseRepository()
+
+    val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository, funksjonellVegklasseRepository)
+
+    val openLrService: OpenLrService = OpenLrService(cachedVegnett)
+
+    val keyValueStore: KeyValueStore = KeyValueRocksDbStore(rocksDbConfiguration)
+
+    val vegobjekterRepository: VegobjekterRepository = VegobjekterRocksDbStore(rocksDbConfiguration)
+
+    val vegobjekterService = VegobjekterService(keyValueStore, uberiketApi, vegobjekterRepository)
+
+    val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository)
+
+    val speedLimitGenerator =
+        ParallelSpeedLimitProcessor(
+            veglenkerBatchLookup = { ids ->
+                ids.associateWith {
+                    cachedVegnett.getVeglenker(it)
+                }
+            },
+            datakatalogApi = datakatalogApi,
+            openLrService = openLrService,
+        )
+
+    companion object {
+        val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
+        val objectMapper = jacksonObjectMapper().initialize()
+    }
+}

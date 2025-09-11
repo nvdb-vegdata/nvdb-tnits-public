@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.database
 
-import no.vegvesen.nvdb.tnits.objectMapper
+import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.vendors.H2Dialect
 import org.jetbrains.exposed.v1.core.vendors.OracleDialect

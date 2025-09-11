@@ -5,7 +5,7 @@ import io.ktor.http.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import no.vegvesen.nvdb.tnits.objectMapper
+import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 
 data class ProblemDetail(
     val type: String? = null,

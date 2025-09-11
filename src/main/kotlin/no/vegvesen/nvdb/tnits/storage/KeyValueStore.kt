@@ -12,5 +12,4 @@ interface KeyValueStore {
     fun countKeysMatchingPattern(prefix: String, suffix: String): Int
     fun clear()
     fun size(): Long
-
 }
