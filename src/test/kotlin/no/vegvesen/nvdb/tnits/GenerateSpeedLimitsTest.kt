@@ -5,15 +5,13 @@ import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
-import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 
 class GenerateSpeedLimitsTest :
     StringSpec({
 
         "include all fields when mapping from VegobjektStedfesting to utstrekning" {
             VegobjektStedfesting(
-                vegobjektId = 1,
-                vegobjektType = 105,
                 veglenkesekvensId = 123,
                 startposisjon = 0.0,
                 sluttposisjon = 1.0,

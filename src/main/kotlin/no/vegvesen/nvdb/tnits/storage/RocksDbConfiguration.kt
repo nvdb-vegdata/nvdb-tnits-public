@@ -191,6 +191,11 @@ open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", e
         return db.newIterator(handle)
     }
 
+    fun newIterator(columnFamily: ColumnFamily, readOptions: ReadOptions): RocksIterator {
+        val handle = getColumnFamily(columnFamily)
+        return db.newIterator(handle, readOptions)
+    }
+
     fun deleteRange(columnFamily: ColumnFamily, start: ByteArray, end: ByteArray) {
         val handle = getColumnFamily(columnFamily)
         db.deleteRange(handle, start, end)
@@ -199,6 +204,77 @@ open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", e
     fun getEstimatedKeys(columnFamily: ColumnFamily): Long {
         val handle = getColumnFamily(columnFamily)
         return db.getProperty(handle, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L
+    }
+
+    fun findKeysByPrefix(columnFamily: ColumnFamily, prefix: ByteArray): List<ByteArray> {
+        if (prefix.isEmpty()) {
+            return emptyList()
+        }
+
+        val keys = mutableListOf<ByteArray>()
+
+        val readOptions = ReadOptions().apply {
+            setAutoPrefixMode(true)
+            val upperBound = calculateUpperBound(prefix)
+            setIterateUpperBound(upperBound)
+        }
+
+        readOptions.use { options ->
+            newIterator(columnFamily, options).use { iterator ->
+                iterator.seek(prefix)
+                while (iterator.isValid && iterator.key().startsWith(prefix)) {
+                    keys.add(iterator.key().clone())
+                    iterator.next()
+                }
+            }
+        }
+
+        return keys
+    }
+
+    fun findByPrefix(columnFamily: ColumnFamily, prefix: ByteArray): List<Pair<ByteArray, ByteArray>> {
+        if (prefix.isEmpty()) {
+            return emptyList()
+        }
+
+        val keyValuePairs = mutableListOf<Pair<ByteArray, ByteArray>>()
+
+        val readOptions = ReadOptions().apply {
+            setAutoPrefixMode(true)
+            val upperBound = calculateUpperBound(prefix)
+            setIterateUpperBound(upperBound)
+        }
+
+        readOptions.use { options ->
+            newIterator(columnFamily, options).use { iterator ->
+                iterator.seek(prefix)
+                while (iterator.isValid && iterator.key().startsWith(prefix)) {
+                    keyValuePairs.add(Pair(iterator.key().clone(), iterator.value().clone()))
+                    iterator.next()
+                }
+            }
+        }
+
+        return keyValuePairs
+    }
+
+    private fun calculateUpperBound(prefix: ByteArray): Slice {
+        val upperBound = prefix.clone()
+        for (i in upperBound.size - 1 downTo 0) {
+            if (upperBound[i] != Byte.MAX_VALUE) {
+                upperBound[i] = (upperBound[i] + 1).toByte()
+                return Slice(upperBound)
+            }
+        }
+        return Slice(ByteArray(prefix.size + 1) { if (it < prefix.size) prefix[it] else 0 })
+    }
+
+    private fun ByteArray.startsWith(prefix: ByteArray): Boolean {
+        if (this.size < prefix.size) return false
+        for (i in prefix.indices) {
+            if (this[i] != prefix[i]) return false
+        }
+        return true
     }
 
     fun batchWrite(columnFamily: ColumnFamily, operations: List<BatchOperation>) {

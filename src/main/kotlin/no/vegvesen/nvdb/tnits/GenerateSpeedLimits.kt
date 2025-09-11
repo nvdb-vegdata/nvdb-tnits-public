@@ -8,11 +8,7 @@ import no.vegvesen.nvdb.tnits.database.KeyValue
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.extensions.toRounded
-import no.vegvesen.nvdb.tnits.model.EgenskapsTyper
-import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
-import no.vegvesen.nvdb.tnits.model.Veglenke
-import no.vegvesen.nvdb.tnits.model.VegobjektTyper
-import no.vegvesen.nvdb.tnits.vegobjekter.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
 import java.nio.file.Files

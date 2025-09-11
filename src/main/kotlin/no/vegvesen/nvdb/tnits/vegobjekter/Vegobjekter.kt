@@ -1,8 +1,6 @@
 package no.vegvesen.nvdb.tnits.vegobjekter
 
 import kotlinx.coroutines.flow.toList
-import no.vegvesen.nvdb.apiles.uberiket.Retning
-import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.database.KeyValue
@@ -12,6 +10,7 @@ import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.nowOffsetDateTime
 import no.vegvesen.nvdb.tnits.extensions.put
+import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.uberiketApi
 import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
@@ -145,8 +144,6 @@ private fun insertVegobjekter(vegobjekter: List<Vegobjekt>) {
             vegobjekt.getStedfestingLinjer()
         }
     Stedfestinger.batchInsert(stedfestinger) { stedfesting ->
-        this[Stedfestinger.vegobjektId] = stedfesting.vegobjektId
-        this[Stedfestinger.vegobjektType] = stedfesting.vegobjektType
         this[Stedfestinger.veglenkesekvensId] = stedfesting.veglenkesekvensId
         this[Stedfestinger.startposisjon] = stedfesting.startposisjon
         this[Stedfestinger.sluttposisjon] = stedfesting.sluttposisjon
@@ -166,23 +163,8 @@ fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val ste
                 retning = it.retning,
                 sideposisjon = it.sideposisjon,
                 kjorefelt = it.kjorefelt,
-                vegobjektId = this.id,
-                vegobjektType = this.typeId,
             )
         }
 
     else -> error("Forventet StedfestingLinjer, fikk ${stedfesting::class.simpleName}")
 }
-
-data class VegobjektStedfesting(
-    val vegobjektId: Long,
-    val vegobjektType: Int,
-    val veglenkesekvensId: Long,
-    val startposisjon: Double,
-    val sluttposisjon: Double,
-    val retning: Retning? = null,
-    val sideposisjon: Sideposisjon? = null,
-    val kjorefelt: List<String> = emptyList(),
-)
-
-interface Stedfesting
