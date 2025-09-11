@@ -2,9 +2,8 @@ package no.vegvesen.nvdb.tnits.storage
 
 import org.rocksdb.*
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 
-open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
+open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions
@@ -38,8 +37,8 @@ open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", e
         initialize()
     }
 
-    fun writeBatch(block: WriteBatchDsl.() -> Unit) {
-        val operations = WriteBatchDsl(block)
+    fun writeBatch(block: WriteBatchContext.() -> Unit) {
+        val operations = WriteBatchContext(block)
         WriteBatch().use {
             for ((columnFamily, ops) in operations) {
                 val handle = getColumnFamily(columnFamily)
@@ -332,46 +331,6 @@ open class RocksDbConfiguration(protected val dbPath: String = "veglenker.db", e
         }
         if (::options.isInitialized) {
             options.close()
-        }
-    }
-}
-
-sealed class BatchOperation {
-    class Put(val key: ByteArray, val value: ByteArray) : BatchOperation()
-
-    class Delete(val key: ByteArray) : BatchOperation()
-}
-
-class WriteBatchDsl {
-    private val operations = ConcurrentHashMap<ColumnFamily, MutableList<BatchOperation>>()
-
-    fun put(columnFamily: ColumnFamily, key: ByteArray, value: ByteArray) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
-            .add(BatchOperation.Put(key, value))
-    }
-
-    fun putAll(columnFamily: ColumnFamily, entries: Map<ByteArray, ByteArray>) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
-            .addAll(entries.map { (key, value) -> BatchOperation.Put(key, value) })
-    }
-
-    fun delete(columnFamily: ColumnFamily, key: ByteArray) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
-            .add(BatchOperation.Delete(key))
-    }
-
-    fun deleteAll(columnFamily: ColumnFamily, keys: Collection<ByteArray>) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
-            .addAll(keys.map { key -> BatchOperation.Delete(key) })
-    }
-
-    fun getOperations(): Map<ColumnFamily, List<BatchOperation>> = operations
-
-    companion object {
-        inline operator fun invoke(block: WriteBatchDsl.() -> Unit): Map<ColumnFamily, List<BatchOperation>> {
-            val dsl = WriteBatchDsl()
-            dsl.block()
-            return dsl.getOperations()
         }
     }
 }

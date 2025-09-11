@@ -2,11 +2,8 @@ package no.vegvesen.nvdb.tnits.extensions
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
-import no.vegvesen.nvdb.tnits.storage.KeyValueStore
-import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
+import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
@@ -14,12 +11,12 @@ class KeyValueRocksDbExtensionsTest :
     StringSpec({
 
         lateinit var tempDir: File
-        lateinit var rocksDbConfig: RocksDbConfiguration
-        lateinit var store: KeyValueStore
+        lateinit var rocksDbConfig: RocksDbContext
+        lateinit var store: KeyValueRocksDbStore
 
         beforeTest {
             tempDir = createTempDirectory("keyvalue-extensions-test").toFile()
-            rocksDbConfig = RocksDbConfiguration(tempDir.absolutePath, enableCompression = false)
+            rocksDbConfig = RocksDbContext(tempDir.absolutePath, enableCompression = false)
             store = KeyValueRocksDbStore(rocksDbConfig)
         }
 

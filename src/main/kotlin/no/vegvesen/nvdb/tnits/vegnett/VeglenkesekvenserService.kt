@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.geometry.projectTo
@@ -13,16 +11,18 @@ import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.KeyValueStore
+import no.vegvesen.nvdb.tnits.storage.DirtyVeglenkesekvenserRepository
+import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 class VeglenkesekvenserService(
-    private val keyValueStore: KeyValueStore,
+    private val keyValueStore: KeyValueRocksDbStore,
     private val uberiketApi: UberiketApi,
     private val veglenkerRepository: VeglenkerRepository,
+    private val dirtyVeglenkesekvenserRepository: DirtyVeglenkesekvenserRepository,
 ) {
 
     suspend fun backfillVeglenkesekvenser() {
@@ -125,7 +125,7 @@ class VeglenkesekvenserService(
                 veglenkerRepository.batchUpdate(updates)
 
                 transaction {
-                    publishChangedVeglenkesekvensIds(changedIds)
+                    dirtyVeglenkesekvenserRepository.publishChangedVeglenkesekvensIds(changedIds)
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
 

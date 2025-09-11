@@ -7,30 +7,46 @@ import no.vegvesen.nvdb.tnits.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.toDomain
 import java.nio.ByteBuffer
+import kotlin.time.Clock
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
+fun WriteBatchContext.publishChangedVeglenkesekvenser(veglenkesekvensIds: Set<Long>) {
+    val now = Clock.System.now()
+    val dirtyVeglenkesekvenserUpserts = veglenkesekvensIds.map {
+        BatchOperation.Put(it.toByteArray(), now.toEpochMilliseconds().toByteArray())
+    }
+    write(ColumnFamily.DIRTY_VEGLENKESEKVENSER, dirtyVeglenkesekvenserUpserts)
+}
+
 @OptIn(ExperimentalSerializationApi::class)
-class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbConfiguration) : VegobjekterRepository {
+class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbContext) : VegobjekterRepository {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
+    private val dirtyVeglenkesekvenserColumnFamily = ColumnFamily.DIRTY_VEGLENKESEKVENSER
 
     private val relevanteEgenskaperPerType: Map<Int, Set<Int>> = mapOf(
         105 to setOf(2021),
     )
 
+    // TODO: Kanskje dette er unødvendig hvis vi kan anta at endringer på 616 og 821 alltid kommer sammen med endringer på tilhørende vegnett?
+    private val dirtyCheckForTypes = setOf(821, 616)
+
+    context(context: WriteBatchContext)
     override fun batchInsert(vegobjekter: List<ApiVegobjekt>) {
-        val operations = mutableListOf<BatchOperation>()
         for (apiVegobjekt in vegobjekter) {
             val vegobjekt = mapToDomain(apiVegobjekt)
 
             val vegobjektUpsert = createVegobjektUpsert(vegobjekt)
-            operations.add(vegobjektUpsert)
+            context.write(columnFamily, vegobjektUpsert)
 
             val stedfestingerByVeglenkesekvens = vegobjekt.stedfestinger.groupBy { it.veglenkesekvensId }
 
             val stedfestingerUpserts = createStedfestingerUpserts(stedfestingerByVeglenkesekvens, vegobjekt.id)
-            operations.addAll(stedfestingerUpserts)
+            context.write(columnFamily, stedfestingerUpserts)
+
+            if (apiVegobjekt.typeId in dirtyCheckForTypes) {
+                context.publishChangedVeglenkesekvenser(stedfestingerByVeglenkesekvens.keys)
+            }
         }
-        rocksDbConfig.writeBatch(columnFamily, operations)
     }
 
     private fun mapToDomain(apiVegobjekt: ApiVegobjekt): Vegobjekt {
@@ -39,9 +55,8 @@ class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbConfiguration) :
         return vegobjekt
     }
 
+    context(context: WriteBatchContext)
     override fun batchUpdate(updates: Map<Long, ApiVegobjekt?>) {
-        val operations = mutableListOf<BatchOperation>()
-
         for ((vegobjektId, apiVegobjekt) in updates) {
             val vegobjektKey = getVegobjektKey(vegobjektId)
 
@@ -52,24 +67,23 @@ class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbConfiguration) :
                     getStedfestingKey(vegobjektId, it.veglenkesekvensId)
                 }.toSet().map { BatchOperation.Delete(it) }
 
-                operations.add(BatchOperation.Delete(vegobjektKey))
-                operations.addAll(stedfestingerDeletions)
+                context.write(columnFamily, BatchOperation.Delete(vegobjektKey))
+                context.write(columnFamily, stedfestingerDeletions)
             } else {
                 val vegobjekt = mapToDomain(apiVegobjekt)
 
                 val vegobjektUpsert = createVegobjektUpsert(vegobjekt)
-                operations.add(vegobjektUpsert)
+                context.write(columnFamily, vegobjektUpsert)
 
                 val stedfestingerByVeglenkesekvens = vegobjekt.stedfestinger.groupBy { it.veglenkesekvensId }
 
                 val stedfestingerUpserts = createStedfestingerUpserts(stedfestingerByVeglenkesekvens, vegobjektId)
-                operations.addAll(stedfestingerUpserts)
+                context.write(columnFamily, stedfestingerUpserts)
 
                 val stedfestingerDeletions = createStedfestingerDeletions(stedfestingerByVeglenkesekvens, vegobjektId)
-                operations.addAll(stedfestingerDeletions)
+                context.write(columnFamily, stedfestingerDeletions)
             }
         }
-        rocksDbConfig.writeBatch(columnFamily, operations)
     }
 
     private fun createStedfestingerUpserts(stedfestingerByVeglenkesekvens: Map<Long, List<VegobjektStedfesting>>, vegobjektId: Long): List<BatchOperation.Put> {
@@ -111,8 +125,3 @@ class VegobjekterRocksDbStore(private val rocksDbConfig: RocksDbConfiguration) :
 
 const val VegobjektKeyPrefix: Byte = 0
 const val StedfestingKeyPrefix: Byte = 1
-
-interface VegobjekterRepository {
-    fun batchUpdate(updates: Map<Long, ApiVegobjekt?>)
-    fun batchInsert(vegobjekter: List<ApiVegobjekt>)
-}

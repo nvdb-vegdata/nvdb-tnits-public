@@ -7,7 +7,7 @@ import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
-class VeglenkerRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER) :
+class VeglenkerRocksDbStore(private val rocksDbConfig: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER) :
     VeglenkerRepository {
     override fun get(veglenkesekvensId: Long): List<Veglenke>? {
         val key = veglenkesekvensId.toByteArray()

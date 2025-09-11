@@ -17,12 +17,12 @@ import java.nio.file.Files
 
 class VeglenkerRocksDbStoreTest : StringSpec() {
     private lateinit var tempDir: String
-    private lateinit var configuration: RocksDbConfiguration
+    private lateinit var configuration: RocksDbContext
     private lateinit var store: VeglenkerRocksDbStore
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-veglenker-test").toString()
-        configuration = RocksDbConfiguration(tempDir, enableCompression = true)
+        configuration = RocksDbContext(tempDir, enableCompression = true)
         store = VeglenkerRocksDbStore(configuration)
     }
 

@@ -7,27 +7,35 @@ import kotlinx.serialization.serializer
 import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
-class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) : KeyValueStore {
-    override fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
+class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) {
+    fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
         val keyBytes = key.toByteArray()
         val valueBytes = rocksDbConfig.get(columnFamily, keyBytes)
 
         return valueBytes?.let { deserializeValue(it, serializer) }
     }
 
-    override fun <T : Any> put(key: String, value: T, serializer: KSerializer<T>) {
+    context(context: WriteBatchContext)
+    fun <T : Any> put(key: String, value: T, serializer: KSerializer<T>) {
+        val keyBytes = key.toByteArray()
+        val valueBytes = serializeValue(value, serializer)
+
+        context.write(columnFamily, BatchOperation.Put(keyBytes, valueBytes))
+    }
+
+    fun <T : Any> put(key: String, value: T, serializer: KSerializer<T>) {
         val keyBytes = key.toByteArray()
         val valueBytes = serializeValue(value, serializer)
 
         rocksDbConfig.put(columnFamily, keyBytes, valueBytes)
     }
 
-    override fun delete(key: String) {
+    fun delete(key: String) {
         val keyBytes = key.toByteArray()
         rocksDbConfig.delete(columnFamily, keyBytes)
     }
 
-    override fun deleteKeysByPrefix(prefix: String) {
+    fun deleteKeysByPrefix(prefix: String) {
         val prefixBytes = prefix.toByteArray()
         val keysToDelete = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
 
@@ -37,21 +45,21 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, priv
         }
     }
 
-    override fun findKeysByPrefix(prefix: String): List<String> {
+    fun findKeysByPrefix(prefix: String): List<String> {
         val prefixBytes = prefix.toByteArray()
         val keyBytes = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
 
         return keyBytes.map { String(it) }
     }
 
-    override fun countKeysByPrefix(prefix: String): Int {
+    fun countKeysByPrefix(prefix: String): Int {
         val prefixBytes = prefix.toByteArray()
         val keys = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
 
         return keys.size
     }
 
-    override fun countKeysMatchingPattern(prefix: String, suffix: String): Int {
+    fun countKeysMatchingPattern(prefix: String, suffix: String): Int {
         val prefixBytes = prefix.toByteArray()
         val keys = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
         val suffixBytes = suffix.toByteArray()
@@ -59,7 +67,7 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, priv
         return keys.count { key -> key.endsWith(suffixBytes) }
     }
 
-    override fun clear() {
+    fun clear() {
         try {
             val keysToDelete = mutableListOf<ByteArray>()
 
@@ -80,10 +88,13 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbConfiguration, priv
         }
     }
 
-    override fun size(): Long = rocksDbConfig.getEstimatedKeys(columnFamily)
+    fun size(): Long = rocksDbConfig.getEstimatedKeys(columnFamily)
 
     // Convenience inline functions for reified types
     inline fun <reified T : Any> get(key: String): T? = get(key, serializer())
+    inline fun <reified T : Any> put(key: String, value: T) = put(key, value, serializer())
+
+    context(_: WriteBatchContext)
     inline fun <reified T : Any> put(key: String, value: T) = put(key, value, serializer())
 
     private fun <T : Any> serializeValue(value: T, serializer: KSerializer<T>): ByteArray = ProtoBuf.encodeToByteArray(serializer, value)

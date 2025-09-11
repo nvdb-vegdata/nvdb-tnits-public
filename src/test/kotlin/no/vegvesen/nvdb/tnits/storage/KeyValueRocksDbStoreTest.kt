@@ -6,8 +6,6 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
@@ -15,12 +13,12 @@ class KeyValueRocksDbStoreTest :
     StringSpec({
 
         lateinit var tempDir: File
-        lateinit var rocksDbConfig: RocksDbConfiguration
-        lateinit var store: KeyValueStore
+        lateinit var rocksDbConfig: RocksDbContext
+        lateinit var store: KeyValueRocksDbStore
 
         beforeTest {
             tempDir = createTempDirectory("keyvalue-test").toFile()
-            rocksDbConfig = RocksDbConfiguration(tempDir.absolutePath, enableCompression = false)
+            rocksDbConfig = RocksDbContext(tempDir.absolutePath, enableCompression = false)
             store = KeyValueRocksDbStore(rocksDbConfig)
         }
 

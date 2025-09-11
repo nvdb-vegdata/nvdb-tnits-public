@@ -13,11 +13,11 @@ import java.nio.file.Files
 
 class RocksDbConfigurationTest : StringSpec() {
     private lateinit var tempDir: String
-    private lateinit var configuration: RocksDbConfiguration
+    private lateinit var configuration: RocksDbContext
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-config-test").toString()
-        configuration = RocksDbConfiguration(tempDir, enableCompression = true)
+        configuration = RocksDbContext(tempDir, enableCompression = true)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {

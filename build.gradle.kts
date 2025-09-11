@@ -5,13 +5,17 @@ plugins {
     kotlin("plugin.serialization") version "2.2.10"
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.14.0"
-    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
+    id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
     id("com.github.ben-manes.versions") version "0.52.0"
     application
 }
 
 group = "no.vegvesen.nvdb.tnits"
 version = "1.0.0"
+
+ktlint {
+    version.set("1.7.1")
+}
 
 repositories {
     maven { url = uri("https://repo.osgeo.org/repository/release/") }

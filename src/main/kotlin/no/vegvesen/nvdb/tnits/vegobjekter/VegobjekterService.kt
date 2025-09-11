@@ -6,20 +6,18 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.database.Stedfestinger
 import no.vegvesen.nvdb.tnits.database.Vegobjekter
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.extensions.get
 import no.vegvesen.nvdb.tnits.extensions.nowOffsetDateTime
-import no.vegvesen.nvdb.tnits.extensions.put
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.KeyValueStore
+import no.vegvesen.nvdb.tnits.storage.DirtyVeglenkesekvenserRepository
+import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
+import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.vegnett.publishChangedVeglenkesekvensIds
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -29,9 +27,11 @@ private val dirtyCheckForTypes =
     )
 
 class VegobjekterService(
-    private val keyValueStore: KeyValueStore,
+    private val keyValueStore: KeyValueRocksDbStore,
     private val uberiketApi: UberiketApi,
     private val vegobjekterRepository: VegobjekterRepository,
+    private val dirtyVeglenkesekvenserRepository: DirtyVeglenkesekvenserRepository,
+    private val rocksDbContext: RocksDbContext,
 ) {
     suspend fun backfillVegobjekter(typeId: Int) {
         val backfillCompleted = keyValueStore.get<Instant>("vegobjekter_${typeId}_backfill_completed")
@@ -61,10 +61,8 @@ class VegobjekterService(
                 println("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
                 keyValueStore.put("vegobjekter_${typeId}_backfill_completed", Clock.System.now())
             } else {
-                transaction {
+                rocksDbContext.writeBatch {
                     vegobjekterRepository.batchInsert(vegobjekter)
-//                insertVegobjekterSql(vegobjekter)
-                    // Keep progress update atomic within the same transaction
                     keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
                 }
                 totalCount += vegobjekter.size
@@ -109,7 +107,7 @@ class VegobjekterService(
                     } while (batch.isNotEmpty())
                 }
 
-                transaction {
+                rocksDbContext.writeBatch {
                     if (typeId in dirtyCheckForTypes) {
                         val existingStedfestedeVeglenkesekvensIds =
                             Stedfestinger
@@ -123,7 +121,9 @@ class VegobjekterService(
                                 .flatMap { it.getStedfestingLinjer() }
                                 .map { it.veglenkesekvensId }
                                 .toSet()
-                        publishChangedVeglenkesekvensIds(existingStedfestedeVeglenkesekvensIds + updatedStedfestedeVeglenkesekvensIds)
+                        dirtyVeglenkesekvenserRepository.publishChangedVeglenkesekvensIds(
+                            existingStedfestedeVeglenkesekvensIds + updatedStedfestedeVeglenkesekvensIds,
+                        )
                     }
                     Vegobjekter.deleteWhere {
                         Vegobjekter.vegobjektId inList changedIds

@@ -17,7 +17,7 @@ import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.storage.FeltstrekningRepository
 import no.vegvesen.nvdb.tnits.storage.FunksjonellVegklasseRepository
-import no.vegvesen.nvdb.tnits.storage.RocksDbConfiguration
+import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
@@ -181,7 +181,7 @@ class OpenLrServiceTest :
     })
 
 private fun setupOpenLrService(
-    config: RocksDbConfiguration,
+    config: RocksDbContext,
     vararg paths: String,
     feltstrekningRepository: FeltstrekningRepository = mockk<FeltstrekningRepository>(),
     funksjonellVegklasseRepository: FunksjonellVegklasseRepository =
