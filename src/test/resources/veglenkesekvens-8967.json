@@ -1,0 +1,64 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 8967,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 30668,
+          "nodePortNummer": 1,
+          "posisjon": 0.0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 30666,
+          "nodePortNummer": 1,
+          "posisjon": 1.0
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": true,
+          "topologiniva": "VEGTRASE",
+          "maledato": "2010-04-24",
+          "malemetode": "METRERT",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 2,
+          "kommune": 4203,
+          "geometri": {
+            "wkt": "LINESTRING Z(134159.5 6497409.33 55.46, 134158.28 6497412.24 55.39)",
+            "srid": 5973,
+            "lengde": 3.1561685634436714,
+            "datafangstdato": "2019-04-08",
+            "temakode": 7001,
+            "kommune": 4203,
+            "kvalitet": {
+              "malemetode": 24,
+              "malemetodeHoyde": 24,
+              "noyaktighet": 35,
+              "noyaktighetHoyde": 20,
+              "synbarhet": 0,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot",
+              "datafangstmetodeHoyde": "fot"
+            }
+          },
+          "lengde": 3.15616856344367,
+          "feltoversikt": []
+        }
+      ],
+      "lengde": 8.5164290791904,
+      "sistEndret": "2025-05-02T12:58:41.038595Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 1,
+    "sidestorrelse": 500
+  }
+}

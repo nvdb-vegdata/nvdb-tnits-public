@@ -1,0 +1,87 @@
+{
+  "id": 1020953586,
+  "versjon": 1,
+  "typeId": 616,
+  "gyldighetsperiode": {
+    "startdato": "2024-10-01"
+  },
+  "egenskaper": {
+    "12675": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12673": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12671": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12630": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12629": {
+      "type": "HeltallEgenskap",
+      "verdi": 2
+    },
+    "12668": {
+      "type": "HeltallEgenskap",
+      "verdi": 1
+    },
+    "12669": {
+      "type": "HeltallEgenskap",
+      "verdi": 1
+    },
+    "12631": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12672": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12674": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12632": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12670": {
+      "type": "HeltallEgenskap",
+      "verdi": 0
+    },
+    "12647": {
+      "type": "TekstEgenskap",
+      "verdi": "1#2"
+    },
+    "12633": {
+      "type": "EnumEgenskap",
+      "verdi": 21829
+    },
+    "5528": {
+      "type": "TekstEgenskap",
+      "verdi": "1#2"
+    },
+    "12628": {
+      "type": "EnumEgenskap",
+      "verdi": 21823
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 8967,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T18:57:47.394189Z"
+}

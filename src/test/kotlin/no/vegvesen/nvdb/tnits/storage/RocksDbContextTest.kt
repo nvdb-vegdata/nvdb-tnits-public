@@ -11,46 +11,46 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.nio.file.Files
 
-class RocksDbConfigurationTest : StringSpec() {
+class RocksDbContextTest : StringSpec() {
     private lateinit var tempDir: String
-    private lateinit var configuration: RocksDbContext
+    private lateinit var dbContext: RocksDbContext
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-config-test").toString()
-        configuration = RocksDbContext(tempDir, enableCompression = true)
+        dbContext = RocksDbContext(tempDir, enableCompression = true)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {
-        configuration.clear()
+        dbContext.clear()
     }
 
     override suspend fun afterSpec(spec: Spec) {
-        configuration.close()
+        dbContext.close()
         java.io.File(tempDir).deleteRecursively()
     }
 
     init {
         "should initialize RocksDB with column families" {
-            configuration.getDatabase() shouldNotBe null
-            configuration.getColumnFamily(ColumnFamily.DEFAULT).shouldNotBeNull()
-            configuration.getColumnFamily(ColumnFamily.NODER).shouldNotBeNull()
+            dbContext.getDatabase() shouldNotBe null
+            dbContext.getColumnFamily(ColumnFamily.DEFAULT).shouldNotBeNull()
+            dbContext.getColumnFamily(ColumnFamily.NODER).shouldNotBeNull()
 
-            configuration.getTotalSize() shouldBe 0L
-            configuration.existsAndHasData() shouldBe false
+            dbContext.getTotalSize() shouldBe 0L
+            dbContext.existsAndHasData() shouldBe false
         }
 
         "should clear database" {
-            val veglenkerStore = VeglenkerRocksDbStore(configuration)
+            val veglenkerStore = VeglenkerRocksDbStore(dbContext)
 
             veglenkerStore.upsert(1L, emptyList())
 
-            configuration.getTotalSize() shouldBe 1L
-            configuration.existsAndHasData() shouldBe true
+            dbContext.getTotalSize() shouldBe 1L
+            dbContext.existsAndHasData() shouldBe true
 
-            configuration.clear()
+            dbContext.clear()
 
-            configuration.getTotalSize() shouldBe 0L
-            configuration.existsAndHasData() shouldBe false
+            dbContext.getTotalSize() shouldBe 0L
+            dbContext.existsAndHasData() shouldBe false
         }
 
         "should find keys by prefix" {
@@ -65,13 +65,13 @@ class RocksDbConfigurationTest : StringSpec() {
             )
 
             testData.forEach { (key, value) ->
-                configuration.put(ColumnFamily.DEFAULT, key, value)
+                dbContext.put(ColumnFamily.DEFAULT, key, value)
             }
 
             // Act
-            val userKeys = configuration.findKeysByPrefix(ColumnFamily.DEFAULT, "user:".toByteArray())
-            val postKeys = configuration.findKeysByPrefix(ColumnFamily.DEFAULT, "post:".toByteArray())
-            val user1Keys = configuration.findKeysByPrefix(ColumnFamily.DEFAULT, "user:1:".toByteArray())
+            val userKeys = dbContext.findKeysByPrefix(ColumnFamily.DEFAULT, "user:".toByteArray())
+            val postKeys = dbContext.findKeysByPrefix(ColumnFamily.DEFAULT, "post:".toByteArray())
+            val user1Keys = dbContext.findKeysByPrefix(ColumnFamily.DEFAULT, "user:1:".toByteArray())
 
             // Assert
             userKeys shouldHaveSize 4
@@ -99,12 +99,12 @@ class RocksDbConfigurationTest : StringSpec() {
             )
 
             testData.forEach { (key, value) ->
-                configuration.put(ColumnFamily.DEFAULT, key, value)
+                dbContext.put(ColumnFamily.DEFAULT, key, value)
             }
 
             // Act
-            val configEntries = configuration.findByPrefix(ColumnFamily.DEFAULT, "config:".toByteArray())
-            val dbConfigEntries = configuration.findByPrefix(ColumnFamily.DEFAULT, "config:db:".toByteArray())
+            val configEntries = dbContext.findByPrefix(ColumnFamily.DEFAULT, "config:".toByteArray())
+            val dbConfigEntries = dbContext.findByPrefix(ColumnFamily.DEFAULT, "config:db:".toByteArray())
 
             // Assert
             configEntries shouldHaveSize 4
@@ -122,20 +122,20 @@ class RocksDbConfigurationTest : StringSpec() {
 
         "should return empty results for non-matching prefix" {
             // Arrange
-            configuration.put(ColumnFamily.DEFAULT, "existing:key".toByteArray(), "value".toByteArray())
+            dbContext.put(ColumnFamily.DEFAULT, "existing:key".toByteArray(), "value".toByteArray())
 
             // Act & Assert
-            configuration.findKeysByPrefix(ColumnFamily.DEFAULT, "missing:".toByteArray()).shouldBeEmpty()
-            configuration.findByPrefix(ColumnFamily.DEFAULT, "missing:".toByteArray()).shouldBeEmpty()
+            dbContext.findKeysByPrefix(ColumnFamily.DEFAULT, "missing:".toByteArray()).shouldBeEmpty()
+            dbContext.findByPrefix(ColumnFamily.DEFAULT, "missing:".toByteArray()).shouldBeEmpty()
         }
 
         "should return empty results for empty prefix" {
             // Arrange
-            configuration.put(ColumnFamily.DEFAULT, "some:key".toByteArray(), "value".toByteArray())
+            dbContext.put(ColumnFamily.DEFAULT, "some:key".toByteArray(), "value".toByteArray())
 
             // Act & Assert
-            configuration.findKeysByPrefix(ColumnFamily.DEFAULT, ByteArray(0)).shouldBeEmpty()
-            configuration.findByPrefix(ColumnFamily.DEFAULT, ByteArray(0)).shouldBeEmpty()
+            dbContext.findKeysByPrefix(ColumnFamily.DEFAULT, ByteArray(0)).shouldBeEmpty()
+            dbContext.findByPrefix(ColumnFamily.DEFAULT, ByteArray(0)).shouldBeEmpty()
         }
     }
 }

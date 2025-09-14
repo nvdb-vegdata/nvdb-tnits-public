@@ -7,14 +7,13 @@ import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.geometry.projectTo
-import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.services.UberiketApi
-import no.vegvesen.nvdb.tnits.storage.DirtyVeglenkesekvenserRepository
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
+import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import no.vegvesen.nvdb.tnits.storage.publishChangedVeglenkesekvenser
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -22,7 +21,7 @@ class VeglenkesekvenserService(
     private val keyValueStore: KeyValueRocksDbStore,
     private val uberiketApi: UberiketApi,
     private val veglenkerRepository: VeglenkerRepository,
-    private val dirtyVeglenkesekvenserRepository: DirtyVeglenkesekvenserRepository,
+    private val rocksDbContext: RocksDbContext,
 ) {
 
     suspend fun backfillVeglenkesekvenser() {
@@ -44,7 +43,6 @@ class VeglenkesekvenserService(
         }
 
         var totalCount = 0
-        val updates = mutableMapOf<Long, List<Veglenke>>()
 
         do {
             val veglenkesekvenser = uberiketApi.streamVeglenkesekvenser(start = lastId).toList()
@@ -54,16 +52,14 @@ class VeglenkesekvenserService(
                 println("Ingen veglenkesekvenser å sette inn, backfill fullført.")
                 keyValueStore.put("veglenkesekvenser_backfill_completed", Clock.System.now())
             } else {
-                measure("Behandler ${veglenkesekvenser.size} veglenkesekvenser") {
-                    // Process veglenkesekvenser in batches for RocksDB storage
-                    veglenkesekvenser.forEach { veglenkesekvens ->
-                        val domainVeglenker = convertToDomainVeglenker(veglenkesekvens)
-                        updates[veglenkesekvens.id] = domainVeglenker
-                    }
+                val updates = veglenkesekvenser.associate {
+                    val domainVeglenker = it.convertToDomainVeglenker()
+                    it.id to domainVeglenker
+                }
 
+                rocksDbContext.writeBatch {
                     // Batch update to RocksDB
-                    veglenkerRepository.batchUpdate(updates)
-                    updates.clear()
+                    veglenkerRepository.batchInsert(updates)
 
                     // Update progress in SQL (outside RocksDB transaction)
                     keyValueStore.put("veglenkesekvenser_backfill_last_id", lastId!!)
@@ -106,7 +102,7 @@ class VeglenkesekvenserService(
 
                         if (batch.isNotEmpty()) {
                             batch.forEach { veglenkesekvens ->
-                                val domainVeglenker = convertToDomainVeglenker(veglenkesekvens)
+                                val domainVeglenker = veglenkesekvens.convertToDomainVeglenker()
                                 updates[veglenkesekvens.id] = domainVeglenker
                             }
                             start = batch.maxOf { it.id }
@@ -122,10 +118,9 @@ class VeglenkesekvenserService(
                 }
 
                 // Apply all updates to RocksDB and mark dirty records in SQL
-                veglenkerRepository.batchUpdate(updates)
-
-                transaction {
-                    dirtyVeglenkesekvenserRepository.publishChangedVeglenkesekvensIds(changedIds)
+                rocksDbContext.writeBatch {
+                    veglenkerRepository.batchUpdate(updates)
+                    publishChangedVeglenkesekvenser(changedIds)
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
 
@@ -146,21 +141,21 @@ class VeglenkesekvenserService(
          * - Mapper start- og sluttporter til posisjoner og noder.
          * - Sorterer veglenkene etter startposisjon.
          */
-        fun convertToDomainVeglenker(veglenkesekvens: Veglenkesekvens): List<Veglenke> {
-            val portLookup = veglenkesekvens.porter.associateBy { it.nummer }
+        fun Veglenkesekvens.convertToDomainVeglenker(): List<Veglenke> {
+            val portLookup = this.porter.associateBy { it.nummer }
 
-            return veglenkesekvens.veglenker
+            return this.veglenker
                 .map { veglenke ->
 
                     val startport =
                         portLookup[veglenke.startport]
-                            ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${veglenkesekvens.id}")
+                            ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${this.id}")
                     val sluttport =
                         portLookup[veglenke.sluttport]
-                            ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${veglenkesekvens.id}")
+                            ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${this.id}")
 
                     Veglenke(
-                        veglenkesekvensId = veglenkesekvens.id,
+                        veglenkesekvensId = this.id,
                         veglenkenummer = veglenke.nummer,
                         startposisjon = startport.posisjon,
                         sluttposisjon = sluttport.posisjon,

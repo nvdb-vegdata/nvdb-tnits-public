@@ -8,6 +8,7 @@ import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
 class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) {
+
     fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
         val keyBytes = key.toByteArray()
         val valueBytes = rocksDbConfig.get(columnFamily, keyBytes)
@@ -92,6 +93,7 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private va
 
     // Convenience inline functions for reified types
     inline fun <reified T : Any> get(key: String): T? = get(key, serializer())
+
     inline fun <reified T : Any> put(key: String, value: T) = put(key, value, serializer())
 
     context(_: WriteBatchContext)

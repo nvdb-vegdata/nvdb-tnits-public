@@ -85,23 +85,17 @@ class Services {
     val veglenkerRepository: VeglenkerRepository =
         VeglenkerRocksDbStore(rocksDbContext)
 
-    val feltstrekningRepository: FeltstrekningRepository = FeltstrekningRepository()
-
-    val funksjonellVegklasseRepository = FunksjonellVegklasseRepository()
-
-    val cachedVegnett = CachedVegnett(veglenkerRepository, feltstrekningRepository, funksjonellVegklasseRepository)
-
-    val openLrService: OpenLrService = OpenLrService(cachedVegnett)
-
     val keyValueStore: KeyValueRocksDbStore = KeyValueRocksDbStore(rocksDbContext)
 
     val vegobjekterRepository: VegobjekterRepository = VegobjekterRocksDbStore(rocksDbContext)
 
-    private val dirtyVeglenkesekvenserRocksDbStore = DirtyVeglenkesekvenserRocksDbStore(rocksDbContext)
+    val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository)
 
-    val vegobjekterService = VegobjekterService(keyValueStore, uberiketApi, vegobjekterRepository, dirtyVeglenkesekvenserRocksDbStore, rocksDbContext)
+    val openLrService: OpenLrService = OpenLrService(cachedVegnett)
 
-    val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository, dirtyVeglenkesekvenserRocksDbStore)
+    val vegobjekterService = VegobjekterService(keyValueStore, uberiketApi, vegobjekterRepository, rocksDbContext)
+
+    val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository, rocksDbContext)
 
     val speedLimitGenerator =
         ParallelSpeedLimitProcessor(
@@ -112,6 +106,7 @@ class Services {
             },
             datakatalogApi = datakatalogApi,
             openLrService = openLrService,
+            vegobjekterRepository = vegobjekterRepository,
         )
 
     companion object {

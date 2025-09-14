@@ -149,12 +149,14 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - **Column Families**: Uses typed column families (DEFAULT, NODER, VEGLENKER) for logical data separation
 
 #### Storage Architecture:
+
 - `RocksDbConfiguration`: Encapsulates all RocksDB operations with wrapper methods
 - `VeglenkerRocksDbStore`: High-level storage implementation using RocksDbConfiguration
 - **Wrapper Methods**: All RocksDB operations go through type-safe wrapper methods that accept `ColumnFamily` enum
 - **Encapsulation**: Raw RocksDB and ColumnFamilyHandle instances are fully encapsulated
 
 #### Storage Interface:
+
 - `get(veglenkesekvensId)`: Retrieve veglenker list for a specific sequence ID
 - `batchGet(ids)`: Efficient batch retrieval for multiple sequence IDs (eliminates multiGetAsList complexity)
 - `upsert(id, veglenker)`: Insert or update veglenker data
@@ -162,6 +164,7 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - `clear()`: Complete database reset and reinitialization
 
 #### RocksDbConfiguration Wrapper Methods:
+
 - `get(columnFamily, key)`: Single key retrieval
 - `put(columnFamily, key, value)`: Single key insertion/update
 - `batchGet(columnFamily, keys)`: Batch retrieval with simplified API
@@ -193,7 +196,12 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 - **Simplified API**: Complex operations like multiGetAsList are abstracted away with clean batchGet wrapper methods
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
-- use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803/2?inkluder=alle to fetch a vegobjekt with a given type, id and version
+
+- use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803?inkluder=alle to fetch a vegobjekt with a given type and id
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424 to fetch multiple veglenkesekvenser
 - Don't try to run tests with wildcards
 - test resources are to be placed in src/test/resources
+- save vegobjekter with the format `vegobjekt-<type>-<id>.json`
+- save veglenkesekvenser with the format `veglenkesekvenser-<id1>-<idX>.json`, including all IDs.
+- Use `veglenkesekvens-<id>.json` for single veglenkesekvens
+- Format JSON when saving (pipe curl to jq)

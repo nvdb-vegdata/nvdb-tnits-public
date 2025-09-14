@@ -1,32 +1,20 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.measure
-import no.vegvesen.nvdb.tnits.model.EgenskapsTyper
-import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
-import no.vegvesen.nvdb.tnits.model.overlaps
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
 import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
 import no.vegvesen.nvdb.tnits.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.openlr.toFormOfWay
-import no.vegvesen.nvdb.tnits.storage.FeltstrekningRepository
-import no.vegvesen.nvdb.tnits.storage.FunksjonellVegklasseRepository
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
-import no.vegvesen.nvdb.tnits.utstrekning
-import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
+import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import org.locationtech.jts.geom.Point
 import org.openlr.map.FunctionalRoadClass
 import java.util.concurrent.ConcurrentHashMap
 
-class CachedVegnett(
-    private val veglenkerRepository: VeglenkerRepository,
-    private val feltstrekningRepository: FeltstrekningRepository,
-    private val funksjonellVegklasseRepository: FunksjonellVegklasseRepository,
-) {
+class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
     private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
     private val incomingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
@@ -49,33 +37,19 @@ class CachedVegnett(
         return retning in (tillattRetningByVeglenke[veglenke] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
     }
 
-    fun Vegobjekt.getFrc() = when ((this.egenskaper!![EgenskapsTyper.VEGKLASSE.toString()] as? EnumEgenskap)?.verdi) {
-        0 -> FunctionalRoadClass.FRC_0
-        1 -> FunctionalRoadClass.FRC_1
-        2 -> FunctionalRoadClass.FRC_2
-        3 -> FunctionalRoadClass.FRC_3
-        4 -> FunctionalRoadClass.FRC_4
-        5 -> FunctionalRoadClass.FRC_5
-        6 -> FunctionalRoadClass.FRC_6
-        else -> FunctionalRoadClass.FRC_7
-    }
-
     @Synchronized
     fun initialize() {
         if (initialized) return
 
         measure("Load veglenker") { veglenkerLookup = veglenkerRepository.getAll() }
 
-        val funksjonellVegklasseLookup = measure("Load funksjonelle vegklasser") {
-            createFunksjonellVegklasseLookup()
-        }
         veglenkerLookup.forEach { (_, veglenker) ->
             veglenker.filter {
                 it.isRelevant()
             }.forEach { veglenke ->
 
                 val feltoversikt = if (veglenke.konnektering) {
-                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: feltstrekningRepository.findFeltoversiktFromFeltstrekning(
+                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: vegobjekterRepository.findFeltoversiktFromFeltstrekning(
                         veglenke,
                     )
                 } else {
@@ -83,13 +57,7 @@ class CachedVegnett(
                 }
                 if (feltoversikt.isNotEmpty()) {
                     addVeglenke(veglenke, feltoversikt)
-                    val frc = funksjonellVegklasseLookup[veglenke.veglenkesekvensId]?.entries?.firstNotNullOfOrNull { (utstrekning, frc) ->
-                        if (veglenke.utstrekning.overlaps(utstrekning)) {
-                            frc
-                        } else {
-                            null
-                        }
-                    } ?: FunctionalRoadClass.FRC_7
+                    val frc = vegobjekterRepository.findFrcForVeglenke(veglenke)
                     frcByVeglenke[veglenke] = frc
                 } else {
                     // Sannsynligvis gangveg uten fartsgrense
@@ -97,22 +65,6 @@ class CachedVegnett(
             }
         }
         initialized = true
-    }
-
-    private fun createFunksjonellVegklasseLookup(): MutableMap<Long, MutableMap<StedfestingUtstrekning, FunctionalRoadClass>> {
-        val frcByVeglenkesekvens = mutableMapOf<Long, MutableMap<StedfestingUtstrekning, FunctionalRoadClass>>()
-
-        for (vegobjekt in funksjonellVegklasseRepository.getAll()) {
-            val frc = vegobjekt.getFrc()
-
-            for (stedfesting in vegobjekt.getStedfestingLinjer().map { it.utstrekning }) {
-                val veglenkesekvensId = stedfesting.veglenkesekvensId
-                val map = frcByVeglenkesekvens.getOrPut(veglenkesekvensId) { mutableMapOf() }
-                map[stedfesting] = frc
-            }
-        }
-
-        return frcByVeglenkesekvens
     }
 
     private fun addVeglenke(veglenke: Veglenke, feltoversikt: List<String>) {

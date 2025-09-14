@@ -5,7 +5,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.projectTo
@@ -186,9 +185,8 @@ class JtsGeometrySerializerTest :
             val originalPoint = geometryFactory.createPoint(Coordinate(10.5, 20.3))
             originalPoint.srid = SRID.WGS84
 
-            // This tests that the serializer works with different formats
-            val jsonString = Json.encodeToString(JtsGeometrySerializer, originalPoint)
-            val deserialized = Json.decodeFromString(JtsGeometrySerializer, jsonString)
+            val jsonString = ProtoBuf.encodeToByteArray(JtsGeometrySerializer, originalPoint)
+            val deserialized = ProtoBuf.decodeFromByteArray(JtsGeometrySerializer, jsonString)
 
             deserialized.shouldBeInstanceOf<Point>()
             deserialized.coordinate.x shouldBe 10.5

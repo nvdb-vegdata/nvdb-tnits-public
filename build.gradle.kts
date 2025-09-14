@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.2.10"
-    kotlin("plugin.serialization") version "2.2.10"
+    kotlin("jvm") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
     id("io.ktor.plugin") version "3.2.3"
-    id("org.openapi.generator") version "7.14.0"
+    id("org.openapi.generator") version "7.15.0"
     id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
     id("com.github.ben-manes.versions") version "0.52.0"
     application
@@ -45,15 +45,8 @@ dependencies {
     // Jakarta EE annotations (modern standard)
     implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
 
-    // Database
-    implementation("org.jetbrains.exposed:exposed-core:1.0.0-beta-5")
-    implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0-beta-5")
-    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:1.0.0-beta-5")
-    implementation("org.jetbrains.exposed:exposed-json:1.0.0-beta-5")
-    implementation("org.postgresql:postgresql:42.7.4")
-    implementation("com.oracle.database.jdbc:ojdbc11:23.5.0.24.07")
-    implementation("com.h2database:h2:2.3.232")
-    implementation("com.zaxxer:HikariCP:6.0.0")
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")

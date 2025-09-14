@@ -3,17 +3,18 @@ package no.vegvesen.nvdb.tnits
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import no.vegvesen.nvdb.tnits.extensions.get
-import no.vegvesen.nvdb.tnits.extensions.put
+import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import kotlin.time.Clock
 import kotlin.time.Instant
+
+val mainVegobjektTyper = listOf(VegobjektTyper.FARTSGRENSE)
+
+val supportingVegobjektTyper = setOf(VegobjektTyper.FELTSTREKNING, VegobjektTyper.FUNKSJONELL_VEGKLASSE)
 
 suspend fun main() {
     println("Starter NVDB TN-ITS konsollapplikasjon...")
 
     with(Services()) {
-        val vegobjektTyper = listOf(105, 821, 616)
-
         coroutineScope {
             launch {
                 println("Oppdaterer veglenkesekvenser...")
@@ -21,17 +22,24 @@ suspend fun main() {
                 veglenkesekvenserService.updateVeglenkesekvenser()
             }
 
-            vegobjektTyper.forEach { typeId ->
+            mainVegobjektTyper.forEach { typeId ->
                 launch {
                     println("Oppdaterer vegobjekter for type $typeId...")
-                    vegobjekterService.backfillVegobjekter(typeId)
-                    vegobjekterService.updateVegobjekter(typeId)
+                    vegobjekterService.backfillVegobjekter(typeId, true)
+                    vegobjekterService.updateVegobjekter(typeId, true)
+                }
+            }
+            supportingVegobjektTyper.forEach { typeId ->
+                launch {
+                    println("Oppdaterer vegobjekter for type $typeId...")
+                    vegobjekterService.backfillVegobjekter(typeId, false)
+                    vegobjekterService.updateVegobjekter(typeId, false)
                 }
             }
         }
 
         // Final update check to avoid missing changes during backfill and initial update
-        val now: Instant = performFinalSyncCheckAndGetTimestamp(vegobjektTyper)
+        val now: Instant = performFinalSyncCheckAndGetTimestamp()
 
         println("Oppdateringer fullført!")
 
@@ -76,7 +84,7 @@ suspend fun main() {
     }
 }
 
-private suspend fun Services.performFinalSyncCheckAndGetTimestamp(vegobjektTyper: List<Int>): Instant {
+private suspend fun Services.performFinalSyncCheckAndGetTimestamp(): Instant {
     var now: Instant
     coroutineScope {
         do {
@@ -86,13 +94,20 @@ private suspend fun Services.performFinalSyncCheckAndGetTimestamp(vegobjektTyper
                     veglenkesekvenserService.updateVeglenkesekvenser()
                 }
             val vegobjekterHendelseCounts =
-                vegobjektTyper.map { typeId ->
+                mainVegobjektTyper.map { typeId ->
                     async {
-                        vegobjekterService.updateVegobjekter(typeId)
+                        vegobjekterService.updateVegobjekter(typeId, true)
+                    }
+                }
+            val vegobjekterSupportingHendelseCounts =
+                supportingVegobjektTyper.map { typeId ->
+                    async {
+                        vegobjekterService.updateVegobjekter(typeId, false)
                     }
                 }
 
-            val total = veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() }
+            val total =
+                veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() } + vegobjekterSupportingHendelseCounts.sumOf { it.await() }
         } while (total > 0)
     }
     return now

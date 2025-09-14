@@ -277,6 +277,105 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
         return keyValuePairs
     }
 
+    fun findValuesByPrefix(columnFamily: ColumnFamily, prefix: ByteArray): List<ByteArray> {
+        if (prefix.isEmpty()) {
+            return emptyList()
+        }
+
+        val values = mutableListOf<ByteArray>()
+
+        val readOptions = ReadOptions().apply {
+            setAutoPrefixMode(true)
+            val upperBound = calculateUpperBound(prefix)
+            setIterateUpperBound(upperBound)
+        }
+
+        readOptions.use { options ->
+            newIterator(columnFamily, options).use { iterator ->
+                iterator.seek(prefix)
+                while (iterator.isValid && iterator.key().startsWith(prefix)) {
+                    values.add(iterator.value().clone())
+                    iterator.next()
+                }
+            }
+        }
+
+        return values
+    }
+
+    fun keysByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
+        scanByPrefixSequence(cf, prefix, wantValue = false, startKey) { k, _ -> k }
+
+    fun valuesByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
+        scanByPrefixSequence(cf, prefix, wantValue = true, startKey) { _, v -> v }
+
+    fun entriesByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<Pair<ByteArray, ByteArray>> =
+        scanByPrefixSequence(cf, prefix, wantValue = true, startKey) { k, v -> k to v }
+
+    /** Streaming prefix scan as a Sequence. Closes RocksDB resources even on early termination. */
+    private fun <T> scanByPrefixSequence(
+        cf: ColumnFamily,
+        prefix: ByteArray,
+        wantValue: Boolean,
+        startKey: ByteArray = prefix,
+        map: (key: ByteArray, value: ByteArray) -> T,
+    ): Sequence<T> = sequence {
+        if (prefix.isEmpty()) return@sequence
+
+        val upperBound = nextPrefixOrNull(prefix)
+
+        val readOptions = ReadOptions()
+            .setAutoPrefixMode(true)
+            .setPrefixSameAsStart(true)
+            .setFillCache(false)
+            .apply {
+                if (upperBound != null) setIterateUpperBound(upperBound)
+                setTotalOrderSeek(false)
+            }
+
+        readOptions.use { ro ->
+            newIterator(cf, ro).use {
+                it.seek(startKey)
+
+                val inRange: () -> Boolean =
+                    if (upperBound != null) {
+                        { it.isValid }
+                    } else {
+                        { it.isValid && hasPrefix(it.key(), prefix) }
+                    }
+
+                while (inRange()) {
+                    val k = it.key().clone()
+                    val v = if (wantValue) it.value().clone() else empty
+                    yield(map(k, v))
+                    it.next()
+                }
+            }
+        }
+    }
+
+    private val empty = ByteArray(0)
+
+    /** Compute the smallest byte array strictly greater than all keys with this prefix. Returns null if none (all 0xFF). */
+    private fun nextPrefixOrNull(prefix: ByteArray): Slice? {
+        val out = prefix.copyOf()
+        for (i in out.indices.reversed()) {
+            val b = out[i].toInt() and 0xFF
+            if (b != 0xFF) {
+                out[i] = (b + 1).toByte()
+                for (j in i + 1 until out.size) out[j] = 0
+                return Slice(out)
+            }
+        }
+        return null
+    }
+
+    private fun hasPrefix(key: ByteArray, prefix: ByteArray): Boolean {
+        if (key.size < prefix.size) return false
+        for (i in prefix.indices) if (key[i] != prefix[i]) return false
+        return true
+    }
+
     private fun calculateUpperBound(prefix: ByteArray): Slice {
         val upperBound = prefix.clone()
         for (i in upperBound.size - 1 downTo 0) {
@@ -331,6 +430,13 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
         }
         if (::options.isInitialized) {
             options.close()
+        }
+    }
+
+    fun write(columnFamily: ColumnFamily, operation: BatchOperation) {
+        when (operation) {
+            is BatchOperation.Put -> put(columnFamily, operation.key, operation.value)
+            is BatchOperation.Delete -> delete(columnFamily, operation.key)
         }
     }
 }

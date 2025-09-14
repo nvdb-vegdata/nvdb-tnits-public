@@ -4,8 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.extensions.executeAsNdjsonFlow
+import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import kotlin.time.Instant
 
 const val VEGLENKER_PAGE_SIZE = 1000
@@ -80,4 +84,25 @@ class UberiketApi(private val httpClient: HttpClient) {
             parameter("start", start?.toString())
             parameter("antall", antall)
         }.body()
+
+    fun getVegobjekterPaginated(typeId: Int, vegobjektIds: Set<Long>, inkluderIVegobjekt: Set<InkluderIVegobjekt>): Flow<Vegobjekt> = flow {
+        vegobjektIds.forEachChunked(100) { chunk ->
+            var start: String? = null
+            while (true) {
+                val side = httpClient.get("vegobjekter/$typeId") {
+                    parameter("ider", chunk.joinToString())
+                    parameter("inkluder", inkluderIVegobjekt.joinToString { it.value })
+                    parameter("start", start)
+                }.body<VegobjekterSide>()
+
+                emitAll(side.vegobjekter.asFlow())
+
+                start = side.metadata.neste?.start
+
+                if (side.vegobjekter.isEmpty() || start == null) {
+                    break
+                }
+            }
+        }
+    }
 }

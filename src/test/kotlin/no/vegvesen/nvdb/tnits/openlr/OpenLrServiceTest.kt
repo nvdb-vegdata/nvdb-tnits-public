@@ -15,10 +15,9 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
-import no.vegvesen.nvdb.tnits.storage.FeltstrekningRepository
-import no.vegvesen.nvdb.tnits.storage.FunksjonellVegklasseRepository
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
+import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
@@ -156,10 +155,8 @@ class OpenLrServiceTest :
                     setupOpenLrService(
                         config,
                         "veglenkesekvenser_2518522_413032_2518519.json",
-                        feltstrekningRepository =
-                        mockk {
-                            every { findFeltoversiktFromFeltstrekning(any()) }
-                                .returns(listOf("2"))
+                        vegobjekterRepository = mockk(relaxed = true) {
+                            every { findFeltoversiktFromFeltstrekning(any()) } returns listOf("2")
                         },
                     )
                 val stedfestinger = loadStedfestinger("speed_limit_589421130_v2.json")
@@ -183,11 +180,10 @@ class OpenLrServiceTest :
 private fun setupOpenLrService(
     config: RocksDbContext,
     vararg paths: String,
-    feltstrekningRepository: FeltstrekningRepository = mockk<FeltstrekningRepository>(),
-    funksjonellVegklasseRepository: FunksjonellVegklasseRepository =
-        mockk {
-            every { findFunksjonellVegklasse(any()) } returns FunctionalRoadClass.FRC_0
-        },
+    vegobjekterRepository: VegobjekterRepository = mockk {
+        every { findFeltoversiktFromFeltstrekning(any()) } returns listOf("1", "2")
+        every { findFrcForVeglenke(any()) } returns FunctionalRoadClass.FRC_0
+    },
 ): OpenLrService {
     val veglenkerStore = VeglenkerRocksDbStore(config)
     val veglenkesekvenser =
@@ -196,12 +192,12 @@ private fun setupOpenLrService(
         }
 
     for (veglenkesekvens in veglenkesekvenser) {
-        val veglenker = convertToDomainVeglenker(veglenkesekvens)
+        val veglenker = veglenkesekvens.convertToDomainVeglenker()
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
     val openLrService =
-        OpenLrService(CachedVegnett(veglenkerStore, feltstrekningRepository, funksjonellVegklasseRepository))
+        OpenLrService(CachedVegnett(veglenkerStore, vegobjekterRepository))
     return openLrService
 }
 

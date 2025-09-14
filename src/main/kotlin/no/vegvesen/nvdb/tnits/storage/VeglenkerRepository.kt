@@ -13,15 +13,11 @@ interface VeglenkerRepository {
 
     fun delete(veglenkesekvensId: Long)
 
-    fun batchUpdate(updates: Map<Long, List<Veglenke>?>) {
-        for ((id, veglenker) in updates) {
-            if (veglenker == null) {
-                delete(id)
-            } else {
-                upsert(id, veglenker)
-            }
-        }
-    }
+    context(context: WriteBatchContext)
+    fun batchUpdate(updates: Map<Long, List<Veglenke>?>)
+
+    context(context: WriteBatchContext)
+    fun batchInsert(veglenkerById: Map<Long, List<Veglenke>>)
 
     fun size(): Long
 }
