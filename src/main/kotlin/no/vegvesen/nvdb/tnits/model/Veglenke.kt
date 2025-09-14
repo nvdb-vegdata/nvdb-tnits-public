@@ -2,7 +2,9 @@ package no.vegvesen.nvdb.tnits.model
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
+import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import org.locationtech.jts.geom.Geometry
 
@@ -11,10 +13,10 @@ data class Superstedfesting(val veglenksekvensId: Long, val startposisjon: Doubl
 
 @Serializable
 data class Veglenke(
-    val veglenkesekvensId: Long,
+    override val veglenkesekvensId: Long,
     val veglenkenummer: Int,
-    val startposisjon: Double,
-    val sluttposisjon: Double,
+    override val startposisjon: Double,
+    override val sluttposisjon: Double,
     val startnode: Long,
     val sluttnode: Long,
     val startdato: LocalDate,
@@ -27,10 +29,16 @@ data class Veglenke(
     val detaljniva: Detaljniva,
     val feltoversikt: List<String> = emptyList(),
     val superstedfesting: Superstedfesting? = null,
-) {
+) : StedfestingUtstrekning {
     val veglenkeId: VeglenkeId
         get() = VeglenkeId(veglenkesekvensId, veglenkenummer)
 
     val isTopLevel: Boolean
         get() = detaljniva in setOf(Detaljniva.VEGTRASE, Detaljniva.VEGTRASE_OG_KJOREBANE)
+
+    @Transient
+    override val retning: Retning? = null
+
+    @Transient
+    override val kjorefelt: List<String> = feltoversikt
 }

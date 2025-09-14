@@ -2,26 +2,26 @@ package no.vegvesen.nvdb.tnits.model
 
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 
-data class StedfestingUtstrekning(
-    val veglenkesekvensId: Long,
-    val startposisjon: Double,
-    val sluttposisjon: Double,
-    val retning: Retning? = null,
-    val kjorefelt: List<String> = emptyList(),
-) {
-    init {
-        require(startposisjon in 0.0..1.0) { "'startposisjon' ($startposisjon) må være i intervallet [0.0, 1.0]" }
-        require(sluttposisjon in 0.0..1.0) { "'sluttposisjon' ($sluttposisjon) må være i intervallet [0.0, 1.0]" }
-        require(
-            startposisjon <= sluttposisjon,
-        ) { "'startposisjon' ($startposisjon) kan ikke være større enn 'sluttposisjon' ($sluttposisjon)" }
-    }
+interface StedfestingUtstrekning {
+    val veglenkesekvensId: Long
+    val startposisjon: Double
+    val sluttposisjon: Double
+    val retning: Retning?
+    val kjorefelt: List<String>
 
     val relativeLength get() = sluttposisjon - startposisjon
 }
 
+data class OverlappendeUtstrekning(
+    override val veglenkesekvensId: Long,
+    override val startposisjon: Double,
+    override val sluttposisjon: Double,
+    override val retning: Retning? = null,
+    override val kjorefelt: List<String> = emptyList(),
+) : StedfestingUtstrekning
+
 fun StedfestingUtstrekning.intersect(other: StedfestingUtstrekning): StedfestingUtstrekning? = if (overlaps(other)) {
-    StedfestingUtstrekning(
+    OverlappendeUtstrekning(
         veglenkesekvensId,
         maxOf(startposisjon, other.startposisjon),
         minOf(sluttposisjon, other.sluttposisjon),

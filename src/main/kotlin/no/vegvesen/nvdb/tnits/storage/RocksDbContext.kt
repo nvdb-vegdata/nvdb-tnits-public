@@ -303,14 +303,14 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
         return values
     }
 
-    fun keysByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
-        scanByPrefixSequence(cf, prefix, wantValue = false, startKey) { k, _ -> k }
+    fun streamKeysByPrefix(columnFamily: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
+        scanByPrefixSequence(columnFamily, prefix, wantValue = false, startKey) { k, _ -> k }
 
-    fun valuesByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
-        scanByPrefixSequence(cf, prefix, wantValue = true, startKey) { _, v -> v }
+    fun streamValuesByPrefix(columnFamily: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
+        scanByPrefixSequence(columnFamily, prefix, wantValue = true, startKey) { _, v -> v }
 
-    fun entriesByPrefixSequence(cf: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<Pair<ByteArray, ByteArray>> =
-        scanByPrefixSequence(cf, prefix, wantValue = true, startKey) { k, v -> k to v }
+    fun streamEntriesByPrefix(columnFamily: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<Pair<ByteArray, ByteArray>> =
+        scanByPrefixSequence(columnFamily, prefix, wantValue = true, startKey) { k, v -> k to v }
 
     /** Streaming prefix scan as a Sequence. Closes RocksDB resources even on early termination. */
     private fun <T> scanByPrefixSequence(

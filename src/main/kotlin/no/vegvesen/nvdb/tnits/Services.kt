@@ -30,8 +30,6 @@ fun ObjectMapper.initialize(): ObjectMapper = apply {
 
 class Services {
 
-    val objectMapper: ObjectMapper = ObjectMapper().initialize()
-
     val uberiketHttpClient =
         HttpClient(CIO) {
             expectSuccess = true

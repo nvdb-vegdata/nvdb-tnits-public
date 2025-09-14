@@ -26,15 +26,29 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
 
     override fun findVegobjektIds(vegobjektType: Int): Sequence<Long> {
         val prefix = getVegobjektTypePrefix(vegobjektType)
-        return rocksDbContext.keysByPrefixSequence(columnFamily, prefix).map(::getVegobjektId)
+        return rocksDbContext.streamKeysByPrefix(columnFamily, prefix).map(::getVegobjektId)
     }
 
     override fun findVegobjekter(vegobjektType: Int, idRange: IdRange): List<Vegobjekt> {
         val prefix = getVegobjektTypePrefix(vegobjektType)
-        return rocksDbContext.entriesByPrefixSequence(columnFamily, prefix, getVegobjektKey(vegobjektType, idRange.startId))
+        return rocksDbContext.streamEntriesByPrefix(columnFamily, prefix, getVegobjektKey(vegobjektType, idRange.startId))
             .takeWhile { (key, _) -> getVegobjektId(key) <= idRange.endId }
             .map { (_, value) -> ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), value) }
             .toList()
+    }
+
+    override fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<VegobjektStedfesting>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun streamAll(vegobjektType: Int): Sequence<Vegobjekt> {
+        val prefix = getVegobjektTypePrefix(vegobjektType)
+        return rocksDbContext.streamValuesByPrefix(columnFamily, prefix).map { ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), it) }
+    }
+
+    override fun getAll(vegobjektType: Int): List<Vegobjekt> {
+        val prefix = getVegobjektTypePrefix(vegobjektType)
+        return rocksDbContext.findValuesByPrefix(columnFamily, prefix).map { ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), it) }
     }
 
     private fun getVegobjektId(key: ByteArray): Long = ByteBuffer.wrap(key, 5, 8).long
@@ -52,6 +66,10 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         return rocksDbContext.getBatch(columnFamily, keys)
             .mapNotNull {
                 it?.let { ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), it) }
+            }.filter {
+                it.stedfestinger.any { stedfesting ->
+                    stedfesting.overlaps(utstrekning)
+                }
             }
     }
 
@@ -171,7 +189,7 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
 
     fun findStedfestinger(typeId: Int, veglenkesekvensId: Long): List<VegobjektStedfesting> {
         val prefix = getStedfestingPrefix(veglenkesekvensId, typeId)
-        val values = rocksDbContext.valuesByPrefixSequence(columnFamily, prefix).single()
+        val values = rocksDbContext.streamValuesByPrefix(columnFamily, prefix).single()
             .let { ProtoBuf.decodeFromByteArray(ListSerializer(VegobjektStedfesting.serializer()), it) }
         return values
     }

@@ -6,7 +6,8 @@ import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.extensions.toRounded
-import no.vegvesen.nvdb.tnits.model.*
+import no.vegvesen.nvdb.tnits.model.EgenskapsTyper
+import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
@@ -125,7 +126,7 @@ private fun XmlStreamDsl.writeSpeedLimit(speedLimit: SpeedLimit, index: Int) {
             "validTo" { it }
         }
         "beginLifespanVersion" {
-            speedLimit.validFrom.atStartOfDayIn(OsloZone)
+            speedLimit.beginLifespanVersion
         }
         speedLimit.validTo?.let {
             "endLifespanVersion" {
@@ -192,25 +193,3 @@ private fun XmlStreamDsl.writeSpeedLimit(speedLimit: SpeedLimit, index: Int) {
         }
     }
 }
-
-val Veglenke.utstrekning
-    get(): StedfestingUtstrekning =
-        StedfestingUtstrekning(
-            veglenkesekvensId,
-            startposisjon,
-            sluttposisjon,
-            null,
-            feltoversikt,
-        )
-
-val VegobjektStedfesting.utstrekning
-    get(): StedfestingUtstrekning =
-        StedfestingUtstrekning(
-            veglenkesekvensId,
-            startposisjon,
-            sluttposisjon,
-            retning,
-            kjorefelt,
-        )
-
-const val FartsgrenseEgenskapTypeIdString = EgenskapsTyper.FARTSGRENSE.toString()

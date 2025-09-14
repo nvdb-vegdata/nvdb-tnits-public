@@ -55,10 +55,10 @@ data class Vegobjekt(
 
 @Serializable
 data class VegobjektStedfesting(
-    val veglenkesekvensId: Long,
-    val startposisjon: Double,
-    val sluttposisjon: Double,
-    val retning: Retning? = null,
+    override val veglenkesekvensId: Long,
+    override val startposisjon: Double,
+    override val sluttposisjon: Double,
+    override val retning: Retning? = null,
     val sideposisjon: Sideposisjon? = null,
-    val kjorefelt: List<String> = emptyList(),
-)
+    override val kjorefelt: List<String> = emptyList(),
+) : StedfestingUtstrekning
