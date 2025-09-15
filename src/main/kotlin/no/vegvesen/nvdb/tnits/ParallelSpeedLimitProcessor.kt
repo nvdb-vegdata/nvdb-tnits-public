@@ -7,6 +7,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.tnits.extensions.toOffsetDateTime
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
@@ -163,7 +164,7 @@ class ParallelSpeedLimitProcessor(
                 stedfestingLinjer = vegobjekt.stedfestinger,
                 validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
                 validTo = vegobjekt.sluttdato,
-                beginLifespanVersion = vegobjekt.sistEndret,
+                beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
             )
         }
     }
@@ -178,8 +179,8 @@ class ParallelSpeedLimitProcessor(
                 overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
                     calculateIntersectingGeometry(
                         veglenke.geometri,
-                        veglenke.utstrekning,
-                        stedfesting.utstrekning,
+                        veglenke,
+                        stedfesting,
                     )
                 }
             }
@@ -190,7 +191,7 @@ class ParallelSpeedLimitProcessor(
 
         val locationReferences =
             openLrService.toOpenLr(
-                workItem.stedfestingLinjer.map { it.utstrekning },
+                workItem.stedfestingLinjer,
             )
 
         return SpeedLimit(

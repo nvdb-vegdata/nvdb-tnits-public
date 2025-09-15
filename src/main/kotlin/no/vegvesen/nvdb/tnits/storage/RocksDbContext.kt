@@ -180,6 +180,22 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
         initialize()
     }
 
+    @Synchronized
+    fun clear(columnFamily: ColumnFamily) {
+        val handle = getColumnFamily(columnFamily)
+        db.dropColumnFamily(handle)
+        handle.close()
+        val newHandle = db.createColumnFamily(
+            ColumnFamilyDescriptor(
+                columnFamily.familyName.toByteArray(),
+                columnFamilyOptions,
+            ),
+        )
+        columnFamilies = columnFamilies.toMutableMap().apply {
+            this[columnFamily] = newHandle
+        }
+    }
+
     // Wrapper methods to encapsulate RocksDB operations
     fun get(columnFamily: ColumnFamily, key: ByteArray): ByteArray? {
         val handle = getColumnFamily(columnFamily)

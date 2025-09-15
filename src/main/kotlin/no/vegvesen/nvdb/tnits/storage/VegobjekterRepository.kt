@@ -1,17 +1,15 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.IdRange
 import no.vegvesen.nvdb.tnits.model.*
 import org.openlr.map.FunctionalRoadClass
-import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 interface VegobjekterRepository {
     context(_: WriteBatchContext)
-    fun batchUpdate(vegobjektType: Int, updates: Map<Long, ApiVegobjekt?>, validFromById: Map<Long, LocalDate>)
+    fun batchUpdate(vegobjektType: Int, updates: Map<Long, Vegobjekt?>)
 
     context(_: WriteBatchContext)
-    fun batchInsert(vegobjektType: Int, vegobjekter: List<ApiVegobjekt>, validFromById: Map<Long, LocalDate>)
+    fun batchInsert(vegobjektType: Int, vegobjekter: List<Vegobjekt>)
     fun findOverlappingVegobjekter(utstrekning: StedfestingUtstrekning, vegobjektType: Int): List<Vegobjekt>
 
     fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> {
@@ -33,5 +31,5 @@ interface VegobjekterRepository {
 
     fun streamAll(vegobjektType: Int): Sequence<Vegobjekt>
 
-    fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<VegobjektStedfesting>>
+    fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<Vegobjekt>>
 }

@@ -4,7 +4,6 @@ import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.overlaps
-import no.vegvesen.nvdb.tnits.utstrekning
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import org.locationtech.jts.geom.LineString
 import org.openlr.encoder.EncoderFactory
@@ -60,7 +59,7 @@ class OpenLrService(private val cachedVegnett: CachedVegnett) {
         for (stedfesting in stedfestinger) {
             val veglenker =
                 cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
-                    it.utstrekning.overlaps(stedfesting)
+                    it.overlaps(stedfesting)
                 }
 
             createPaths(veglenker, stedfesting, TillattRetning.Med).let(forwardPaths::addAll)

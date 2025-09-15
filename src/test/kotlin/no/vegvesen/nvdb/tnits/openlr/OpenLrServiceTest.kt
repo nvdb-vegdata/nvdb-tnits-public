@@ -9,7 +9,6 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
@@ -203,15 +202,7 @@ private fun setupOpenLrService(
 
 private fun loadStedfestinger(path: String): List<StedfestingUtstrekning> {
     val fartsgrense = objectMapper.readJson<Vegobjekt>(path)
-    val stedfestinger =
-        fartsgrense.getStedfestingLinjer().map { stedfesting ->
-            StedfestingUtstrekning(
-                veglenkesekvensId = stedfesting.veglenkesekvensId,
-                startposisjon = stedfesting.startposisjon,
-                sluttposisjon = stedfesting.sluttposisjon,
-                retning = stedfesting.retning ?: Retning.MED,
-            )
-        }
+    val stedfestinger = fartsgrense.getStedfestingLinjer()
     return stedfestinger
 }
 

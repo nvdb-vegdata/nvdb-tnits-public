@@ -15,31 +15,9 @@ suspend fun main() {
     println("Starter NVDB TN-ITS konsollapplikasjon...")
 
     with(Services()) {
-        coroutineScope {
-            launch {
-                println("Oppdaterer veglenkesekvenser...")
-                veglenkesekvenserService.backfillVeglenkesekvenser()
-                veglenkesekvenserService.updateVeglenkesekvenser()
-            }
+        performBackfill()
 
-            mainVegobjektTyper.forEach { typeId ->
-                launch {
-                    println("Oppdaterer vegobjekter for type $typeId...")
-                    vegobjekterService.backfillVegobjekter(typeId, true)
-                    vegobjekterService.updateVegobjekter(typeId, true)
-                }
-            }
-            supportingVegobjektTyper.forEach { typeId ->
-                launch {
-                    println("Oppdaterer vegobjekter for type $typeId...")
-                    vegobjekterService.backfillVegobjekter(typeId, false)
-                    vegobjekterService.updateVegobjekter(typeId, false)
-                }
-            }
-        }
-
-        // Final update check to avoid missing changes during backfill and initial update
-        val now: Instant = performFinalSyncCheckAndGetTimestamp()
+        val now: Instant = performUpdateAndGetTimestamp()
 
         println("Oppdateringer fullført!")
 
@@ -84,7 +62,29 @@ suspend fun main() {
     }
 }
 
-private suspend fun Services.performFinalSyncCheckAndGetTimestamp(): Instant {
+private suspend fun Services.performBackfill() {
+    coroutineScope {
+        launch {
+            println("Oppdaterer veglenkesekvenser...")
+            veglenkesekvenserService.backfillVeglenkesekvenser()
+        }
+
+        mainVegobjektTyper.forEach { typeId ->
+            launch {
+                println("Oppdaterer vegobjekter for type $typeId...")
+                vegobjekterService.backfillVegobjekter(typeId, true)
+            }
+        }
+        supportingVegobjektTyper.forEach { typeId ->
+            launch {
+                println("Oppdaterer vegobjekter for type $typeId...")
+                vegobjekterService.backfillVegobjekter(typeId, false)
+            }
+        }
+    }
+}
+
+private suspend fun Services.performUpdateAndGetTimestamp(): Instant {
     var now: Instant
     coroutineScope {
         do {

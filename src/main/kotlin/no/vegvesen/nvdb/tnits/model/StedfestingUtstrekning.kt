@@ -12,7 +12,7 @@ interface StedfestingUtstrekning {
     val relativeLength get() = sluttposisjon - startposisjon
 }
 
-data class OverlappendeUtstrekning(
+data class EnkelUtstrekning(
     override val veglenkesekvensId: Long,
     override val startposisjon: Double,
     override val sluttposisjon: Double,
@@ -21,7 +21,7 @@ data class OverlappendeUtstrekning(
 ) : StedfestingUtstrekning
 
 fun StedfestingUtstrekning.intersect(other: StedfestingUtstrekning): StedfestingUtstrekning? = if (overlaps(other)) {
-    OverlappendeUtstrekning(
+    EnkelUtstrekning(
         veglenkesekvensId,
         maxOf(startposisjon, other.startposisjon),
         minOf(sluttposisjon, other.sluttposisjon),

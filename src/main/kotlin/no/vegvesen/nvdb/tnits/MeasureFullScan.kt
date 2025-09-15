@@ -11,5 +11,9 @@ fun main() {
         val fartsgrenser2 = measure("Fartsgrenser full scan 2") {
             vegobjekterRepository.streamAll(VegobjektTyper.FARTSGRENSE).associateBy { it.id }
         }
+
+        val lookup = measure("Feltstrekning lookup") {
+            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
+        }
     }
 }

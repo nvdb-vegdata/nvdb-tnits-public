@@ -3,7 +3,7 @@ package no.vegvesen.nvdb.tnits.vegnett
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.measure
-import no.vegvesen.nvdb.tnits.model.Veglenke
+import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
 import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
 import no.vegvesen.nvdb.tnits.openlr.TillattRetning
@@ -42,6 +42,36 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         if (initialized) return
 
         measure("Load veglenker") { veglenkerLookup = veglenkerRepository.getAll() }
+        val feltstrekningerLookup = measure("Load feltstrekninger") {
+            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
+        }
+
+        fun findFeltoversikt(veglenke: Veglenke): List<String> {
+            val feltstrekning = feltstrekningerLookup[veglenke.veglenkesekvensId]?.firstOrNull {
+                it.stedfestinger.any { stedfesting -> stedfesting.overlaps(veglenke) }
+            }
+            if (feltstrekning == null) {
+                // Sannsynligvis gangveg uten fartsgrense
+                return emptyList()
+            }
+            val feltoversikt = (feltstrekning.egenskaper[EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING] as? TekstVerdi)?.verdi?.split(
+                "#",
+            )
+            return feltoversikt
+                ?: error("Finner ikke feltoversikt for veglenke ${veglenke.veglenkeId}")
+        }
+
+        val frcLookup = measure("Load funksjonell vegklasse") {
+            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
+        }
+
+        // Finn høyeste (laveste viktighet) funksjonell vegklasse for veglenke
+        fun findFrc(veglenke: Veglenke): FunctionalRoadClass {
+            val frc = frcLookup[veglenke.veglenkesekvensId]?.mapNotNull { it.egenskaper[EgenskapsTyper.VEGKLASSE] as? EnumVerdi }
+                ?.maxByOrNull { it.verdi }?.toFrc()
+            // Mange gangveger har ikke funksjonell vegklasse
+            return frc ?: FunctionalRoadClass.FRC_7
+        }
 
         veglenkerLookup.forEach { (_, veglenker) ->
             veglenker.filter {
@@ -49,15 +79,13 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             }.forEach { veglenke ->
 
                 val feltoversikt = if (veglenke.konnektering) {
-                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: vegobjekterRepository.findFeltoversiktFromFeltstrekning(
-                        veglenke,
-                    )
+                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: findFeltoversikt(veglenke)
                 } else {
                     veglenke.feltoversikt
                 }
                 if (feltoversikt.isNotEmpty()) {
                     addVeglenke(veglenke, feltoversikt)
-                    val frc = vegobjekterRepository.findFrcForVeglenke(veglenke)
+                    val frc = findFrc(veglenke)
                     frcByVeglenke[veglenke] = frc
                 } else {
                     // Sannsynligvis gangveg uten fartsgrense

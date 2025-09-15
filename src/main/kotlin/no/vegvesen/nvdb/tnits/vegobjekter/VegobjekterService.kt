@@ -9,6 +9,8 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.model.toDomainVegobjektUpdates
+import no.vegvesen.nvdb.tnits.model.toDomainVegobjekter
 import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
@@ -58,7 +60,7 @@ class VegobjekterService(
                 val validFromById = if (fetchOriginalStartDate) getOriginalStartdatoWhereDifferent(typeId, vegobjekter) else emptyMap()
 
                 rocksDbContext.writeBatch {
-                    vegobjekterRepository.batchInsert(typeId, vegobjekter, validFromById)
+                    vegobjekterRepository.batchInsert(typeId, vegobjekter.toDomainVegobjekter(validFromById))
                     keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
                 }
                 totalCount += vegobjekter.size
@@ -122,7 +124,7 @@ class VegobjekterService(
                 }
 
                 rocksDbContext.writeBatch {
-                    vegobjekterRepository.batchUpdate(typeId, vegobjekter, validFromById)
+                    vegobjekterRepository.batchUpdate(typeId, vegobjekter.toDomainVegobjektUpdates(validFromById))
                     keyValueStore.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
                 }
                 println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
