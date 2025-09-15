@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -25,23 +26,23 @@ class VegobjekterService(
     private val uberiketApi: UberiketApi,
     private val vegobjekterRepository: VegobjekterRepository,
     private val rocksDbContext: RocksDbContext,
-) {
+) : WithLogger {
     suspend fun backfillVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean) {
         val backfillCompleted = keyValueStore.get<Instant>("vegobjekter_${typeId}_backfill_completed")
 
         if (backfillCompleted != null) {
-            println("Backfill for type $typeId er allerede fullført den $backfillCompleted")
+            log.info("Backfill for type $typeId er allerede fullført den $backfillCompleted")
             return
         }
 
         var lastId = keyValueStore.get<Long>("vegobjekter_${typeId}_backfill_last_id")
 
         if (lastId == null) {
-            println("Ingen backfill har blitt startet ennå for type $typeId. Starter backfill...")
+            log.info("Ingen backfill har blitt startet ennå for type $typeId. Starter backfill...")
             val now = Clock.System.now()
             keyValueStore.put("vegobjekter_${typeId}_backfill_started", now)
         } else {
-            println("Backfill pågår for type $typeId. Gjenopptar fra siste ID: $lastId")
+            log.info("Backfill pågår for type $typeId. Gjenopptar fra siste ID: $lastId")
         }
 
         var totalCount = 0
@@ -51,7 +52,7 @@ class VegobjekterService(
             lastId = vegobjekter.lastOrNull()?.id
 
             if (vegobjekter.isEmpty()) {
-                println("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
+                log.info("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
                 keyValueStore.put("vegobjekter_${typeId}_backfill_completed", Clock.System.now())
             } else {
                 val validFromById = if (fetchOriginalStartDate) getOriginalStartdatoWhereDifferent(typeId, vegobjekter) else emptyMap()
@@ -61,7 +62,7 @@ class VegobjekterService(
                     keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
                 }
                 totalCount += vegobjekter.size
-                println("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
+                log.info("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
             }
         } while (vegobjekter.isNotEmpty())
     }
@@ -83,7 +84,7 @@ class VegobjekterService(
 
         var hendelseCount = 0
 
-        println("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $lastHendelseId")
+        log.info("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $lastHendelseId")
 
         do {
             val response =
@@ -124,11 +125,11 @@ class VegobjekterService(
                     vegobjekterRepository.batchUpdate(typeId, vegobjekter.toDomainVegobjektUpdates(validFromById))
                     keyValueStore.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
                 }
-                println("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
+                log.info("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
                 hendelseCount += response.hendelser.size
             }
         } while (response.hendelser.isNotEmpty())
-        println("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse-ID: $lastHendelseId")
+        log.info("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse-ID: $lastHendelseId")
         return hendelseCount
     }
 }

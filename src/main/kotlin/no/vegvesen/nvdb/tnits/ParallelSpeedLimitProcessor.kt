@@ -8,12 +8,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
+import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toOffsetDateTime
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Instant
 import kotlin.time.measureTime
 
@@ -36,9 +38,9 @@ class ParallelSpeedLimitProcessor(
     private val openLrService: OpenLrService,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
     private val vegobjekterRepository: VegobjekterRepository,
-) {
-    private val FETCH_SIZE = 1000
-    private val superBatchSize = workerCount * FETCH_SIZE
+) : WithLogger {
+    private val fetchSize = 1000
+    private val superBatchSize = workerCount * fetchSize
 
     fun generateSpeedLimitsUpdate(since: Instant): Flow<SpeedLimit> = flow {
         val kmhByEgenskapVerdi = datakatalogApi.getKmhByEgenskapVerdi()
@@ -75,7 +77,7 @@ class ParallelSpeedLimitProcessor(
 
         vegobjekterRepository.findVegobjektIds(VegobjektTyper.FARTSGRENSE).chunked(superBatchSize).forEach { ids ->
 
-            println("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}...")
+            log.info("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}...")
 
             // Create ranges of work for parallel processing
             val idRanges = createIdRanges(ids)
@@ -92,7 +94,7 @@ class ParallelSpeedLimitProcessor(
                 emit(speedLimit)
             }
 
-            println("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
+            log.info("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
         }
     }
 
@@ -131,8 +133,8 @@ class ParallelSpeedLimitProcessor(
     private fun processIdRange(idRange: IdRange, kmhByEgenskapVerdi: Map<Int, Int>): List<SpeedLimit> = try {
         // Each worker fetches and processes its own data range
         val workItems = fetchSpeedLimitWorkItemsForRange(idRange, kmhByEgenskapVerdi)
-        check(workItems.size <= FETCH_SIZE) {
-            "Fetched ${workItems.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $FETCH_SIZE"
+        check(workItems.size <= fetchSize) {
+            "Fetched ${workItems.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $fetchSize"
         }
 
         workItems.mapNotNull { workItem ->
@@ -141,14 +143,14 @@ class ParallelSpeedLimitProcessor(
             } catch (e: CancellationException) {
                 throw e // Re-throw cancellation exceptions
             } catch (e: Exception) {
-                println("Warning: Error processing speed limit ${workItem.id}: ${e.message}")
+                log.error("Warning: Error processing speed limit ${workItem.id}: ${e.message}", e)
                 null // Skip this item but continue processing others
             }
         }
     } catch (e: CancellationException) {
         throw e // Propagate cancellation
     } catch (e: Exception) {
-        println("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.message}")
+        log.error("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.message}", e)
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 

@@ -1,41 +1,47 @@
 package no.vegvesen.nvdb.tnits
 
 import kotlinx.coroutines.flow.collectIndexed
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
+import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toRounded
+import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.model.EgenskapsTyper
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
+import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
+import java.io.BufferedOutputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.time.Instant
-import kotlin.time.measureTime
 
-val OsloZone = TimeZone.of("Europe/Oslo")
-
-inline fun <T> measure(label: String, logStart: Boolean = false, block: () -> T): T {
-    if (logStart) {
-        println("Start: $label")
-    }
-
-    var result: T
-    val time = measureTime { result = block() }
-    println("${if (logStart) "End: " else "Timed: "}$label, time: $time")
-    return result
+suspend fun DatakatalogApi.getKmhByEgenskapVerdi(): Map<Int, Int> = try {
+    getVegobjekttype(VegobjektTyper.FARTSGRENSE)
+        .egenskapstyper!!
+        .filterIsInstance<EgenskapstypeHeltallenum>()
+        .single { it.id == EgenskapsTyper.FARTSGRENSE }
+        .tillatteVerdier
+        .associate { it.id to it.verdi!! }
+} catch (exception: Exception) {
+    log.warn("Feil ved henting av vegobjekttype ${VegobjektTyper.FARTSGRENSE} fra datakatalogen: $exception. Bruker hardkodede verdier.")
+    mapOf(
+        19885 to 5,
+        11576 to 20,
+        2726 to 30,
+        2728 to 40,
+        2730 to 50,
+        2732 to 60,
+        2735 to 70,
+        2738 to 80,
+        2741 to 90,
+        5087 to 100,
+        9721 to 110,
+        19642 to 120,
+    )
 }
-
-suspend fun DatakatalogApi.getKmhByEgenskapVerdi(): Map<Int, Int> = getVegobjekttype(VegobjektTyper.FARTSGRENSE)
-    .egenskapstyper!!
-    .filterIsInstance<EgenskapstypeHeltallenum>()
-    .single { it.id == EgenskapsTyper.FARTSGRENSE }
-    .tillatteVerdier
-    .associate { it.id to it.verdi!! }
-
-fun Instant.truncateToSeconds() = Instant.fromEpochSeconds(epochSeconds)
 
 const val rootQName = "RoadFeatureDataset"
 
@@ -49,12 +55,10 @@ val namespaces =
             "http://spec.tn-its.eu/schemas/ TNITS.xsd",
     )
 
-const val indent = "\t"
-
 suspend fun ParallelSpeedLimitProcessor.generateSpeedLimitsDeltaUpdate(now: Instant, since: Instant) {
     val path =
         Files.createTempFile("TNITS_SpeedLimits_${now.truncateToSeconds().toString().replace(":", "-")}_update", ".xml")
-    println("Lagrer endringsdata for fartsgrenser til ${path.toAbsolutePath()}")
+    log.info("Lagrer endringsdata for fartsgrenser til ${path.toAbsolutePath()}")
 
     val speedLimitsFlow = generateSpeedLimitsUpdate(since)
 
@@ -62,7 +66,6 @@ suspend fun ParallelSpeedLimitProcessor.generateSpeedLimitsDeltaUpdate(now: Inst
         path,
         rootQName = rootQName,
         namespaces = namespaces,
-        indent = indent,
     ) {
         "metadata" {
             "Metadata" {
@@ -85,27 +88,32 @@ suspend fun ParallelSpeedLimitProcessor.generateSpeedLimitsFullSnapshot(now: Ins
             "TNITS_SpeedLimits_${now.truncateToSeconds().toString().replace(":", "-")}_snapshot",
             ".xml",
         )
-    println("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
+    log.info("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
+    generateSpeedLimitsFullSnapshot(now, path)
+}
+
+suspend fun ParallelSpeedLimitProcessor.generateSpeedLimitsFullSnapshot(now: Instant, path: Path) {
     val speedLimitsFlow = generateSpeedLimitsSnapshot()
 
-    measure("Generating full snapshot", logStart = true) {
-        writeXmlDocument(
-            path,
-            rootQName = rootQName,
-            namespaces = namespaces,
-            indent = indent,
-        ) {
-            "metadata" {
-                "Metadata" {
-                    "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
-                    "datasetCreationTime" { now }
+    BufferedOutputStream(Files.newOutputStream(path)).use { outputStream ->
+        log.measure("Generating full snapshot", logStart = true) {
+            writeXmlDocument(
+                outputStream,
+                rootQName = rootQName,
+                namespaces = namespaces,
+            ) {
+                "metadata" {
+                    "Metadata" {
+                        "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
+                        "datasetCreationTime" { now }
+                    }
                 }
-            }
-            "type" { "Snapshot" }
-            "roadFeatures" {
-                speedLimitsFlow.collectIndexed { i, speedLimit ->
-                    writeSpeedLimit(speedLimit, i)
+                "type" { "Snapshot" }
+                "roadFeatures" {
+                    speedLimitsFlow.collectIndexed { i, speedLimit ->
+                        writeSpeedLimit(speedLimit, i)
+                    }
                 }
             }
         }

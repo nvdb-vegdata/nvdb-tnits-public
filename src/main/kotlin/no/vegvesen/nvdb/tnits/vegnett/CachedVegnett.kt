@@ -7,7 +7,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.extensions.today
-import no.vegvesen.nvdb.tnits.measure
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrLine
 import no.vegvesen.nvdb.tnits.openlr.OpenLrNode
@@ -15,11 +14,13 @@ import no.vegvesen.nvdb.tnits.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.openlr.toFormOfWay
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
+import no.vegvesen.nvdb.tnits.utilities.measure
 import org.locationtech.jts.geom.Point
 import org.openlr.map.FunctionalRoadClass
 import java.util.concurrent.ConcurrentHashMap
 
-class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) {
+class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) : WithLogger {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
     private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
     private val incomingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
@@ -50,17 +51,17 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
             coroutineScope {
                 val veglenkerLoad = async {
-                    measure("Load veglenker") { veglenkerRepository.getAll() }
+                    log.measure("Load veglenker") { veglenkerRepository.getAll() }
                 }
 
                 val felstrekningerLoad = async {
-                    measure("Load feltstrekninger") {
+                    log.measure("Load feltstrekninger") {
                         vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
                     }
                 }
 
                 val frcLoad = async {
-                    measure("Load funksjonell vegklasse") {
+                    log.measure("Load funksjonell vegklasse") {
                         vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
                     }
                 }

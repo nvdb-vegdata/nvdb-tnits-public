@@ -145,7 +145,7 @@ inline fun writeXmlDocument(
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
-    indent: String? = null,
+    indent: String? = "\t",
     writeChildren: XmlStreamDsl.() -> Unit,
 ) = writeXmlStream(outputStream, encoding, indent) {
     // Separate different types of namespace map entries:
@@ -189,7 +189,7 @@ inline fun writeXmlDocument(
     rootQName: String,
     namespaces: Map<String, String> = emptyMap(),
     encoding: String = "UTF-8",
-    indent: String? = null,
+    indent: String? = "\t",
     vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
     writeChildren: XmlStreamDsl.() -> Unit,
 ) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->

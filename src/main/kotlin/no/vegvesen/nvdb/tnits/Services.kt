@@ -10,10 +10,12 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
+import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.DatakatalogApi
 import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.*
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService
 import no.vegvesen.nvdb.tnits.vegobjekter.VegobjekterService
@@ -28,7 +30,9 @@ fun ObjectMapper.initialize(): ObjectMapper = apply {
     setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 }
 
-class Services {
+class Services : WithLogger {
+
+    val config = loadConfig()
 
     val uberiketHttpClient =
         HttpClient(CIO) {
@@ -44,7 +48,7 @@ class Services {
                 exponentialDelay(base = 2.0, maxDelayMs = 30_000)
 
                 modifyRequest { request ->
-                    println("Retrying API request to ${request.url}")
+                    log.warn("Retrying API request to ${request.url}")
                 }
             }
             install(HttpTimeout) {
@@ -53,7 +57,7 @@ class Services {
                 socketTimeoutMillis = 60_000
             }
             defaultRequest {
-                url("https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/")
+                url(config.uberiketApi.baseUrl)
                 headers.append("Accept", "application/json, application/x-ndjson")
                 headers.append("X-Client", "nvdb-tnits-console")
             }
@@ -70,7 +74,7 @@ class Services {
                 }
             }
             defaultRequest {
-                url("https://nvdbapiles.atlas.vegvesen.no/datakatalog/api/v1/")
+                url(config.datakatalogApi.baseUrl)
                 headers.append("Accept", "application/json")
                 headers.append("X-Client", "nvdb-tnits-console")
             }

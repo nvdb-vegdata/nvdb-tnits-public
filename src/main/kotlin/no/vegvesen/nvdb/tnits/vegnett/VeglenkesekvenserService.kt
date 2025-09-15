@@ -13,6 +13,7 @@ import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -21,24 +22,24 @@ class VeglenkesekvenserService(
     private val uberiketApi: UberiketApi,
     private val veglenkerRepository: VeglenkerRepository,
     private val rocksDbContext: RocksDbContext,
-) {
+) : WithLogger {
 
     suspend fun backfillVeglenkesekvenser() {
         val backfillCompleted = keyValueStore.get<Instant>("veglenkesekvenser_backfill_completed")
 
         if (backfillCompleted != null) {
-            println("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
+            log.info("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
             return
         }
 
         var lastId = keyValueStore.get<Long>("veglenkesekvenser_backfill_last_id")
 
         if (lastId == null) {
-            println("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
+            log.info("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
             val now = Clock.System.now()
             keyValueStore.put("veglenkesekvenser_backfill_started", now)
         } else {
-            println("Veglenkesekvenser backfill pågår. Gjenopptar fra siste ID: $lastId")
+            log.info("Veglenkesekvenser backfill pågår. Gjenopptar fra siste ID: $lastId")
         }
 
         var totalCount = 0
@@ -48,7 +49,7 @@ class VeglenkesekvenserService(
             lastId = veglenkesekvenser.lastOrNull()?.id
 
             if (veglenkesekvenser.isEmpty()) {
-                println("Ingen veglenkesekvenser å sette inn, backfill fullført.")
+                log.info("Ingen veglenkesekvenser å sette inn, backfill fullført.")
                 keyValueStore.put("veglenkesekvenser_backfill_completed", Clock.System.now())
             } else {
                 val updates = veglenkesekvenser.associate {
@@ -65,7 +66,7 @@ class VeglenkesekvenserService(
                 }
 
                 totalCount += veglenkesekvenser.size
-                println("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
+                log.info("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
             }
         } while (veglenkesekvenser.isNotEmpty())
     }
@@ -122,11 +123,11 @@ class VeglenkesekvenserService(
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
 
-                println("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
+                log.info("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
                 hendelseCount += response.hendelser.size
             }
         } while (response.hendelser.isNotEmpty())
-        println("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
+        log.info("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
 
         return hendelseCount
     }

@@ -4,6 +4,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.utilities.measure
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -11,73 +14,79 @@ val mainVegobjektTyper = listOf(VegobjektTyper.FARTSGRENSE)
 
 val supportingVegobjektTyper = setOf(VegobjektTyper.FELTSTREKNING, VegobjektTyper.FUNKSJONELL_VEGKLASSE)
 
+val log: Logger = LoggerFactory.getLogger("tnits")
+
 suspend fun main() {
-    println("Starter NVDB TN-ITS konsollapplikasjon...")
+    log.info("Starter NVDB TN-ITS konsollapplikasjon...")
 
     with(Services()) {
         performBackfill()
 
         val now: Instant = performUpdateAndGetTimestamp()
 
-        println("Oppdateringer fullført!")
+        log.info("Oppdateringer fullført!")
 
-        measure("Bygger vegnett-cache", true) {
+        log.measure("Bygger vegnett-cache", true) {
             cachedVegnett.initialize()
         }
 
-        do {
-            println("Trykk:")
-            println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
-            println(" 2 for å generere delta snapshot")
-            println(" 3 for å avslutte")
-
-            val input: String = readln().trim()
-
-            when (input) {
-                "1" -> {
-                    println("Genererer fullt snapshot av TN-ITS fartsgrenser...")
-                    speedLimitGenerator.generateSpeedLimitsFullSnapshot(now)
-                    keyValueStore.put("last_speedlimit_snapshot", now)
-                    println("Fullt snapshot generert.")
-                }
-
-                "2" -> {
-                    println("Genererer delta snapshot av TN-ITS fartsgrenser...")
-                    val since =
-                        keyValueStore.get<Instant>("last_speedlimit_snapshot")
-                            ?: keyValueStore.get<Instant>("last_speedlimit_update")
-                            ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
-                    speedLimitGenerator.generateSpeedLimitsDeltaUpdate(now, since)
-                    keyValueStore.put("last_speedlimit_update", now)
-                }
-
-                "3" -> {
-                    println("Avslutter applikasjonen...")
-                    return
-                }
-
-                else -> println("Ugyldig valg, vennligst prøv igjen.")
-            }
-        } while (true)
+        handleInput(now)
     }
+}
+
+private suspend fun Services.handleInput(now: Instant) {
+    do {
+        println("Trykk:")
+        println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
+        println(" 2 for å generere delta snapshot")
+        println(" 3 for å avslutte")
+
+        val input: String = readln().trim()
+
+        when (input) {
+            "1" -> {
+                log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
+                speedLimitGenerator.generateSpeedLimitsFullSnapshot(now)
+                keyValueStore.put("last_speedlimit_snapshot", now)
+                log.info("Fullt snapshot generert.")
+            }
+
+            "2" -> {
+                log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
+                val since =
+                    keyValueStore.get<Instant>("last_speedlimit_snapshot")
+                        ?: keyValueStore.get<Instant>("last_speedlimit_update")
+                        ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
+                speedLimitGenerator.generateSpeedLimitsDeltaUpdate(now, since)
+                keyValueStore.put("last_speedlimit_update", now)
+            }
+
+            "3" -> {
+                log.info("Avslutter applikasjonen...")
+                return
+            }
+
+            else -> log.info("Ugyldig valg, vennligst prøv igjen.")
+        }
+    } while (true)
 }
 
 private suspend fun Services.performBackfill() {
     coroutineScope {
         launch {
-            println("Oppdaterer veglenkesekvenser...")
+            log.info("Oppdaterer veglenkesekvenser...")
             veglenkesekvenserService.backfillVeglenkesekvenser()
         }
 
         mainVegobjektTyper.forEach { typeId ->
             launch {
-                println("Oppdaterer vegobjekter for type $typeId...")
+                log.info("Oppdaterer vegobjekter for hovedtype $typeId...")
                 vegobjekterService.backfillVegobjekter(typeId, true)
             }
         }
         supportingVegobjektTyper.forEach { typeId ->
             launch {
-                println("Oppdaterer vegobjekter for type $typeId...")
+                log.info("Oppdaterer vegobjekter for støttende type $typeId...")
                 vegobjekterService.backfillVegobjekter(typeId, false)
             }
         }
