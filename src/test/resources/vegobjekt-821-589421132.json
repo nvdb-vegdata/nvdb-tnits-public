@@ -1,0 +1,33 @@
+{
+  "id": 589421132,
+  "versjon": 1,
+  "typeId": 821,
+  "gyldighetsperiode": {
+    "startdato": "2010-01-01"
+  },
+  "egenskaper": {
+    "9338": {
+      "type": "EnumEgenskap",
+      "verdi": 13060
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 2518519,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      },
+      {
+        "id": 2518522,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T17:27:16.399468Z"
+}

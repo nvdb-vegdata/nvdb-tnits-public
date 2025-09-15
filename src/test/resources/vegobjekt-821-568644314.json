@@ -1,0 +1,27 @@
+{
+  "id": 568644314,
+  "versjon": 1,
+  "typeId": 821,
+  "gyldighetsperiode": {
+    "startdato": "2013-01-01"
+  },
+  "egenskaper": {
+    "9338": {
+      "type": "EnumEgenskap",
+      "verdi": 13066
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 365652,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T17:11:52.686589Z"
+}

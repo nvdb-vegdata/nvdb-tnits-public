@@ -7,36 +7,39 @@ import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.mockk.every
-import io.mockk.mockk
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
-import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
+import no.vegvesen.nvdb.tnits.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
-import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
+import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.openlr.binary.BinaryMarshallerFactory
 import org.openlr.map.FunctionalRoadClass
 import java.io.InputStream
+import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 private val marshaller = BinaryMarshallerFactory().create()
+
+fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readJson<ApiVegobjekt>(path).toDomain()
 
 class OpenLrServiceTest :
     StringSpec({
 
         "should convert speed limit stedfesting to OpenLR with real NVDB data" {
-            withTempDb { config ->
+            withTempDb { dbContext ->
                 // Arrange
                 val openLrService =
                     setupOpenLrService(
-                        config,
+                        dbContext,
                         "veglenkesekvens-41423.json",
                         "veglenkesekvenser-41437-41438.json",
+                        "vegobjekt-821-568696095.json",
                     )
                 val stedfestinger = loadStedfestinger("speed-limit-85283803-v2.json")
 
@@ -71,25 +74,28 @@ class OpenLrServiceTest :
                         10.45995 to 63.42732,
                         10.45458 to 63.43004,
                     )
+                openLrReferences.flatMap { ref -> ref.locationReferencePoints.map { it.functionalRoadClass } }.toSet() shouldBe setOf(FunctionalRoadClass.FRC_6)
 
                 binary shouldBe
                     listOf(
-                        "CwdvMy0bFwIQBwIZ/vADOy0=",
-                        "CwdwQy0ajwMMBwJe/ukCfCQV",
-                        "CwdxXS0aDQIcB/2iARcDbBUk",
-                        "CwdwLi0amAMbB/3nARACUC0=",
+                        "CwdvMy0bFzLQBwIZ/vAzOy0=",
+                        "CwdwQy0ajzPMBwJe/ukyfCQV",
+                        "CwdxXS0aDTLcB/2iARczbBUk",
+                        "CwdwLi0amDPbB/3nARAyUC0=",
                     )
             }
         }
 
         "should convert speed limit stedfesting to OpenLR with multi-sequence NVDB data" {
-            withTempDb { config ->
+            withTempDb { dbContext ->
                 // Arrange
                 val openLrService =
                     setupOpenLrService(
-                        config,
+                        dbContext,
                         "veglenkesekvenser-41658-2553792.json",
                         "veglenkesekvenser-42241-48174-41659.json",
+                        "vegobjekt-821-568696277.json",
+                        "vegobjekt-821-633410504.json",
                     )
                 val stedfestinger = loadStedfestinger("speed-limit-85283410-v1.json")
 
@@ -109,22 +115,24 @@ class OpenLrServiceTest :
                         10.50769 to 63.42537,
                         10.50101 to 63.4266,
                     )
+                openLrReferences.flatMap { ref -> ref.locationReferencePoints.map { it.functionalRoadClass } }.toSet() shouldBe setOf(FunctionalRoadClass.FRC_6)
 
                 binary shouldBe
                     listOf(
-                        "Cwd3py0adgMIBgKc/4UDGg==",
-                        "Cwd43i0aPQMaBv1kAHsDCA==",
+                        "Cwd3py0adjPIBgKc/4UzGg==",
+                        "Cwd43i0aPTPaBv1kAHszCA==",
                     )
             }
         }
 
-        "should handle speed limits with gaps in veglenkesekvens" {
+        "should handle speed limits with gaps in veglenkesekvens and varied tillatt kjøreretning" {
             withTempDb { config ->
                 // Arrange
                 val openLrService =
                     setupOpenLrService(
                         config,
                         "veglenkesekvens-365652.json",
+                        "vegobjekt-821-568644314.json",
                     )
                 val stedfestinger = loadStedfestinger("speedlimit-78712521-v1.json")
 
@@ -134,15 +142,16 @@ class OpenLrServiceTest :
 
                 // Assert
                 openLrReferences shouldHaveSize 3
-                openLrReferences.shouldForAll {
-                    it.relativeNegativeOffset shouldBe 0
-                    it.relativePositiveOffset shouldBe 0
+                openLrReferences.shouldForAll { ref ->
+                    ref.relativeNegativeOffset shouldBe 0
+                    ref.relativePositiveOffset shouldBe 0
+                    ref.locationReferencePoints.all { it.functionalRoadClass == FunctionalRoadClass.FRC_6 } shouldBe true
                 }
                 binary shouldBe
                     listOf(
-                        "CwOZ4iuf5gMeAP/dACwDDg==",
-                        "CwOZwiugDQMCBgI7AKEDFw==",
-                        "CwOazCugWAMXCP4K/wsDHg==",
+                        "CwOZ4iuf5jPeAP/dACwzDg==",
+                        "CwOZwiugDTPCBgI7AKEzFw==",
+                        "CwOazCugWDPXCP4K/wszHg==",
                     )
             }
         }
@@ -154,9 +163,9 @@ class OpenLrServiceTest :
                     setupOpenLrService(
                         config,
                         "veglenkesekvenser_2518522_413032_2518519.json",
-                        vegobjekterRepository = mockk(relaxed = true) {
-                            every { findFeltoversiktFromFeltstrekning(any()) } returns listOf("2")
-                        },
+                        "vegobjekt-821-589421132.json",
+                        "vegobjekt-821-568168206.json",
+                        "vegobjekt-616-1020150975.json",
                     )
                 val stedfestinger = loadStedfestinger("speed_limit_589421130_v2.json")
 
@@ -169,24 +178,21 @@ class OpenLrServiceTest :
                 openLrReferences[0].should {
                     it.relativeNegativeOffset shouldBe 0
                     it.relativePositiveOffset shouldBe 0
+                    it.locationReferencePoints shouldHaveSize 2
+                    it.locationReferencePoints[0].functionalRoadClass shouldBe FunctionalRoadClass.FRC_0
+                    it.locationReferencePoints[0].pathAttributes.get().lowestFunctionalRoadClass shouldBe FunctionalRoadClass.FRC_7
+                    it.locationReferencePoints[1].functionalRoadClass shouldBe FunctionalRoadClass.FRC_0
                 }
 
-                binary shouldBe listOf("Cweq+ip17AMSAwB6/1kDGQ==")
+                binary shouldBe listOf("Cweq+ip17APyAwB6/1kDGQ==")
             }
         }
     })
 
-private fun setupOpenLrService(
-    config: RocksDbContext,
-    vararg paths: String,
-    vegobjekterRepository: VegobjekterRepository = mockk {
-        every { findFeltoversiktFromFeltstrekning(any()) } returns listOf("1", "2")
-        every { findFrcForVeglenke(any()) } returns FunctionalRoadClass.FRC_0
-    },
-): OpenLrService {
-    val veglenkerStore = VeglenkerRocksDbStore(config)
+private suspend fun setupOpenLrService(dbContext: RocksDbContext, vararg paths: String): OpenLrService {
+    val veglenkerStore = VeglenkerRocksDbStore(dbContext)
     val veglenkesekvenser =
-        paths.flatMap { path ->
+        paths.filter { it.startsWith("veglenkesekvens") }.flatMap { path ->
             objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
         }
 
@@ -195,13 +201,21 @@ private fun setupOpenLrService(
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
+    val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+    for (path in paths.filter { it.startsWith("vegobjekt") }) {
+        val vegobjekt = objectMapper.readVegobjekt(path)
+        vegobjekterStore.insert(vegobjekt)
+    }
+
+    val cachedVegnett = CachedVegnett(veglenkerStore, vegobjekterStore)
+    cachedVegnett.initialize()
     val openLrService =
-        OpenLrService(CachedVegnett(veglenkerStore, vegobjekterRepository))
+        OpenLrService(cachedVegnett)
     return openLrService
 }
 
 private fun loadStedfestinger(path: String): List<StedfestingUtstrekning> {
-    val fartsgrense = objectMapper.readJson<Vegobjekt>(path)
+    val fartsgrense = objectMapper.readJson<ApiVegobjekt>(path)
     val stedfestinger = fartsgrense.getStedfestingLinjer()
     return stedfestinger
 }

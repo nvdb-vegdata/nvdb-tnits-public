@@ -1,0 +1,31 @@
+{
+  "id": 568168206,
+  "versjon": 1,
+  "typeId": 821,
+  "gyldighetsperiode": {
+    "startdato": "2013-01-01"
+  },
+  "egenskaper": {
+    "9338": {
+      "type": "EnumEgenskap",
+      "verdi": 13067
+    },
+    "10183": {
+      "type": "TekstEgenskap",
+      "verdi": "Kontrollplass"
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 413032,
+        "startposisjon": 0.36971529,
+        "sluttposisjon": 0.77288576,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T16:18:30.750720Z"
+}

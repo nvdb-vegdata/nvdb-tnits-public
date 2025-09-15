@@ -11,7 +11,7 @@ import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.model.toDomainVegobjekt
+import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.openlr.readJson
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
@@ -25,7 +25,7 @@ class VegobjekterRocksDbStoreTest :
             withTempDb { dbContext ->
                 val vegobjekter = VegobjekterRocksDbStore(dbContext)
                 val apiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
-                val domainVegobjekt = apiVegobjekt.toDomainVegobjekt()
+                val domainVegobjekt = apiVegobjekt.toDomain()
                 vegobjekter.insert(domainVegobjekt)
 
                 val retrieved = vegobjekter.findVegobjekt(apiVegobjekt.typeId, apiVegobjekt.id)
@@ -45,8 +45,8 @@ class VegobjekterRocksDbStoreTest :
                 val funskjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
                 val veglenker = veglenkesekvens.convertToDomainVeglenker()
                 veglenkesekvenser.upsert(veglenkesekvens.id, veglenker)
-                vegobjekter.insert(feltstrekning.toDomainVegobjekt())
-                vegobjekter.insert(funskjonellVegklasse.toDomainVegobjekt())
+                vegobjekter.insert(feltstrekning.toDomain())
+                vegobjekter.insert(funskjonellVegklasse.toDomain())
                 val veglenke = veglenker.single()
 
                 val overlappingFeltstrekning = vegobjekter.findOverlappingVegobjekter(veglenke, 616)
@@ -62,7 +62,7 @@ class VegobjekterRocksDbStoreTest :
                 // Arrange
                 val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
                 val baseApiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
-                val baseDomainVegobjekt = baseApiVegobjekt.toDomainVegobjekt()
+                val baseDomainVegobjekt = baseApiVegobjekt.toDomain()
 
                 // Create test vegobjekter using .copy() with different IDs and stedfestinger
                 val vegobjekt1001 = baseDomainVegobjekt.copy(
@@ -142,8 +142,8 @@ class VegobjekterRocksDbStoreTest :
                 val feltstrekning = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
                 val funksjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
 
-                vegobjekterStore.insert(feltstrekning.toDomainVegobjekt())
-                vegobjekterStore.insert(funksjonellVegklasse.toDomainVegobjekt())
+                vegobjekterStore.insert(feltstrekning.toDomain())
+                vegobjekterStore.insert(funksjonellVegklasse.toDomain())
 
                 // Act - Get lookup for different vegobjekt types
                 val feltstrekningLookup = vegobjekterStore.getVegobjektStedfestingLookup(616)

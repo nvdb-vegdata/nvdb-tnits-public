@@ -10,6 +10,7 @@ interface VegobjekterRepository {
 
     context(_: WriteBatchContext)
     fun batchInsert(vegobjektType: Int, vegobjekter: List<Vegobjekt>)
+
     fun findOverlappingVegobjekter(utstrekning: StedfestingUtstrekning, vegobjektType: Int): List<Vegobjekt>
 
     fun findFeltoversiktFromFeltstrekning(veglenke: Veglenke): List<String> {

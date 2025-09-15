@@ -7,11 +7,11 @@ import kotlinx.serialization.serializer
 import org.rocksdb.RocksDBException
 
 @OptIn(ExperimentalSerializationApi::class)
-class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) {
+class KeyValueRocksDbStore(private val rocksDbContext: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) {
 
     fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
         val keyBytes = key.toByteArray()
-        val valueBytes = rocksDbConfig.get(columnFamily, keyBytes)
+        val valueBytes = rocksDbContext.get(columnFamily, keyBytes)
 
         return valueBytes?.let { deserializeValue(it, serializer) }
     }
@@ -28,41 +28,41 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private va
         val keyBytes = key.toByteArray()
         val valueBytes = serializeValue(value, serializer)
 
-        rocksDbConfig.put(columnFamily, keyBytes, valueBytes)
+        rocksDbContext.put(columnFamily, keyBytes, valueBytes)
     }
 
     fun delete(key: String) {
         val keyBytes = key.toByteArray()
-        rocksDbConfig.delete(columnFamily, keyBytes)
+        rocksDbContext.delete(columnFamily, keyBytes)
     }
 
     fun deleteKeysByPrefix(prefix: String) {
         val prefixBytes = prefix.toByteArray()
-        val keysToDelete = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
+        val keysToDelete = rocksDbContext.findKeysByPrefix(columnFamily, prefixBytes)
 
         if (keysToDelete.isNotEmpty()) {
             val deleteOperations = keysToDelete.map { key -> BatchOperation.Delete(key) }
-            rocksDbConfig.writeBatch(columnFamily, deleteOperations)
+            rocksDbContext.writeBatch(columnFamily, deleteOperations)
         }
     }
 
     fun findKeysByPrefix(prefix: String): List<String> {
         val prefixBytes = prefix.toByteArray()
-        val keyBytes = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
+        val keyBytes = rocksDbContext.findKeysByPrefix(columnFamily, prefixBytes)
 
         return keyBytes.map { String(it) }
     }
 
     fun countKeysByPrefix(prefix: String): Int {
         val prefixBytes = prefix.toByteArray()
-        val keys = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
+        val keys = rocksDbContext.findKeysByPrefix(columnFamily, prefixBytes)
 
         return keys.size
     }
 
     fun countKeysMatchingPattern(prefix: String, suffix: String): Int {
         val prefixBytes = prefix.toByteArray()
-        val keys = rocksDbConfig.findKeysByPrefix(columnFamily, prefixBytes)
+        val keys = rocksDbContext.findKeysByPrefix(columnFamily, prefixBytes)
         val suffixBytes = suffix.toByteArray()
 
         return keys.count { key -> key.endsWith(suffixBytes) }
@@ -72,7 +72,7 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private va
         try {
             val keysToDelete = mutableListOf<ByteArray>()
 
-            rocksDbConfig.newIterator(columnFamily).use { iterator ->
+            rocksDbContext.newIterator(columnFamily).use { iterator ->
                 iterator.seekToFirst()
                 while (iterator.isValid) {
                     keysToDelete.add(iterator.key().clone())
@@ -82,14 +82,14 @@ class KeyValueRocksDbStore(private val rocksDbConfig: RocksDbContext, private va
 
             if (keysToDelete.isNotEmpty()) {
                 val deleteOperations = keysToDelete.map { key -> BatchOperation.Delete(key) }
-                rocksDbConfig.writeBatch(columnFamily, deleteOperations)
+                rocksDbContext.writeBatch(columnFamily, deleteOperations)
             }
         } catch (e: RocksDBException) {
             throw RuntimeException("Failed to clear key-value data", e)
         }
     }
 
-    fun size(): Long = rocksDbConfig.getEstimatedKeys(columnFamily)
+    fun size(): Long = rocksDbContext.getEstimatedKeys(columnFamily)
 
     // Convenience inline functions for reified types
     inline fun <reified T : Any> get(key: String): T? = get(key, serializer())

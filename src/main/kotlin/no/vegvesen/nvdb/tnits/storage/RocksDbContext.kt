@@ -3,6 +3,12 @@ package no.vegvesen.nvdb.tnits.storage
 import org.rocksdb.*
 import java.io.File
 
+/**
+ * RocksDB context managing database connection, column families, and providing utility methods.
+ * Ensures thread-safe initialization and cleanup of resources.
+ *
+ * Provides Unit-of-Work atomic batch operations via [writeBatch] method.
+ */
 open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options

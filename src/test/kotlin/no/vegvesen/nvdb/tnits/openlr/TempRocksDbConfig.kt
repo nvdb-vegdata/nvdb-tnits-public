@@ -11,7 +11,7 @@ class TempRocksDbConfig : RocksDbContext(Files.createTempDirectory("openlr-test"
     }
 
     companion object {
-        fun withTempDb(block: (RocksDbContext) -> Unit) {
+        inline fun withTempDb(block: (RocksDbContext) -> Unit) {
             TempRocksDbConfig().use { config ->
                 block(config)
             }
