@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.services
+package no.vegvesen.nvdb.tnits.gateways
 
 import io.ktor.client.*
 import io.ktor.client.call.*

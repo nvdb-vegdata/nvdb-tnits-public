@@ -7,10 +7,10 @@ import no.vegvesen.nvdb.apiles.uberiket.InkluderIVegobjekt
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
+import no.vegvesen.nvdb.tnits.gateways.UberiketApi
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.toDomainVegobjektUpdates
 import no.vegvesen.nvdb.tnits.model.toDomainVegobjekter
-import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository

@@ -11,9 +11,9 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 import no.vegvesen.nvdb.tnits.config.loadConfig
+import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
+import no.vegvesen.nvdb.tnits.gateways.UberiketApi
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
-import no.vegvesen.nvdb.tnits.services.DatakatalogApi
-import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.*
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
