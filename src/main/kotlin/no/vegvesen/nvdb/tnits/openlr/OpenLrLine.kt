@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.openlr
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import no.vegvesen.nvdb.tnits.model.VeglenkeId
+import no.vegvesen.nvdb.tnits.model.reversedView
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import org.locationtech.jts.geom.LineString
 import org.openlr.map.FormOfWay
@@ -95,7 +96,7 @@ data class OpenLrLine private constructor(
                     geometri =
                     when (tillattRetning) {
                         TillattRetning.Med -> geometry
-                        TillattRetning.Mot -> geometry.reverse()
+                        TillattRetning.Mot -> geometry.reversedView()
                     },
                     frc = frc,
                     fow = fow,

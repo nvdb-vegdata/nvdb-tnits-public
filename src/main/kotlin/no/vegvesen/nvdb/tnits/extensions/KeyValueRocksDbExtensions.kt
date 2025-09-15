@@ -6,6 +6,10 @@ fun KeyValueRocksDbStore.clearVeglenkesekvensSettings() {
     deleteKeysByPrefix("veglenkesekvenser_")
 }
 
+fun KeyValueRocksDbStore.clearVegobjektSettings() {
+    deleteKeysByPrefix("vegobjekter_")
+}
+
 fun KeyValueRocksDbStore.getWorkerLastIdCount(): Int = countKeysByPrefix("veglenkesekvenser_backfill_last_id_")
 
 fun KeyValueRocksDbStore.getRangeWorkerCount(): Int = countKeysMatchingPattern("veglenkesekvenser_backfill_range_", "_completed")

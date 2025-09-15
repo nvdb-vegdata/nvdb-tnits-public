@@ -2,6 +2,12 @@ package no.vegvesen.nvdb.tnits.model
 
 import org.locationtech.jts.geom.*
 
+/**
+ * A read-only [CoordinateSequence] that presents the coordinates of the base sequence in reverse order.
+ * This can be used to create a reversed view of geometries without copying the coordinate data.
+ *
+ * NOTE: Probably overkill.
+ */
 class ReversedCoordinateSequence(private val base: CoordinateSequence) : CoordinateSequence {
     override fun getDimension(): Int = base.dimension
 
@@ -38,7 +44,7 @@ class ReversedCoordinateSequence(private val base: CoordinateSequence) : Coordin
     override fun copy(): CoordinateSequence = ReversedCoordinateSequence(base.copy())
 }
 
-fun reversedView(line: LineString, factory: GeometryFactory = line.factory): LineString {
-    val reversedSeq = ReversedCoordinateSequence(line.coordinateSequence)
+fun LineString.reversedView(factory: GeometryFactory = this.factory): LineString {
+    val reversedSeq = ReversedCoordinateSequence(this.coordinateSequence)
     return factory.createLineString(reversedSeq)
 }

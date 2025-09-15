@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.locationtech.jts.geom.*
+import kotlin.time.measureTime
 
 class ReversedCoordinateSequenceTest :
     StringSpec({
@@ -253,7 +254,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(30.0, 15.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.shouldBeInstanceOf<LineString>()
             reversedLine.numPoints shouldBe 4
@@ -270,7 +271,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(3.0, 4.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.factory shouldBe originalLine.factory
         }
@@ -283,7 +284,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(3.0, 4.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine, customFactory)
+            val reversedLine = originalLine.reversedView(customFactory)
 
             reversedLine.factory shouldBe customFactory
             reversedLine.factory shouldNotBe originalLine.factory
@@ -298,7 +299,7 @@ class ReversedCoordinateSequenceTest :
             val factoryWithSrid = GeometryFactory(PrecisionModel(), 25833)
             val originalLine = factoryWithSrid.createLineString(coordinates)
 
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.factory shouldBe originalLine.factory
             reversedLine.srid shouldBe 25833
@@ -311,7 +312,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(100.0, 100.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.numPoints shouldBe 2
             reversedLine.getCoordinateN(0) shouldBe Coordinate(100.0, 100.0)
@@ -325,7 +326,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(15.0, 20.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.numPoints shouldBe 2
             reversedLine.getCoordinateN(0) shouldBe Coordinate(15.0, 20.0)
@@ -334,7 +335,7 @@ class ReversedCoordinateSequenceTest :
 
         "reversedView should handle empty LineString" {
             val emptyLine = geometryFactory.createLineString()
-            val reversedLine = reversedView(emptyLine)
+            val reversedLine = emptyLine.reversedView()
 
             reversedLine.isEmpty shouldBe true
             reversedLine.numPoints shouldBe 0
@@ -348,7 +349,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(20.0, 5.0, 150.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             reversedLine.numPoints shouldBe 3
             reversedLine.getCoordinateN(0) shouldBe Coordinate(20.0, 5.0, 150.0)
@@ -365,7 +366,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(7.0, 8.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val doubleReversedLine = reversedView(reversedView(originalLine))
+            val doubleReversedLine = originalLine.reversedView().reversedView()
 
             doubleReversedLine.numPoints shouldBe originalLine.numPoints
             for (i in 0 until originalLine.numPoints) {
@@ -385,7 +386,7 @@ class ReversedCoordinateSequenceTest :
             val factoryWithSrid = GeometryFactory(PrecisionModel(), 25833)
             val roadLine = factoryWithSrid.createLineString(coordinates)
 
-            val reversedRoadLine = reversedView(roadLine)
+            val reversedRoadLine = roadLine.reversedView()
 
             reversedRoadLine.numPoints shouldBe 5
             reversedRoadLine.srid shouldBe 25833
@@ -400,7 +401,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(3.0, 4.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             // Modify original line's SRID
             originalLine.srid = 4326
@@ -417,7 +418,7 @@ class ReversedCoordinateSequenceTest :
                     Coordinate(3.0, 4.0),
                 )
             val originalLine = geometryFactory.createLineString(coordinates)
-            val reversedLine = reversedView(originalLine)
+            val reversedLine = originalLine.reversedView()
 
             val coordinateSeq = reversedLine.coordinateSequence
             coordinateSeq.shouldBeInstanceOf<ReversedCoordinateSequence>()
@@ -425,5 +426,135 @@ class ReversedCoordinateSequenceTest :
             shouldThrow<UnsupportedOperationException> {
                 coordinateSeq.setOrdinate(0, 0, 999.0)
             }
+        }
+
+        // Performance benchmarks comparing reversedView vs built-in reverse()
+
+        "benchmark small geometry (10 coordinates) - reversedView vs reverse()" {
+            val coordinates = Array(10) { i -> Coordinate(i.toDouble(), i * 2.0) }
+            val originalLine = geometryFactory.createLineString(coordinates)
+            val iterations = 10000
+
+            val reversedViewTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reversedView()
+                }
+            }
+
+            val builtinReverseTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reverse()
+                }
+            }
+
+            println("Small geometry (10 coords, $iterations iterations):")
+            println("  reversedView: $reversedViewTime")
+            println("  builtin reverse(): $builtinReverseTime")
+            println("  Ratio: ${builtinReverseTime.inWholeNanoseconds.toDouble() / reversedViewTime.inWholeNanoseconds}")
+
+            // Verify both produce correct results
+            val reversedViewResult = originalLine.reversedView()
+            val builtinReverseResult = originalLine.reverse()
+
+            reversedViewResult.numPoints shouldBe builtinReverseResult.numPoints
+            for (i in 0 until originalLine.numPoints) {
+                reversedViewResult.getCoordinateN(i) shouldBe builtinReverseResult.getCoordinateN(i)
+            }
+        }
+
+        "benchmark medium geometry (100 coordinates) - reversedView vs reverse()" {
+            val coordinates = Array(100) { i -> Coordinate(i.toDouble(), i * 2.0) }
+            val originalLine = geometryFactory.createLineString(coordinates)
+            val iterations = 1000
+
+            val reversedViewTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reversedView()
+                }
+            }
+
+            val builtinReverseTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reverse()
+                }
+            }
+
+            println("Medium geometry (100 coords, $iterations iterations):")
+            println("  reversedView: $reversedViewTime")
+            println("  builtin reverse(): $builtinReverseTime")
+            println("  Ratio: ${builtinReverseTime.inWholeNanoseconds.toDouble() / reversedViewTime.inWholeNanoseconds}")
+
+            // Verify both produce correct results
+            val reversedViewResult = originalLine.reversedView()
+            val builtinReverseResult = originalLine.reverse()
+
+            reversedViewResult.numPoints shouldBe builtinReverseResult.numPoints
+            for (i in 0 until originalLine.numPoints) {
+                reversedViewResult.getCoordinateN(i) shouldBe builtinReverseResult.getCoordinateN(i)
+            }
+        }
+
+        "benchmark large geometry (1000 coordinates) - reversedView vs reverse()" {
+            val coordinates = Array(1000) { i -> Coordinate(i.toDouble(), i * 2.0) }
+            val originalLine = geometryFactory.createLineString(coordinates)
+            val iterations = 100
+
+            val reversedViewTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reversedView()
+                }
+            }
+
+            val builtinReverseTime = measureTime {
+                repeat(iterations) {
+                    originalLine.reverse()
+                }
+            }
+
+            println("Large geometry (1000 coords, $iterations iterations):")
+            println("  reversedView: $reversedViewTime")
+            println("  builtin reverse(): $builtinReverseTime")
+            println("  Ratio: ${builtinReverseTime.inWholeNanoseconds.toDouble() / reversedViewTime.inWholeNanoseconds}")
+
+            // Verify both produce correct results
+            val reversedViewResult = originalLine.reversedView()
+            val builtinReverseResult = originalLine.reverse()
+
+            reversedViewResult.numPoints shouldBe builtinReverseResult.numPoints
+            for (i in 0 until originalLine.numPoints) {
+                reversedViewResult.getCoordinateN(i) shouldBe builtinReverseResult.getCoordinateN(i)
+            }
+        }
+
+        "benchmark coordinate access patterns - reversedView vs reverse()" {
+            val coordinates = Array(100) { i -> Coordinate(i.toDouble(), i * 2.0) }
+            val originalLine = geometryFactory.createLineString(coordinates)
+
+            val reversedViewResult = originalLine.reversedView()
+            val builtinReverseResult = originalLine.reverse()
+            val iterations = 10000
+
+            val reversedViewAccessTime = measureTime {
+                repeat(iterations) {
+                    // Access all coordinates
+                    for (i in 0 until reversedViewResult.numPoints) {
+                        reversedViewResult.getCoordinateN(i)
+                    }
+                }
+            }
+
+            val builtinReverseAccessTime = measureTime {
+                repeat(iterations) {
+                    // Access all coordinates
+                    for (i in 0 until builtinReverseResult.numPoints) {
+                        builtinReverseResult.getCoordinateN(i)
+                    }
+                }
+            }
+
+            println("Coordinate access (100 coords, $iterations iterations):")
+            println("  reversedView access: $reversedViewAccessTime")
+            println("  builtin reverse() access: $builtinReverseAccessTime")
+            println("  Ratio: ${builtinReverseAccessTime.inWholeNanoseconds.toDouble() / reversedViewAccessTime.inWholeNanoseconds}")
         }
     })
