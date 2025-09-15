@@ -8,20 +8,17 @@ import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.model.toDomainVegobjektUpdates
 import no.vegvesen.nvdb.tnits.model.toDomainVegobjekter
 import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
+import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-private val dirtyCheckForTypes =
-    setOf(
-        VegobjektTyper.FUNKSJONELL_VEGKLASSE,
-    )
+private val dirtyCheckForTypes = supportingVegobjektTyper
 
 class VegobjekterService(
     private val keyValueStore: KeyValueRocksDbStore,

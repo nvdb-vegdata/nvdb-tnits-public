@@ -40,11 +40,7 @@ class VeglenkerRocksDbStore(private val rocksDbContext: RocksDbContext, private 
         rocksDbContext.newIterator(columnFamily).use { iterator ->
             iterator.seekToFirst()
             while (iterator.isValid) {
-                val key =
-                    ByteArray(8).let {
-                        iterator.key().copyInto(it)
-                        it.toLong()
-                    }
+                val key = iterator.key().toLong()
                 val veglenker = deserializeVeglenker(iterator.value())
                 result[key] = veglenker
                 iterator.next()

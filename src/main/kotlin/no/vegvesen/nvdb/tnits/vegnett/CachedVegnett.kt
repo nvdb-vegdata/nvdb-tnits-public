@@ -1,5 +1,10 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.measure
@@ -37,62 +42,58 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         return retning in (tillattRetningByVeglenke[veglenke] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
     }
 
-    @Synchronized
-    fun initialize() {
-        if (initialized) return
+    private val initMutex = Mutex()
 
-        measure("Load veglenker") { veglenkerLookup = veglenkerRepository.getAll() }
-        val feltstrekningerLookup = measure("Load feltstrekninger") {
-            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
-        }
+    suspend fun initialize() {
+        initMutex.withLock {
+            if (initialized) return
 
-        fun findFeltoversikt(veglenke: Veglenke): List<String> {
-            val feltstrekning = feltstrekningerLookup[veglenke.veglenkesekvensId]?.firstOrNull {
-                it.stedfestinger.any { stedfesting -> stedfesting.overlaps(veglenke) }
-            }
-            if (feltstrekning == null) {
-                // Sannsynligvis gangveg uten fartsgrense
-                return emptyList()
-            }
-            val feltoversikt = (feltstrekning.egenskaper[EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING] as? TekstVerdi)?.verdi?.split(
-                "#",
-            )
-            return feltoversikt
-                ?: error("Finner ikke feltoversikt for veglenke ${veglenke.veglenkeId}")
-        }
-
-        val frcLookup = measure("Load funksjonell vegklasse") {
-            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
-        }
-
-        // Finn høyeste (laveste viktighet) funksjonell vegklasse for veglenke
-        fun findFrc(veglenke: Veglenke): FunctionalRoadClass {
-            val frc = frcLookup[veglenke.veglenkesekvensId]?.mapNotNull { it.egenskaper[EgenskapsTyper.VEGKLASSE] as? EnumVerdi }
-                ?.maxByOrNull { it.verdi }?.toFrc()
-            // Mange gangveger har ikke funksjonell vegklasse
-            return frc ?: FunctionalRoadClass.FRC_7
-        }
-
-        veglenkerLookup.forEach { (_, veglenker) ->
-            veglenker.filter {
-                it.isRelevant()
-            }.forEach { veglenke ->
-
-                val feltoversikt = if (veglenke.konnektering) {
-                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: findFeltoversikt(veglenke)
-                } else {
-                    veglenke.feltoversikt
+            coroutineScope {
+                val veglenkerLoad = async {
+                    measure("Load veglenker") { veglenkerRepository.getAll() }
                 }
-                if (feltoversikt.isNotEmpty()) {
-                    addVeglenke(veglenke, feltoversikt)
-                    val frc = findFrc(veglenke)
-                    frcByVeglenke[veglenke] = frc
-                } else {
-                    // Sannsynligvis gangveg uten fartsgrense
+
+                val felstrekningerLoad = async {
+                    measure("Load feltstrekninger") {
+                        vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
+                    }
+                }
+
+                val frcLoad = async {
+                    measure("Load funksjonell vegklasse") {
+                        vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
+                    }
+                }
+
+                veglenkerLookup = veglenkerLoad.await()
+                val feltstrekningerLookup = felstrekningerLoad.await()
+                val frcLookup = frcLoad.await()
+
+                veglenkerLookup.forEach { (_, veglenker) ->
+                    launch {
+                        veglenker.filter {
+                            it.isRelevant()
+                        }.forEach { veglenke ->
+
+                            val feltoversikt = if (veglenke.konnektering) {
+                                findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: feltstrekningerLookup.findFeltoversikt(veglenke)
+                            } else {
+                                veglenke.feltoversikt
+                            }
+                            if (feltoversikt.isNotEmpty()) {
+                                addVeglenke(veglenke, feltoversikt)
+                                val frc = frcLookup.findFrc(veglenke)
+                                frcByVeglenke[veglenke] = frc
+                            } else {
+                                // Sannsynligvis gangveg uten fartsgrense
+                            }
+                        }
+                    }
                 }
             }
+
+            initialized = true
         }
-        initialized = true
     }
 
     private fun addVeglenke(veglenke: Veglenke, feltoversikt: List<String>) {
@@ -126,7 +127,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         veglenker.filter { !it.konnektering }.minByOrNull { (it.startposisjon - veglenke.startposisjon).let { diff -> diff * diff } }
 
     fun getVeglenker(veglenkesekvensId: Long): List<Veglenke> {
-        initialize()
+        check(initialized) { "CachedVegnett is not initialized" }
         return veglenkerLookup[veglenkesekvensId]?.filter {
             it.isRelevant()
         } ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
@@ -214,6 +215,35 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                 val fow = veglenke.typeVeg.toFormOfWay()
                 OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
             }
+        }
+    }
+
+    companion object {
+
+        /**
+         * Finn feltoversikt for veglenke ved å lete opp første feltstrekning med overlappende stedfesting.
+         */
+        private fun Map<Long, List<Vegobjekt>>.findFeltoversikt(veglenke: Veglenke): List<String> {
+            val feltstrekning = this[veglenke.veglenkesekvensId]?.firstOrNull {
+                it.stedfestinger.any { stedfesting -> stedfesting.overlaps(veglenke) }
+            }
+            if (feltstrekning == null) {
+                // Sannsynligvis gangveg uten fartsgrense
+                return emptyList()
+            }
+            val feltoversikt = (feltstrekning.egenskaper[EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING] as? TekstVerdi)?.verdi?.split(
+                "#",
+            )
+            return feltoversikt
+                ?: error("Finner ikke feltoversikt for veglenke ${veglenke.veglenkeId}")
+        }
+
+        /** Finn høyeste (laveste viktighet) funksjonell vegklasse for veglenke */
+        private fun Map<Long, List<Vegobjekt>>.findFrc(veglenke: Veglenke): FunctionalRoadClass {
+            val frc = this[veglenke.veglenkesekvensId]?.mapNotNull { it.egenskaper[EgenskapsTyper.VEGKLASSE] as? EnumVerdi }
+                ?.maxByOrNull { it.verdi }?.toFrc()
+            // Mange gangveger har ikke funksjonell vegklasse
+            return frc ?: FunctionalRoadClass.FRC_7
         }
     }
 }

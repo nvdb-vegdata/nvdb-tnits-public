@@ -13,7 +13,6 @@ import no.vegvesen.nvdb.tnits.services.UberiketApi
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRepository
-import no.vegvesen.nvdb.tnits.storage.publishChangedVeglenkesekvenser
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -120,7 +119,6 @@ class VeglenkesekvenserService(
                 // Apply all updates to RocksDB and mark dirty records in SQL
                 rocksDbContext.writeBatch {
                     veglenkerRepository.batchUpdate(updates)
-                    publishChangedVeglenkesekvenser(changedIds)
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
 
