@@ -100,7 +100,7 @@ class Services : WithLogger {
     val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository, rocksDbContext)
 
     val speedLimitGenerator =
-        ParallelSpeedLimitProcessor(
+        SpeedLimitGenerator(
             veglenkerBatchLookup = { ids ->
                 ids.associateWith {
                     cachedVegnett.getVeglenker(it)
@@ -110,6 +110,8 @@ class Services : WithLogger {
             openLrService = openLrService,
             vegobjekterRepository = vegobjekterRepository,
         )
+
+    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator)
 
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()

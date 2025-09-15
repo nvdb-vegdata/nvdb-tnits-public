@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
+import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toOffsetDateTime
 import no.vegvesen.nvdb.tnits.geometry.*
@@ -32,7 +33,7 @@ data class SpeedLimitWorkItem(
 
 data class IdRange(val startId: Long, val endId: Long)
 
-class ParallelSpeedLimitProcessor(
+class SpeedLimitGenerator(
     private val veglenkerBatchLookup: VeglenkerBatchLookup,
     private val datakatalogApi: DatakatalogApi,
     private val openLrService: OpenLrService,
@@ -41,6 +42,18 @@ class ParallelSpeedLimitProcessor(
 ) : WithLogger {
     private val fetchSize = 1000
     private val superBatchSize = workerCount * fetchSize
+
+    private suspend fun DatakatalogApi.getKmhByEgenskapVerdi(): Map<Int, Int> = try {
+        getVegobjekttype(VegobjektTyper.FARTSGRENSE)
+            .egenskapstyper!!
+            .filterIsInstance<EgenskapstypeHeltallenum>()
+            .single { it.id == EgenskapsTyper.FARTSGRENSE }
+            .tillatteVerdier
+            .associate { it.id to it.verdi!! }
+    } catch (exception: Exception) {
+        log.warn("Feil ved henting av vegobjekttype ${VegobjektTyper.FARTSGRENSE} fra datakatalogen: $exception. Bruker hardkodede verdier.")
+        hardcodedFartsgrenseTillatteVerdier
+    }
 
     fun generateSpeedLimitsUpdate(since: Instant): Flow<SpeedLimit> = flow {
         val kmhByEgenskapVerdi = datakatalogApi.getKmhByEgenskapVerdi()
@@ -205,6 +218,23 @@ class ParallelSpeedLimitProcessor(
             geometry = geometry,
             updateType = UpdateType.Add,
             beginLifespanVersion = workItem.beginLifespanVersion,
+        )
+    }
+
+    companion object {
+        private val hardcodedFartsgrenseTillatteVerdier = mapOf(
+            19885 to 5,
+            11576 to 20,
+            2726 to 30,
+            2728 to 40,
+            2730 to 50,
+            2732 to 60,
+            2735 to 70,
+            2738 to 80,
+            2741 to 90,
+            5087 to 100,
+            9721 to 110,
+            19642 to 120,
         )
     }
 }

@@ -46,7 +46,7 @@ private suspend fun Services.handleInput(now: Instant) {
         when (input) {
             "1" -> {
                 log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
-                speedLimitGenerator.generateSpeedLimitsFullSnapshot(now)
+                speedLimitExporter.exportSpeedLimitsFullSnapshot(now)
                 keyValueStore.put("last_speedlimit_snapshot", now)
                 log.info("Fullt snapshot generert.")
             }
@@ -57,7 +57,7 @@ private suspend fun Services.handleInput(now: Instant) {
                     keyValueStore.get<Instant>("last_speedlimit_snapshot")
                         ?: keyValueStore.get<Instant>("last_speedlimit_update")
                         ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
-                speedLimitGenerator.generateSpeedLimitsDeltaUpdate(now, since)
+                speedLimitExporter.generateSpeedLimitsDeltaUpdate(now, since)
                 keyValueStore.put("last_speedlimit_update", now)
             }
 
