@@ -7,7 +7,8 @@ import io.minio.*
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
-import no.vegvesen.nvdb.tnits.config.*
+import no.vegvesen.nvdb.tnits.config.ExportTarget
+import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
@@ -18,18 +19,17 @@ import kotlin.time.Instant
 class S3IntegrationTest :
     StringSpec({
 
-        lateinit var minioContainer: MinIOContainer
+        val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
+            .withUserName("testuser")
+            .withPassword("testpassword")
         lateinit var minioClient: MinioClient
         val testBucket = "nvdb-tnits-test"
 
+        val exporterConfig = ExporterConfig(false, ExportTarget.S3, testBucket)
+
         beforeSpec {
-            // Start MinIO container
-            minioContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-                .withUserName("testuser")
-                .withPassword("testpassword")
             minioContainer.start()
 
-            // Create MinIO client
             minioClient = MinioClient.builder()
                 .endpoint(minioContainer.s3URL)
                 .credentials(minioContainer.userName, minioContainer.password)
@@ -144,22 +144,7 @@ class S3IntegrationTest :
                 every { generateSpeedLimitsSnapshot() } returns flowOf(mockSpeedLimit)
             }
 
-            val s3Config = S3Config(
-                endpoint = minioContainer.s3URL,
-                bucket = testBucket,
-                accessKey = minioContainer.userName,
-                secretKey = minioContainer.password,
-            )
-
-            val appConfig = AppConfig(
-                database = DatabaseConfig(),
-                uberiketApi = UberiketApiConfig("http://test"),
-                datakatalogApi = DatakatalogApiConfig("http://test"),
-                gzip = false,
-                s3 = s3Config,
-            )
-
-            val exporter = SpeedLimitExporter(mockGenerator, appConfig, minioClient)
+            val exporter = SpeedLimitExporter(mockGenerator, exporterConfig, minioClient)
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
@@ -208,20 +193,7 @@ class S3IntegrationTest :
                 every { generateSpeedLimitsSnapshot() } returns flowOf(mockSpeedLimit)
             }
 
-            val s3Config = S3Config(
-                endpoint = minioContainer.s3URL,
-                bucket = testBucket,
-                accessKey = minioContainer.userName,
-                secretKey = minioContainer.password,
-            )
-
-            val appConfig = AppConfig(
-                database = DatabaseConfig(),
-                uberiketApi = UberiketApiConfig("http://test"),
-                datakatalogApi = DatakatalogApiConfig("http://test"),
-                gzip = true, // Enable GZIP compression
-                s3 = s3Config,
-            )
+            val appConfig = exporterConfig.copy(gzip = true)
 
             val exporter = SpeedLimitExporter(mockGenerator, appConfig, minioClient)
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")

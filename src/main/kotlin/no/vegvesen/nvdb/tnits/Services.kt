@@ -83,18 +83,12 @@ class Services : WithLogger {
 
     val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
 
-    val minioClient: MinioClient? = config.s3?.let { s3Config ->
-        try {
-            MinioClient.builder()
-                .endpoint(s3Config.endpoint)
-                .credentials(s3Config.accessKey, s3Config.secretKey)
-                .region(s3Config.region)
-                .build()
-                .also { log.info("MinIO client initialized for endpoint: ${s3Config.endpoint}") }
-        } catch (e: Exception) {
-            log.error("Failed to initialize MinIO client", e)
-            null
-        }
+    val minioClient: MinioClient = config.s3.let { s3Config ->
+        MinioClient.builder()
+            .endpoint(s3Config.endpoint)
+            .credentials(s3Config.accessKey, s3Config.secretKey)
+            .build()
+            .also { log.info("MinIO client initialized for endpoint: ${s3Config.endpoint}") }
     }
 
     val rocksDbContext = RocksDbContext()
@@ -126,7 +120,7 @@ class Services : WithLogger {
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config, minioClient)
+    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config.exporter, minioClient)
 
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()

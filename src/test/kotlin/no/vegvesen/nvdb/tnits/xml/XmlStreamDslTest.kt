@@ -71,7 +71,11 @@ class XmlStreamDslTest :
 
             val xml = output.toString("UTF-8")
             xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://example.com/test test.xsd"><test:element gml:id="test-1">content</test:element></gml:Root>"""
+                """<?xml version="1.0" encoding="UTF-8"?>
+<gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://example.com/test test.xsd">
+	<test:element gml:id="test-1">content</test:element>
+</gml:Root>
+"""
         }
 
         "writeXmlDocument Path should delegate to OutputStream version" {
@@ -85,7 +89,11 @@ class XmlStreamDslTest :
 
             val content = tempFile.readText()
             content shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><ns:root xmlns:ns="http://example.com"><ns:child>test</ns:child></ns:root>"""
+                """<?xml version="1.0" encoding="UTF-8"?>
+<ns:root xmlns:ns="http://example.com">
+	<ns:child>test</ns:child>
+</ns:root>
+"""
         }
 
         "namespace handling should work correctly" {
@@ -104,7 +112,11 @@ class XmlStreamDslTest :
 
             val xml = output.toString("UTF-8")
             xml shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?><gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:xlink="http://www.w3.org/1999/xlink"><gml:featureMember xlink:href="#feature1"></gml:featureMember></gml:FeatureCollection>"""
+                """<?xml version="1.0" encoding="UTF-8"?>
+<gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<gml:featureMember xlink:href="#feature1"></gml:featureMember>
+</gml:FeatureCollection>
+"""
         }
 
         "complex nested structure should generate correct XML" {
@@ -136,7 +148,36 @@ class XmlStreamDslTest :
 
             val xml = output.toString("UTF-8")
             val expected =
-                """<?xml version="1.0" encoding="UTF-8"?><root><metadata version="1.0"><author>Test Author</author><date>2024-01-01</date></metadata><data><items><item id="1"><name>Item 1</name><properties><property key="type">test</property></properties></item><item id="2"><name>Item 2</name><properties><property key="type">test</property></properties></item><item id="3"><name>Item 3</name><properties><property key="type">test</property></properties></item></items></data></root>"""
+                """<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<metadata version="1.0">
+		<author>Test Author</author>
+		<date>2024-01-01</date>
+	</metadata>
+	<data>
+		<items>
+			<item id="1">
+				<name>Item 1</name>
+				<properties>
+					<property key="type">test</property>
+				</properties>
+			</item>
+			<item id="2">
+				<name>Item 2</name>
+				<properties>
+					<property key="type">test</property>
+				</properties>
+			</item>
+			<item id="3">
+				<name>Item 3</name>
+				<properties>
+					<property key="type">test</property>
+				</properties>
+			</item>
+		</items>
+	</data>
+</root>
+"""
             xml shouldBe expected
         }
 
