@@ -198,6 +198,10 @@ class SpeedLimitGenerator(
                 }
             }
 
+        require(lineStrings.isNotEmpty()) {
+            "Finner ingen veglenker for fartsgrense ${workItem.id} med stedfesting ${workItem.stedfestingLinjer}"
+        }
+
         val geometry =
             mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
                 ?: error("Could not determine geometry for fartsgrense ${workItem.id}")
