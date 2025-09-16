@@ -6,7 +6,6 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
-import kotlin.io.path.readText
 
 class XmlStreamDslTest :
     StringSpec({
@@ -39,19 +38,6 @@ class XmlStreamDslTest :
             xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child><other attr="value"></other></root>"""
         }
 
-        "writeXmlStream should work with Path" {
-            writeXmlStream(tempFile) {
-                "root" {
-                    "test" {
-                        +"path content"
-                    }
-                }
-            }
-
-            val content = tempFile.readText()
-            content shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><test>path content</test></root>"""
-        }
-
         "writeXmlDocument should generate document with namespaces using OutputStream" {
             val output = ByteArrayOutputStream()
             val namespaces =
@@ -75,24 +61,6 @@ class XmlStreamDslTest :
 <gml:Root xmlns:gml="http://www.opengis.net/gml/3.2.1" xmlns:test="http://example.com/test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://example.com/test test.xsd">
 	<test:element gml:id="test-1">content</test:element>
 </gml:Root>
-"""
-        }
-
-        "writeXmlDocument Path should delegate to OutputStream version" {
-            val namespaces = mapOf("ns" to "http://example.com")
-
-            writeXmlDocument(tempFile, "ns:root", namespaces) {
-                "ns:child" {
-                    +"test"
-                }
-            }
-
-            val content = tempFile.readText()
-            content shouldBe
-                """<?xml version="1.0" encoding="UTF-8"?>
-<ns:root xmlns:ns="http://example.com">
-	<ns:child>test</ns:child>
-</ns:root>
 """
         }
 

@@ -1,10 +1,7 @@
 package no.vegvesen.nvdb.tnits.xml
 
-import java.io.BufferedOutputStream
 import java.io.OutputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.lang.AutoCloseable
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.stream.XMLStreamWriter
 
@@ -18,7 +15,7 @@ internal val xmlOutputFactory: XMLOutputFactory by lazy { XMLOutputFactory.newFa
  * - namespace("gml", uri)       -> declare prefix->URI
  * - -"text"                     -> text node
  */
-class XmlStreamDsl(val writer: XMLStreamWriter, private val indent: String? = null) {
+class XmlStreamDsl(val writer: XMLStreamWriter, private val indent: String? = null) : AutoCloseable {
     @PublishedApi
     internal val namespaces = mutableMapOf<String, String>()
 
@@ -30,14 +27,15 @@ class XmlStreamDsl(val writer: XMLStreamWriter, private val indent: String? = nu
 
     fun startDocument(encoding: String = "UTF-8", version: String = "1.0") = writer.writeStartDocument(encoding, version)
 
-    fun endDocument() = writer.writeEndDocument()
-
-    fun flushAndClose() {
-        try {
-            writer.flush()
-        } finally {
-            writer.close()
+    fun endDocument() {
+        writer.writeEndDocument()
+        if (indent != null) {
+            writer.writeCharacters("\n")
         }
+    }
+
+    override fun close() {
+        writer.close()
     }
 
     inline fun element(qName: String, namespaceDeclarations: Map<String, String> = emptyMap(), block: XmlStreamDsl.() -> Any?) {
@@ -115,27 +113,10 @@ class XmlStreamDsl(val writer: XMLStreamWriter, private val indent: String? = nu
 /** Generic entry point over an OutputStream. */
 inline fun writeXmlStream(outputStream: OutputStream, encoding: String = "UTF-8", indent: String? = null, block: XmlStreamDsl.() -> Unit) {
     val writer = xmlOutputFactory.createXMLStreamWriter(outputStream, encoding)
-    val xml = XmlStreamDsl(writer, indent)
-    try {
+    XmlStreamDsl(writer, indent).use { xml ->
         xml.startDocument(encoding)
         xml.block()
         xml.endDocument()
-        indent?.let { xml.writer.writeCharacters("\n") }
-    } finally {
-        xml.flushAndClose()
-    }
-}
-
-/** Overload writing directly to a Path. */
-inline fun writeXmlStream(
-    path: Path,
-    encoding: String = "UTF-8",
-    indent: String? = null,
-    vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    block: XmlStreamDsl.() -> Unit,
-) {
-    BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-        writeXmlStream(os, encoding, indent) { block() }
     }
 }
 
@@ -181,17 +162,4 @@ inline fun writeXmlDocument(
         }
         writeChildren()
     }
-}
-
-/** Path overload of xmlDocument. */
-inline fun writeXmlDocument(
-    path: Path,
-    rootQName: String,
-    namespaces: Map<String, String> = emptyMap(),
-    encoding: String = "UTF-8",
-    indent: String? = "\t",
-    vararg options: StandardOpenOption = arrayOf(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-    writeChildren: XmlStreamDsl.() -> Unit,
-) = BufferedOutputStream(Files.newOutputStream(path, *options)).use { os ->
-    writeXmlDocument(os, rootQName, namespaces, encoding, indent, writeChildren)
 }
