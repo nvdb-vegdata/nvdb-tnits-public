@@ -32,32 +32,15 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, p
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(since)
 
         openStream(path).use { outputStream ->
-
-            writeXmlDocument(
-                outputStream,
-                rootQName = rootQName,
-                namespaces = namespaces,
-            ) {
-                "metadata" {
-                    "Metadata" {
-                        "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
-                        "datasetCreationTime" { now }
-                    }
-                }
-                "type" { "Update" }
-                "roadFeatures" {
-                    speedLimitsFlow.collectIndexed { i, speedLimit ->
-                        writeSpeedLimit(speedLimit, i)
-                    }
-                }
-            }
+            writeSpeedLimitsToXml(now, outputStream, speedLimitsFlow, ExportType.Update)
         }
     }
 
     fun openStream(path: Path): OutputStream {
-        val fileOut = BufferedOutputStream(Files.newOutputStream(path), 1024 * 1024)
+        val bufferSize = 256 * 1024
+        val fileOut = BufferedOutputStream(Files.newOutputStream(path), bufferSize)
         return if (appConfig.gzip) {
-            BufferedOutputStream(GZIPOutputStream(fileOut), 64 * 1024)
+            BufferedOutputStream(GZIPOutputStream(fileOut), bufferSize)
         } else {
             fileOut
         }
@@ -74,12 +57,17 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, p
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsSnapshot()
 
         openStream(path).use { outputStream ->
-            exportSpeedLimitsFullSnapshot(timestamp, outputStream, speedLimitsFlow)
+            writeSpeedLimitsToXml(timestamp, outputStream, speedLimitsFlow, ExportType.Snapshot)
         }
     }
 
-    suspend fun exportSpeedLimitsFullSnapshot(timestamp: Instant, outputStream: OutputStream, speedLimitsFlow: Flow<SpeedLimit>) {
-        log.measure("Generating full snapshot", logStart = true) {
+    enum class ExportType {
+        Snapshot,
+        Update,
+    }
+
+    suspend fun writeSpeedLimitsToXml(timestamp: Instant, outputStream: OutputStream, speedLimitsFlow: Flow<SpeedLimit>, exportType: ExportType) {
+        log.measure("Generating $exportType", logStart = true) {
             writeXmlDocument(
                 outputStream,
                 rootQName = rootQName,
@@ -91,7 +79,7 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, p
                         "datasetCreationTime" { timestamp }
                     }
                 }
-                "type" { "Snapshot" }
+                "type" { exportType }
                 "roadFeatures" {
                     speedLimitsFlow.collectIndexed { i, speedLimit ->
                         writeSpeedLimit(speedLimit, i)
