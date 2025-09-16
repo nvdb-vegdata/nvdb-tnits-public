@@ -74,6 +74,9 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:6.0.0")
     testImplementation("io.kotest:kotest-assertions-core:6.0.0")
     testImplementation("io.mockk:mockk:1.13.12")
+
+    // Testcontainers for integration testing
+    testImplementation("org.testcontainers:minio:1.21.3")
 }
 
 application {
