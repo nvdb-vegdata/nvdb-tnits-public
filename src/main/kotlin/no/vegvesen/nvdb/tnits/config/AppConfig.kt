@@ -4,7 +4,7 @@ import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addResourceOrFileSource
 
-data class AppConfig(val database: DatabaseConfig, val uberiketApi: UberiketApiConfig, val datakatalogApi: DatakatalogApiConfig)
+data class AppConfig(val database: DatabaseConfig, val uberiketApi: UberiketApiConfig, val datakatalogApi: DatakatalogApiConfig, val gzip: Boolean)
 
 data class DatabaseConfig(val url: String = "jdbc:h2:file:./data/nvdb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1", val user: String = "sa", val password: String = "")
 

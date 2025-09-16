@@ -17,8 +17,8 @@ import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
+import no.vegvesen.nvdb.tnits.utilities.measure
 import kotlin.time.Instant
-import kotlin.time.measureTime
 
 typealias VeglenkerBatchLookup = (Collection<Long>) -> Map<Long, List<Veglenke>>
 
@@ -90,24 +90,18 @@ class SpeedLimitGenerator(
 
         vegobjekterRepository.findVegobjektIds(VegobjektTyper.FARTSGRENSE).chunked(superBatchSize).forEach { ids ->
 
-            log.info("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}...")
+            log.measure("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}...") {
+                // Create ranges of work for parallel processing
+                val idRanges = createIdRanges(ids)
 
-            // Create ranges of work for parallel processing
-            val idRanges = createIdRanges(ids)
+                // Process ranges in parallel - each worker fetches and processes its range
+                val speedLimits: List<SpeedLimit> = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
 
-            // Process ranges in parallel - each worker fetches and processes its range
-            val speedLimits: List<SpeedLimit>
-            val processingTime =
-                measureTime {
-                    speedLimits = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
+                totalCount += speedLimits.size
+                speedLimits.sortedBy { it.id }.forEach { speedLimit ->
+                    emit(speedLimit)
                 }
-
-            totalCount += speedLimits.size
-            speedLimits.sortedBy { it.id }.forEach { speedLimit ->
-                emit(speedLimit)
             }
-
-            log.info("Behandlet superbatch: ${speedLimits.size} fartsgrenser på $processingTime (totalt: $totalCount)")
         }
     }
 

@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
+import no.vegvesen.nvdb.tnits.config.AppConfig
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
@@ -13,9 +14,10 @@ import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
+import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
-class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator) {
+class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, private val appConfig: AppConfig) {
 
     suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, since: Instant) {
         val path =
@@ -48,14 +50,21 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator) {
         val path =
             Files.createTempFile(
                 "TNITS_SpeedLimits_${timestamp.truncateToSeconds().toString().replace(":", "-")}_snapshot",
-                ".xml",
+                if (appConfig.gzip) ".xml.gz" else ".xml",
             )
         log.info("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
 
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsSnapshot()
 
-        BufferedOutputStream(Files.newOutputStream(path)).use { outputStream ->
-            exportSpeedLimitsFullSnapshot(timestamp, outputStream, speedLimitsFlow)
+        BufferedOutputStream(Files.newOutputStream(path), 1024 * 1024).use { fileOut ->
+            if (appConfig.gzip) {
+                BufferedOutputStream(GZIPOutputStream(fileOut), 64 * 1024).use { gzipOut ->
+                    exportSpeedLimitsFullSnapshot(timestamp, gzipOut, speedLimitsFlow)
+                    gzipOut.flush()
+                }
+            } else {
+                exportSpeedLimitsFullSnapshot(timestamp, fileOut, speedLimitsFlow)
+            }
         }
     }
 

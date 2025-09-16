@@ -111,7 +111,7 @@ class Services : WithLogger {
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator)
+    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config)
 
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
