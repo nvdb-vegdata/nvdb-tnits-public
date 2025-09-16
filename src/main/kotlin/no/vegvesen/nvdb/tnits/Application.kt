@@ -48,7 +48,6 @@ private suspend fun Services.handleInput(now: Instant) {
                 log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
                 speedLimitExporter.exportSpeedLimitsFullSnapshot(now)
                 keyValueStore.put("last_speedlimit_snapshot", now)
-                log.info("Fullt snapshot generert.")
             }
 
             "2" -> {

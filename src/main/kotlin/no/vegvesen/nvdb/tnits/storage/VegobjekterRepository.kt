@@ -20,4 +20,5 @@ interface VegobjekterRepository {
     fun streamAll(vegobjektType: Int): Sequence<Vegobjekt>
 
     fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<Vegobjekt>>
+    fun countVegobjekter(vegobjektType: Int): Int
 }

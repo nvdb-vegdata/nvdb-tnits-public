@@ -14,6 +14,7 @@ import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
@@ -21,28 +22,44 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, p
 
     suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, since: Instant) {
         val path =
-            Files.createTempFile("TNITS_SpeedLimits_${now.truncateToSeconds().toString().replace(":", "-")}_update", ".xml")
+            Files.createTempFile(
+                "TNITS_SpeedLimits_${now.truncateToSeconds().toString().replace(":", "-")}_update",
+                if (appConfig.gzip) ".xml.gz" else ".xml",
+            )
+
         log.info("Lagrer endringsdata for fartsgrenser til ${path.toAbsolutePath()}")
 
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(since)
 
-        writeXmlDocument(
-            path,
-            rootQName = rootQName,
-            namespaces = namespaces,
-        ) {
-            "metadata" {
-                "Metadata" {
-                    "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
-                    "datasetCreationTime" { now }
+        openStream(path).use { outputStream ->
+
+            writeXmlDocument(
+                outputStream,
+                rootQName = rootQName,
+                namespaces = namespaces,
+            ) {
+                "metadata" {
+                    "Metadata" {
+                        "datasetId" { "NVDB-TNITS-SpeedLimits_$now" }
+                        "datasetCreationTime" { now }
+                    }
+                }
+                "type" { "Update" }
+                "roadFeatures" {
+                    speedLimitsFlow.collectIndexed { i, speedLimit ->
+                        writeSpeedLimit(speedLimit, i)
+                    }
                 }
             }
-            "type" { "Update" }
-            "roadFeatures" {
-                speedLimitsFlow.collectIndexed { i, speedLimit ->
-                    writeSpeedLimit(speedLimit, i)
-                }
-            }
+        }
+    }
+
+    fun openStream(path: Path): OutputStream {
+        val fileOut = BufferedOutputStream(Files.newOutputStream(path), 1024 * 1024)
+        return if (appConfig.gzip) {
+            BufferedOutputStream(GZIPOutputStream(fileOut), 64 * 1024)
+        } else {
+            fileOut
         }
     }
 
@@ -56,15 +73,8 @@ class SpeedLimitExporter(private val speedLimitGenerator: SpeedLimitGenerator, p
 
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsSnapshot()
 
-        BufferedOutputStream(Files.newOutputStream(path), 1024 * 1024).use { fileOut ->
-            if (appConfig.gzip) {
-                BufferedOutputStream(GZIPOutputStream(fileOut), 64 * 1024).use { gzipOut ->
-                    exportSpeedLimitsFullSnapshot(timestamp, gzipOut, speedLimitsFlow)
-                    gzipOut.flush()
-                }
-            } else {
-                exportSpeedLimitsFullSnapshot(timestamp, fileOut, speedLimitsFlow)
-            }
+        openStream(path).use { outputStream ->
+            exportSpeedLimitsFullSnapshot(timestamp, outputStream, speedLimitsFlow)
         }
     }
 

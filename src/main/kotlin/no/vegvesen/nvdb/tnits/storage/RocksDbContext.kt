@@ -461,4 +461,30 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
             is BatchOperation.Delete -> delete(columnFamily, operation.key)
         }
     }
+
+    fun countEntriesByPrefix(columnFamily: ColumnFamily, prefix: ByteArray): Int {
+        if (prefix.isEmpty()) {
+            return 0
+        }
+
+        var count = 0
+
+        val readOptions = ReadOptions().apply {
+            setAutoPrefixMode(true)
+            val upperBound = calculateUpperBound(prefix)
+            setIterateUpperBound(upperBound)
+        }
+
+        readOptions.use { options ->
+            newIterator(columnFamily, options).use { iterator ->
+                iterator.seek(prefix)
+                while (iterator.isValid && iterator.key().startsWith(prefix)) {
+                    count++
+                    iterator.next()
+                }
+            }
+        }
+
+        return count
+    }
 }

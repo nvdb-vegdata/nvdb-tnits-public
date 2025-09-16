@@ -22,6 +22,11 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         return rocksDbContext.streamKeysByPrefix(columnFamily, prefix).map(::getVegobjektId)
     }
 
+    override fun countVegobjekter(vegobjektType: Int): Int {
+        val prefix = getVegobjektTypePrefix(vegobjektType)
+        return rocksDbContext.countEntriesByPrefix(columnFamily, prefix)
+    }
+
     override fun findVegobjekter(vegobjektType: Int, idRange: IdRange): List<Vegobjekt> {
         val prefix = getVegobjektTypePrefix(vegobjektType)
         return rocksDbContext.streamEntriesByPrefix(columnFamily, prefix, getVegobjektKey(vegobjektType, idRange.startId))

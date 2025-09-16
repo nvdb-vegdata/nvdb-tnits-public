@@ -86,23 +86,27 @@ class SpeedLimitGenerator(
     fun generateSpeedLimitsSnapshot(): Flow<SpeedLimit> = flow {
         val kmhByEgenskapVerdi = datakatalogApi.getKmhByEgenskapVerdi()
 
-        var totalCount = 0
+        val totalCount = vegobjekterRepository.countVegobjekter(VegobjektTyper.FARTSGRENSE)
+
+        var count = 0
 
         vegobjekterRepository.findVegobjektIds(VegobjektTyper.FARTSGRENSE).chunked(superBatchSize).forEach { ids ->
 
-            log.measure("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}...") {
+            log.measure("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}, totalt $count av $totalCount") {
                 // Create ranges of work for parallel processing
                 val idRanges = createIdRanges(ids)
 
                 // Process ranges in parallel - each worker fetches and processes its range
                 val speedLimits: List<SpeedLimit> = processIdRangesInParallel(idRanges, kmhByEgenskapVerdi)
 
-                totalCount += speedLimits.size
+                count += speedLimits.size
                 speedLimits.sortedBy { it.id }.forEach { speedLimit ->
                     emit(speedLimit)
                 }
             }
         }
+
+        log.info("Ferdig med å generere fartsgrenser. Totalt $count av $totalCount")
     }
 
     private fun createIdRanges(ids: List<Long>): List<IdRange> {

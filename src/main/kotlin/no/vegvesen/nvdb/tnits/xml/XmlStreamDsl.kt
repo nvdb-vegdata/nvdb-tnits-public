@@ -123,6 +123,7 @@ inline fun writeXmlStream(outputStream: OutputStream, encoding: String = "UTF-8"
         indent?.let { xml.writer.writeCharacters("\n") }
     } finally {
         xml.flushAndClose()
+        outputStream.flush()
     }
 }
 
