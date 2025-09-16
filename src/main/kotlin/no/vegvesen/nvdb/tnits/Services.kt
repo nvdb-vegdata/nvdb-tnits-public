@@ -10,6 +10,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
+import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
@@ -82,6 +83,20 @@ class Services : WithLogger {
 
     val datakatalogApi = DatakatalogApi(datakatalogHttpClient)
 
+    val minioClient: MinioClient? = config.s3?.let { s3Config ->
+        try {
+            MinioClient.builder()
+                .endpoint(s3Config.endpoint)
+                .credentials(s3Config.accessKey, s3Config.secretKey)
+                .region(s3Config.region)
+                .build()
+                .also { log.info("MinIO client initialized for endpoint: ${s3Config.endpoint}") }
+        } catch (e: Exception) {
+            log.error("Failed to initialize MinIO client", e)
+            null
+        }
+    }
+
     val rocksDbContext = RocksDbContext()
 
     val veglenkerRepository: VeglenkerRepository =
@@ -111,7 +126,7 @@ class Services : WithLogger {
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config)
+    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config, minioClient)
 
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()

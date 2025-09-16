@@ -44,6 +44,40 @@ All tables include timestamp fields for change tracking.
 3. **Incremental Updates**: Process change events from NVDB's event stream
 4. **TN-ITS Export**: Interactive menu for generating speed limit exports in TN-ITS compliant XML format
 
+### S3/MinIO Export
+
+The application now supports exporting TN-ITS XML files directly to S3-compatible storage (MinIO):
+
+- **S3 Configuration**: Add S3 settings to `AppConfig` with endpoint, bucket, credentials
+- **Automatic Fallback**: Falls back to local file export if S3 is unavailable
+- **Streaming Upload**: Uses `S3OutputStream` with piped streams for memory-efficient uploads
+- **Folder Structure**: Files are organized as `{vegobjekttype-padded}-speed-limits/{timestamp}/{type}.xml[.gz]`
+  - Example: `0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml.gz`
+  - Speed limits use vegobjekttype 105, resulting in `0105-speed-limits/` folder
+- **GZIP Support**: Maintains GZIP compression when uploading to S3
+
+### Logging System
+
+The application uses SLF4J logging with the `WithLogger` interface pattern:
+
+- **Interface Pattern**: Classes implement `WithLogger` interface to get `log` property
+- **Logger Creation**: Uses `LoggerFactory.getLogger()` with proper class detection
+- **Log Levels**: Standard SLF4J levels (trace, debug, info, warn, error)
+- **Syntax**: Use `log.info("message")` or `log.error("message", exception)` - no block syntax
+- **Performance**: Includes `measure` extension for timing operations with automatic logging
+
+Example usage:
+```kotlin
+class MyService : WithLogger {
+    fun doWork() {
+        log.info("Starting work")
+        log.measure("Processing data") {
+            // work here
+        }
+    }
+}
+```
+
 ## Development Commands
 
 ### Build and Test
