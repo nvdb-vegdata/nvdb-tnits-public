@@ -309,17 +309,19 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
         val options = Options().setCreateIfMissing(true)
 
         try {
-            BackupEngine.open(Env.getDefault(), BackupEngineOptions(backupPath.toString())).use { backupEngine ->
-                log.debug("BackupEngine opened for restore, available backups:")
-                val backupInfos = backupEngine.getBackupInfo()
-                backupInfos.forEach { info ->
-                    log.debug("  Backup ID: ${info.backupId()}, Size: ${info.size()} bytes, Timestamp: ${info.timestamp()}")
-                }
+            BackupEngineOptions(backupPath.toString()).use { options ->
+                BackupEngine.open(Env.getDefault(), options).use { backupEngine ->
+                    log.debug("BackupEngine opened for restore, available backups:")
+                    val backupInfos = backupEngine.getBackupInfo()
+                    backupInfos.forEach { info ->
+                        log.debug("  Backup ID: ${info.backupId()}, Size: ${info.size()} bytes, Timestamp: ${info.timestamp()}")
+                    }
 
-                log.debug("Starting restore from backup path: $backupPath to database path: ${rocksDbContext.dbPath}")
-                // Restore to current rocksDbContext.dbPath (both db_dir and wal_dir point to the same location)
-                backupEngine.restoreDbFromLatestBackup(rocksDbContext.dbPath, rocksDbContext.dbPath, restoreOptions)
-                log.debug("restoreDbFromLatestBackup completed")
+                    log.debug("Starting restore from backup path: $backupPath to database path: ${rocksDbContext.dbPath}")
+                    // Restore to current rocksDbContext.dbPath (both db_dir and wal_dir point to the same location)
+                    backupEngine.restoreDbFromLatestBackup(rocksDbContext.dbPath, rocksDbContext.dbPath, restoreOptions)
+                    log.debug("restoreDbFromLatestBackup completed")
+                }
             }
         } catch (e: Exception) {
             log.error("Failed during RocksDB restore operation", e)

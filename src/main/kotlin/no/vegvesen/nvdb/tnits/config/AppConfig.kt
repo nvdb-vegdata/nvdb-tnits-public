@@ -19,7 +19,7 @@ data class AppConfig(
 
 data class ExporterConfig(val gzip: Boolean, val target: ExportTarget, val bucket: String)
 
-data class BackupConfig(val enabled: Boolean, val bucket: String = "", val path: String = "", val tempDir: String = "")
+data class BackupConfig(val enabled: Boolean, val bucket: String = "", val path: String = "")
 
 data class UberiketApiConfig(val baseUrl: String)
 
