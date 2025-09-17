@@ -9,7 +9,7 @@ import java.io.File
  *
  * Provides Unit-of-Work atomic batch operations via [writeBatch] method.
  */
-open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
+open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions
@@ -183,6 +183,12 @@ open class RocksDbContext(protected val dbPath: String = "veglenker.db", enableC
     fun clear() {
         close()
         File(dbPath).deleteRecursively()
+        initialize()
+    }
+
+    @Synchronized
+    fun reinitialize() {
+        close()
         initialize()
     }
 

@@ -82,9 +82,9 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                                 veglenke.feltoversikt
                             }
                             if (feltoversikt.isNotEmpty()) {
-                                addVeglenke(veglenke, feltoversikt)
                                 val frc = frcLookup.findFrc(veglenke)
                                 frcByVeglenke[veglenke] = frc
+                                addVeglenke(veglenke, feltoversikt)
                             } else {
                                 // Sannsynligvis gangveg uten fartsgrense
                             }
@@ -206,16 +206,14 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     }
 
     private fun computeIfAbsent(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
-        synchronized(veglenke) {
-            val linesByVeglenker = when (retning) {
-                TillattRetning.Med -> linesByVeglenkerForward
-                TillattRetning.Mot -> linesByVeglenkerReverse
-            }
-            return linesByVeglenker.computeIfAbsent(veglenke) {
-                val frc = frcByVeglenke[veglenke] ?: FunctionalRoadClass.FRC_7
-                val fow = veglenke.typeVeg.toFormOfWay()
-                OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
-            }
+        val linesByVeglenker = when (retning) {
+            TillattRetning.Med -> linesByVeglenkerForward
+            TillattRetning.Mot -> linesByVeglenkerReverse
+        }
+        return linesByVeglenker.computeIfAbsent(veglenke) {
+            val frc = frcByVeglenke[veglenke] ?: FunctionalRoadClass.FRC_7
+            val fow = veglenke.typeVeg.toFormOfWay()
+            OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
         }
     }
 

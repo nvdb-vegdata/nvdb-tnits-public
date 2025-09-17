@@ -154,14 +154,14 @@ class SpeedLimitGenerator(
             } catch (e: CancellationException) {
                 throw e // Re-throw cancellation exceptions
             } catch (e: Exception) {
-                log.error("Warning: Error processing speed limit ${workItem.id}: ${e.message}", e)
+                log.error("Warning: Error processing speed limit ${workItem.id}", e)
                 null // Skip this item but continue processing others
             }
         }
     } catch (e: CancellationException) {
         throw e // Propagate cancellation
     } catch (e: Exception) {
-        log.error("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.message}", e)
+        log.error("Error processing ID range ${idRange.startId}-${idRange.endId}", e)
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 

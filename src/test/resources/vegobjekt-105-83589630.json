@@ -1,0 +1,31 @@
+{
+  "id": 83589630,
+  "versjon": 1,
+  "typeId": 105,
+  "gyldighetsperiode": {
+    "startdato": "1980-01-01"
+  },
+  "egenskaper": {
+    "5127": {
+      "type": "DatoEgenskap",
+      "verdi": "1980-01-01"
+    },
+    "2021": {
+      "type": "EnumEgenskap",
+      "verdi": 2730
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 430468,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-04-30T18:34:16.712631Z"
+}

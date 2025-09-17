@@ -122,6 +122,8 @@ class Services : WithLogger {
 
     val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config.exporter, minioClient)
 
+    val rocksDbBackupService = RocksDbBackupService(rocksDbContext, minioClient, config.backup)
+
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
         val objectMapper = jacksonObjectMapper().initialize()

@@ -20,6 +20,7 @@ suspend fun main() {
     log.info("Starter NVDB TN-ITS konsollapplikasjon...")
 
     with(Services()) {
+        performRestoreIfNeeded()
         performBackfill()
 
         val now: Instant = performUpdateAndGetTimestamp()
@@ -39,7 +40,8 @@ private suspend fun Services.handleInput(now: Instant) {
         println("Trykk:")
         println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
         println(" 2 for å generere delta snapshot")
-        println(" 3 for å avslutte")
+        println(" 3 for å ta backup av RocksDB til S3")
+        println(" 4 for å avslutte")
 
         val input: String = readln().trim()
 
@@ -61,6 +63,16 @@ private suspend fun Services.handleInput(now: Instant) {
             }
 
             "3" -> {
+                log.info("Tar backup av RocksDB...")
+                val success = rocksDbBackupService.createBackup()
+                if (success) {
+                    log.info("RocksDB backup fullført")
+                } else {
+                    log.error("RocksDB backup feilet")
+                }
+            }
+
+            "4" -> {
                 log.info("Avslutter applikasjonen...")
                 return
             }
@@ -119,4 +131,22 @@ private suspend fun Services.performUpdateAndGetTimestamp(): Instant {
         } while (total > 0)
     }
     return now
+}
+
+private suspend fun Services.performRestoreIfNeeded() {
+    try {
+        if (!rocksDbContext.existsAndHasData()) {
+            log.info("RocksDB database is empty or missing, checking for backup to restore...")
+            val restored = rocksDbBackupService.restoreFromBackup()
+            if (restored) {
+                log.info("Successfully restored RocksDB from backup")
+            } else {
+                log.info("No backup available or restore failed, will proceed with full backfill")
+            }
+        } else {
+            log.info("RocksDB database exists and has data, skipping restore")
+        }
+    } catch (e: Exception) {
+        log.warn("Error during restore check, will proceed with full backfill", e)
+    }
 }

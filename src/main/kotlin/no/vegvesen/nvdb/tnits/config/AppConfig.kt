@@ -9,9 +9,17 @@ enum class ExportTarget {
     S3,
 }
 
-data class AppConfig(val uberiketApi: UberiketApiConfig, val datakatalogApi: DatakatalogApiConfig, val s3: S3Config, val exporter: ExporterConfig)
+data class AppConfig(
+    val uberiketApi: UberiketApiConfig,
+    val datakatalogApi: DatakatalogApiConfig,
+    val s3: S3Config,
+    val exporter: ExporterConfig,
+    val backup: BackupConfig,
+)
 
 data class ExporterConfig(val gzip: Boolean, val target: ExportTarget, val bucket: String)
+
+data class BackupConfig(val enabled: Boolean, val bucket: String = "", val path: String = "", val tempDir: String = "")
 
 data class UberiketApiConfig(val baseUrl: String)
 

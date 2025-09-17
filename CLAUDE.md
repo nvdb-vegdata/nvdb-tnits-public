@@ -231,8 +231,33 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 
 The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
 
+## NVDB API Usage
+
+### Fetching Data
+
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803?inkluder=alle to fetch a vegobjekt with a given type and id
 - use the format https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424 to fetch multiple veglenkesekvenser
+
+### Extracting Veglenkesekvenser from Vegobjekter
+
+To find which veglenkesekvenser a vegobjekt references, extract the IDs from the `stedfesting` structure:
+
+```bash
+# Extract veglenkesekvens IDs from a vegobjekt
+jq -r '.stedfesting.linjer[].id' vegobjekt-105-83589630.json
+
+# Extract unique IDs from multiple vegobjekter
+jq -r '.stedfesting.linjer[].id' vegobjekt-*.json | sort -u
+```
+
+The `stedfesting.linjer[].id` field contains the veglenkesekvens ID that the road object is positioned on. Each `linjer` entry represents a road segment with:
+- `id`: The veglenkesekvens ID
+- `startposisjon`: Start position along the segment (0.0 to 1.0)
+- `sluttposisjon`: End position along the segment (0.0 to 1.0)
+- `retning`: Direction ("MED" = with road direction, "MOT" = against road direction)
+
+### Test Resources
+
 - Don't try to run tests with wildcards
 - test resources are to be placed in src/test/resources
 - save vegobjekter with the format `vegobjekt-<type>-<id>.json`
