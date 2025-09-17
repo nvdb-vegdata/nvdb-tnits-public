@@ -36,10 +36,12 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
     private val nodes = ConcurrentHashMap<Long, OpenLrNode>()
 
+    private var veglenkerInitialized = false
+
     private var initialized = false
 
     fun hasRetning(veglenke: Veglenke, retning: TillattRetning): Boolean {
-        require(initialized)
+        require(veglenkerInitialized)
         return retning in (tillattRetningByVeglenke[veglenke] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
     }
 
@@ -93,6 +95,30 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                 }
             }
 
+            veglenkerInitialized = true
+
+            log.measure("Load OpenLR lines") {
+                coroutineScope {
+                    veglenkerLookup.forEach { (_, veglenker) ->
+                        launch {
+                            veglenker.filter {
+                                it.isRelevant()
+                            }.forEach { veglenke ->
+                                val tillattRetning = tillattRetningByVeglenke[veglenke]
+                                if (tillattRetning != null) {
+                                    if (TillattRetning.Med in tillattRetning) {
+                                        linesByVeglenkerForward[veglenke] = createOpenLrLine(veglenke, TillattRetning.Med)
+                                    }
+                                    if (TillattRetning.Mot in tillattRetning) {
+                                        linesByVeglenkerReverse[veglenke] = createOpenLrLine(veglenke, TillattRetning.Mot)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             initialized = true
         }
     }
@@ -128,7 +154,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         veglenker.filter { !it.konnektering }.minByOrNull { (it.startposisjon - veglenke.startposisjon).let { diff -> diff * diff } }
 
     fun getVeglenker(veglenkesekvensId: Long): List<Veglenke> {
-        check(initialized) { "CachedVegnett is not initialized" }
+        check(veglenkerInitialized) { "CachedVegnett is not initialized" }
         return veglenkerLookup[veglenkesekvensId]?.filter {
             it.isRelevant()
         } ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
@@ -150,35 +176,35 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         (sluttdato == null || sluttdato > today)
 
     fun getOutgoingVeglenker(nodeId: Long, retning: TillattRetning): Set<Veglenke> {
-        require(initialized)
+        require(veglenkerInitialized)
         val outgoingVeglenker = when (retning) {
             TillattRetning.Med -> outgoingVeglenkerForward
             TillattRetning.Mot -> outgoingVeglenkerReverse
         }
-        return outgoingVeglenker.computeIfAbsent(nodeId) { mutableSetOf() }
+        return outgoingVeglenker[nodeId] ?: emptySet()
     }
 
     fun getIncomingVeglenker(nodeId: Long, retning: TillattRetning): Set<Veglenke> {
-        require(initialized)
+        require(veglenkerInitialized)
         val incomingVeglenker = when (retning) {
             TillattRetning.Med -> incomingVeglenkerForward
             TillattRetning.Mot -> incomingVeglenkerReverse
         }
-        return incomingVeglenker.computeIfAbsent(nodeId) { mutableSetOf() }
+        return incomingVeglenker[nodeId] ?: emptySet()
     }
 
     fun getIncomingLines(id: Long, retning: TillattRetning): List<OpenLrLine> {
         require(initialized)
-        return getIncomingVeglenker(id, retning).map { computeIfAbsent(it, retning) }
+        return getIncomingVeglenker(id, retning).map { getLine(it, retning) }
     }
 
     fun getOutgoingLines(id: Long, retning: TillattRetning): List<OpenLrLine> {
         require(initialized)
-        return getOutgoingVeglenker(id, retning).map { computeIfAbsent(it, retning) }
+        return getOutgoingVeglenker(id, retning).map { getLine(it, retning) }
     }
 
     fun getNode(nodeId: Long, retning: TillattRetning, getPoint: () -> Point): OpenLrNode {
-        require(initialized)
+        require(veglenkerInitialized)
         return nodes.computeIfAbsent(nodeId) {
             // Samme veglenke vil ikke bli lagt til dobbelt, pga set
             val incomingVeglenker = getIncomingVeglenker(nodeId, retning) + getOutgoingVeglenker(nodeId, retning.reverse())
@@ -200,21 +226,28 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
     fun getLines(veglenker: List<Veglenke>, retning: TillattRetning): List<OpenLrLine> {
         require(initialized)
-        return veglenker.map { veglenke ->
-            computeIfAbsent(veglenke, retning)
-        }
-    }
-
-    private fun computeIfAbsent(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
         val linesByVeglenker = when (retning) {
             TillattRetning.Med -> linesByVeglenkerForward
             TillattRetning.Mot -> linesByVeglenkerReverse
         }
-        return linesByVeglenker.computeIfAbsent(veglenke) {
-            val frc = frcByVeglenke[veglenke] ?: FunctionalRoadClass.FRC_7
-            val fow = veglenke.typeVeg.toFormOfWay()
-            OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
+        return veglenker.map { veglenke ->
+            linesByVeglenker[veglenke] ?: error("Veglenker $veglenke not found")
         }
+    }
+
+    fun getLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
+        require(initialized)
+        val linesByVeglenker = when (retning) {
+            TillattRetning.Med -> linesByVeglenkerForward
+            TillattRetning.Mot -> linesByVeglenkerReverse
+        }
+        return linesByVeglenker[veglenke] ?: error("Veglenker $veglenke not found")
+    }
+
+    private fun createOpenLrLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
+        val frc = frcByVeglenke[veglenke] ?: FunctionalRoadClass.FRC_7
+        val fow = veglenke.typeVeg.toFormOfWay()
+        return OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
     }
 
     companion object {

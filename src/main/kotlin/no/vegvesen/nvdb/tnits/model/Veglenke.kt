@@ -7,6 +7,7 @@ import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import org.locationtech.jts.geom.Geometry
+import java.util.*
 
 @Serializable
 data class Superstedfesting(val veglenksekvensId: Long, val startposisjon: Double, val sluttposisjon: Double, val kjorefelt: List<String> = emptyList())
@@ -41,4 +42,12 @@ data class Veglenke(
 
     @Transient
     override val kjorefelt: List<String> = feltoversikt
+
+    override fun hashCode(): Int = Objects.hash(veglenkesekvensId, veglenkenummer)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Veglenke) return false
+        return veglenkesekvensId == other.veglenkesekvensId && veglenkenummer == other.veglenkenummer
+    }
 }

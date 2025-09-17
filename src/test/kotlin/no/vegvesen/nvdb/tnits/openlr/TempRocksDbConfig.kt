@@ -5,9 +5,17 @@ import java.io.File
 import java.nio.file.Files
 
 class TempRocksDbConfig : RocksDbContext(Files.createTempDirectory("openlr-test").toString()) {
+    private var preserveOnClose = false
+
+    fun setPreserveOnClose(preserve: Boolean) {
+        preserveOnClose = preserve
+    }
+
     override fun close() {
         super.close()
-        File(dbPath).deleteRecursively()
+        if (!preserveOnClose) {
+            File(dbPath).deleteRecursively()
+        }
     }
 
     companion object {
