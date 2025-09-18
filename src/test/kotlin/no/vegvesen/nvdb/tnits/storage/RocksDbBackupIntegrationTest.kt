@@ -62,18 +62,14 @@ class RocksDbBackupIntegrationTest :
                 emptyCheck shouldBe null
 
                 // Set preserve on close to prevent deletion during restore
-                if (dbContext is no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig) {
-                    dbContext.setPreserveOnClose(true)
-                }
+                dbContext.setPreserveOnClose(true)
 
                 // Restore from backup
                 val restoreResult = backupService.restoreFromBackup()
                 restoreResult shouldBe true
 
                 // Reset preserve flag
-                if (dbContext is no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig) {
-                    dbContext.setPreserveOnClose(false)
-                }
+                dbContext.setPreserveOnClose(false)
 
                 // Verify restored data
                 val restoredKey = dbContext.get(ColumnFamily.KEY_VALUE, "original-key".toByteArray())

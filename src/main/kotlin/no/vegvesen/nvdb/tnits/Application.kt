@@ -47,19 +47,11 @@ private suspend fun Services.handleInput(now: Instant) {
 
         when (input) {
             "1" -> {
-                log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
-                speedLimitExporter.exportSpeedLimitsFullSnapshot(now)
-                keyValueStore.put("last_speedlimit_snapshot", now)
+                exportSpeedLimitsSnapshot(now)
             }
 
             "2" -> {
-                log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
-                val since =
-                    keyValueStore.get<Instant>("last_speedlimit_snapshot")
-                        ?: keyValueStore.get<Instant>("last_speedlimit_update")
-                        ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
-                speedLimitExporter.generateSpeedLimitsDeltaUpdate(now, since)
-                keyValueStore.put("last_speedlimit_update", now)
+                exportSpeedLimitsUpdate(now)
             }
 
             "3" -> {
@@ -80,6 +72,22 @@ private suspend fun Services.handleInput(now: Instant) {
             else -> log.info("Ugyldig valg, vennligst prøv igjen.")
         }
     } while (true)
+}
+
+private suspend fun Services.exportSpeedLimitsUpdate(now: Instant) {
+    log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
+    val since =
+        keyValueStore.get<Instant>("last_speedlimit_update")
+            ?: keyValueStore.get<Instant>("last_speedlimit_snapshot")
+            ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
+    speedLimitExporter.generateSpeedLimitsDeltaUpdate(now, since)
+    keyValueStore.put("last_speedlimit_update", now)
+}
+
+private suspend fun Services.exportSpeedLimitsSnapshot(now: Instant) {
+    log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
+    speedLimitExporter.exportSpeedLimitsFullSnapshot(now)
+    keyValueStore.put("last_speedlimit_snapshot", now)
 }
 
 private suspend fun Services.performBackfill() {

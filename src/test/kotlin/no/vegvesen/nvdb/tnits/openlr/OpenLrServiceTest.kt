@@ -41,7 +41,7 @@ class OpenLrServiceTest :
                         "veglenkesekvenser-41437-41438.json",
                         "vegobjekt-821-568696095.json",
                     )
-                val stedfestinger = loadStedfestinger("speed-limit-85283803-v2.json")
+                val stedfestinger = loadStedfestinger("vegobjekt-105-85283803.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
@@ -97,7 +97,7 @@ class OpenLrServiceTest :
                         "vegobjekt-821-568696277.json",
                         "vegobjekt-821-633410504.json",
                     )
-                val stedfestinger = loadStedfestinger("speed-limit-85283410-v1.json")
+                val stedfestinger = loadStedfestinger("vegobjekt-105-85283410.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
@@ -134,7 +134,7 @@ class OpenLrServiceTest :
                         "veglenkesekvens-365652.json",
                         "vegobjekt-821-568644314.json",
                     )
-                val stedfestinger = loadStedfestinger("speedlimit-78712521-v1.json")
+                val stedfestinger = loadStedfestinger("vegobjekt-105-78712521.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
@@ -162,12 +162,12 @@ class OpenLrServiceTest :
                 val openLrService =
                     setupOpenLrService(
                         config,
-                        "veglenkesekvenser_2518522_413032_2518519.json",
+                        "veglenkesekvenser-2518522-413032-2518519.json",
                         "vegobjekt-821-589421132.json",
                         "vegobjekt-821-568168206.json",
                         "vegobjekt-616-1020150975.json",
                     )
-                val stedfestinger = loadStedfestinger("speed_limit_589421130_v2.json")
+                val stedfestinger = loadStedfestinger("vegobjekt-105-589421130.json")
 
                 // Act
                 val openLrReferences = openLrService.toOpenLr(stedfestinger)
