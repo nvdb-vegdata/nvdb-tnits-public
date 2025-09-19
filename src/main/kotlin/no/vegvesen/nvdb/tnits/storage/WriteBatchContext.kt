@@ -1,17 +1,18 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class WriteBatchContext {
     private val operations = ConcurrentHashMap<ColumnFamily, MutableList<BatchOperation>>()
 
     fun write(columnFamily: ColumnFamily, operation: BatchOperation) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
+        operations.computeIfAbsent(columnFamily) { CopyOnWriteArrayList() }
             .add(operation)
     }
 
     fun write(columnFamily: ColumnFamily, ops: List<BatchOperation>) {
-        operations.computeIfAbsent(columnFamily) { mutableListOf() }
+        operations.computeIfAbsent(columnFamily) { CopyOnWriteArrayList() }
             .addAll(ops)
     }
 

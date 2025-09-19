@@ -129,12 +129,12 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         tillattRetningByVeglenke[veglenke] = tillattRetning
 
         if (TillattRetning.Med in tillattRetning) {
-            outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
-            incomingVeglenkerForward.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }.add(veglenke)
+            outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
+            incomingVeglenkerForward.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
         }
         if (TillattRetning.Mot in tillattRetning) {
-            outgoingVeglenkerReverse.computeIfAbsent(veglenke.sluttnode) { mutableSetOf() }.add(veglenke)
-            incomingVeglenkerReverse.computeIfAbsent(veglenke.startnode) { mutableSetOf() }.add(veglenke)
+            outgoingVeglenkerReverse.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
+            incomingVeglenkerReverse.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
         }
     }
 
@@ -193,14 +193,14 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         return incomingVeglenker[nodeId] ?: emptySet()
     }
 
-    fun getIncomingLines(id: Long, retning: TillattRetning): List<OpenLrLine> {
+    fun getIncomingLines(nodeId: Long, retning: TillattRetning): List<OpenLrLine> {
         require(initialized)
-        return getIncomingVeglenker(id, retning).map { getLine(it, retning) }
+        return getIncomingVeglenker(nodeId, retning).map { getLine(it, retning) }
     }
 
-    fun getOutgoingLines(id: Long, retning: TillattRetning): List<OpenLrLine> {
+    fun getOutgoingLines(nodeId: Long, retning: TillattRetning): List<OpenLrLine> {
         require(initialized)
-        return getOutgoingVeglenker(id, retning).map { getLine(it, retning) }
+        return getOutgoingVeglenker(nodeId, retning).map { getLine(it, retning) }
     }
 
     fun getNode(nodeId: Long, retning: TillattRetning, getPoint: () -> Point): OpenLrNode {

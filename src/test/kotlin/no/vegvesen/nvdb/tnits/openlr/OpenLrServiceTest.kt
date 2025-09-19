@@ -7,17 +7,13 @@ import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
+import no.vegvesen.nvdb.tnits.setupCachedVegnett
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
-import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
-import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore
-import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
-import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.openlr.binary.BinaryMarshallerFactory
 import org.openlr.map.FunctionalRoadClass
@@ -190,27 +186,9 @@ class OpenLrServiceTest :
     })
 
 private suspend fun setupOpenLrService(dbContext: RocksDbContext, vararg paths: String): OpenLrService {
-    val veglenkerStore = VeglenkerRocksDbStore(dbContext)
-    val veglenkesekvenser =
-        paths.filter { it.startsWith("veglenkesekvens") }.flatMap { path ->
-            objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
-        }
-
-    for (veglenkesekvens in veglenkesekvenser) {
-        val veglenker = veglenkesekvens.convertToDomainVeglenker()
-        veglenkerStore.upsert(veglenkesekvens.id, veglenker)
-    }
-
-    val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
-    for (path in paths.filter { it.startsWith("vegobjekt") }) {
-        val vegobjekt = objectMapper.readVegobjekt(path)
-        vegobjekterStore.insert(vegobjekt)
-    }
-
-    val cachedVegnett = CachedVegnett(veglenkerStore, vegobjekterStore)
+    val cachedVegnett = setupCachedVegnett(dbContext, *paths)
     cachedVegnett.initialize()
-    val openLrService =
-        OpenLrService(cachedVegnett)
+    val openLrService = OpenLrService(cachedVegnett)
     return openLrService
 }
 
