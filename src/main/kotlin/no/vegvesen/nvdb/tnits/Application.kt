@@ -76,10 +76,12 @@ private suspend fun Services.handleInput(now: Instant) {
 
 private suspend fun Services.exportSpeedLimitsUpdate(now: Instant) {
     log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
-    val since =
-        keyValueStore.get<Instant>("last_speedlimit_update")
-            ?: keyValueStore.get<Instant>("last_speedlimit_snapshot")
-            ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
+    val since = s3TimestampService.getLastUpdateTimestamp()
+        ?: s3TimestampService.getLastSnapshotTimestamp()
+        ?: keyValueStore.get<Instant>("last_speedlimit_update")
+        ?: keyValueStore.get<Instant>("last_speedlimit_snapshot")
+        ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
+
     speedLimitExporter.generateSpeedLimitsDeltaUpdate(now, since)
     keyValueStore.put("last_speedlimit_update", now)
 }

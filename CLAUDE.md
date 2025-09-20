@@ -93,6 +93,23 @@ class MyService : WithLogger {
 ./gradlew run            # Start the console application
 ```
 
+#### Running specific tests
+
+```bash
+kotest_filter_tests="*.generateS3Key should format with padded vegobjekttype for speed limits" ./gradlew test --info --rerun --tests="SpeedLimitExporterTest"
+```
+
+- The full test name is `<package>.<Class>.<test name>`
+- Wildcards at the start in combination with `--tests` ensures we only run the specified test
+- By using `--info` and `--rerun`, you get detailed output and rerun tests even if they are up-to-date
+- You can also use wildcards in `kotest_filter_tests` for more flexible filtering
+- For specific tests, always use `--tests` to specify the test class to run; this narrows down the test scope
+- IMPORTANT: NEVER USE `--tests` with wildcards, as this doesn't work properly with Kotest filtering. Instead use `kotest_filter_tests` for wildcards.
+- NEVER use asterisks (*) or any wildcards directly in --tests parameter
+- ALWAYS use --tests with exact class names only (e.g., --tests="ClassName")
+- For test name filtering, ALWAYS use kotest_filter_tests environment variable with wildcards
+- When debugging specific tests, use the pattern: kotest_filter_tests="*test name pattern*" ./gradlew test --tests="ExactClassName"
+
 ### RocksDB Configuration
 
 The application uses RocksDB as its primary storage with no SQL database dependencies. Configuration includes:
@@ -288,7 +305,6 @@ The `stedfesting.linjer[].id` field contains the veglenkesekvens ID that the roa
 
 ### Test Resources
 
-- Don't try to run tests with wildcards
 - test resources are to be placed in src/test/resources
 - save vegobjekter with the format `vegobjekt-<type>-<id>.json`
 - save veglenkesekvenser with the format `veglenkesekvenser-<id1>-<idX>.json`, including all IDs.

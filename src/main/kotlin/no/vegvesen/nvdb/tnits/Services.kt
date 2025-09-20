@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.services.S3TimestampService
 import no.vegvesen.nvdb.tnits.storage.*
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
@@ -121,6 +122,8 @@ class Services : WithLogger {
         )
 
     val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config.exporter, minioClient)
+
+    val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 
     val rocksDbBackupService = RocksDbBackupService(rocksDbContext, minioClient, config.backup)
 
