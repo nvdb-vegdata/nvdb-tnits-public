@@ -121,7 +121,7 @@ class Services : WithLogger {
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val speedLimitExporter = SpeedLimitExporter(speedLimitGenerator, config.exporter, minioClient)
+    val tnitsFeatureExporter = TnitsFeatureExporter(speedLimitGenerator, config.exporter, minioClient)
 
     val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 

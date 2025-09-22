@@ -25,7 +25,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     companion object {
         private const val BACKUP_OBJECT_NAME = "rocksdb-backup.zip"
-        private const val BUFFER_SIZE = 8192
+        private const val BUFFER_SIZE = 256 * 1024
     }
 
     /**
@@ -159,6 +159,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
         log.info("Starting backup compression...")
 
+        // TODO: Speed up compression. Buffered streams?
         ByteArrayOutputStream().use { byteArrayOut ->
             ZipOutputStream(byteArrayOut).use { zipOut ->
                 log.info("Compressing directory: $backupPath")

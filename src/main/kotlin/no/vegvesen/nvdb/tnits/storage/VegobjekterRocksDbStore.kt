@@ -11,7 +11,6 @@ import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.overlaps
 import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
 import java.nio.ByteBuffer
-import kotlin.time.Clock
 
 @OptIn(ExperimentalSerializationApi::class)
 class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : VegobjekterRepository {
@@ -130,9 +129,10 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
                 val stedfestingerUpserts = createStedfestingerUpserts(vegobjektType, vegobjekt.id, stedfestingerByVeglenkesekvens)
                 context.write(columnFamily, stedfestingerUpserts)
 
-                val stedfestingerDeletions = createStedfestingerDeletions(vegobjektType, vegobjekt.id, stedfestingerByVeglenkesekvens)
+                val removedVeglenkesekvensIds = findRemovedVeglenkesekvensIds(vegobjektType, vegobjekt.id, stedfestingerByVeglenkesekvens)
+                val stedfestingerDeletions = createStedfestingerDeletions(vegobjektType, vegobjekt.id, removedVeglenkesekvensIds)
                 context.write(columnFamily, stedfestingerDeletions)
-                dirtyVeglenkesekvenser.addAll(stedfestingerByVeglenkesekvens.keys)
+                dirtyVeglenkesekvenser.addAll(stedfestingerByVeglenkesekvens.keys + removedVeglenkesekvensIds)
             }
         }
 
@@ -144,14 +144,6 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         if (vegobjektType in supportingVegobjektTyper) {
             context.publishChangedVeglenkesekvenser(dirtyVeglenkesekvenser)
         }
-    }
-
-    fun WriteBatchContext.publishChangedVegobjekter(vegobjektType: Int, vegobjektIds: Set<Long>) {
-        val now = Clock.System.now()
-        val dirtyVegobjekterUpserts = vegobjektIds.map {
-            BatchOperation.Put(getVegobjektKey(vegobjektType, it), now.toEpochMilliseconds().toByteArray())
-        }
-        write(ColumnFamily.DIRTY_VEGOBJEKTER, dirtyVegobjekterUpserts)
     }
 
     private fun createStedfestingerUpserts(
@@ -168,19 +160,23 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         return stedfestingerUpserts
     }
 
-    private fun createStedfestingerDeletions(
+    private fun createStedfestingerDeletions(vegobjektType: Int, vegobjektId: Long, removedVeglenkesekvensIds: Set<Long>): List<BatchOperation.Delete> {
+        val stedfestingerDeletions = removedVeglenkesekvensIds.map {
+            BatchOperation.Delete(getStedfestingKey(it, vegobjektType, vegobjektId))
+        }
+        return stedfestingerDeletions
+    }
+
+    private fun findRemovedVeglenkesekvensIds(
         vegobjektType: Int,
         vegobjektId: Long,
         stedfestingerByVeglenkesekvens: Map<Long, List<VegobjektStedfesting>>,
-    ): List<BatchOperation.Delete> {
+    ): Set<Long> {
         val existingStedfestinger = rocksDbContext.get(columnFamily, getVegobjektKey(vegobjektType, vegobjektId))?.let {
             ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), it).stedfestinger
         }?.groupBy { it.veglenkesekvensId } ?: emptyMap()
         val removedVedlenkesekvensIds = existingStedfestinger.keys - stedfestingerByVeglenkesekvens.keys
-        val stedfestingerDeletions = removedVedlenkesekvensIds.map {
-            BatchOperation.Delete(getStedfestingKey(it, vegobjektType, vegobjektId))
-        }
-        return stedfestingerDeletions
+        return removedVedlenkesekvensIds
     }
 
     private fun createVegobjektUpsert(vegobjekt: Vegobjekt): BatchOperation.Put {
@@ -211,7 +207,7 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         /**
          * Key structure: [1 byte prefix][4 bytes vegobjektType][8 bytes vegobjektId] = 13 bytes
          */
-        private fun getVegobjektKey(vegobjektType: Int, vegobjektId: Long): ByteArray =
+        fun getVegobjektKey(vegobjektType: Int, vegobjektId: Long): ByteArray =
             ByteBuffer.allocate(13).put(VEGOBJEKT_KEY_PREFIX).putInt(vegobjektType).putLong(vegobjektId).array()
 
         /**

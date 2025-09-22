@@ -4,12 +4,14 @@ import io.minio.MinioClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.datetime.atStartOfDayIn
+import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
+import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
@@ -22,7 +24,7 @@ import java.nio.file.Path
 import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
-class SpeedLimitExporter(
+class TnitsFeatureExporter(
     private val speedLimitGenerator: SpeedLimitGenerator,
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
@@ -31,11 +33,11 @@ class SpeedLimitExporter(
     suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, since: Instant) {
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(since)
 
-        exportSpeedLimits(now, speedLimitsFlow, ExportType.Update)
+        exportFeatures(now, ExportedFeatureType.SpeedLimit, speedLimitsFlow, ExportType.Update)
     }
 
-    private fun generateS3Key(timestamp: Instant, exportType: ExportType, vegobjekttype: Int = 105): String =
-        generateS3Key(timestamp, exportType, exporterConfig.gzip, vegobjekttype)
+    private fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
+        generateS3Key(timestamp, exportType, exporterConfig.gzip, featureType)
 
     fun openStream(path: Path): OutputStream {
         val bufferSize = 256 * 1024
@@ -47,11 +49,10 @@ class SpeedLimitExporter(
         }
     }
 
-    fun openS3Stream(timestamp: Instant, exportType: ExportType): OutputStream {
+    fun openS3Stream(objectKey: String): OutputStream {
         val bucket = exporterConfig.bucket
         val client = minioClient
 
-        val objectKey = generateS3Key(timestamp, exportType)
         val contentType = if (exporterConfig.gzip) "application/gzip" else "application/xml"
 
         val s3Stream = S3OutputStream(client, bucket, objectKey, contentType)
@@ -67,32 +68,32 @@ class SpeedLimitExporter(
     suspend fun exportSpeedLimitsFullSnapshot(timestamp: Instant) {
         val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsSnapshot()
 
-        exportSpeedLimits(timestamp, speedLimitsFlow, ExportType.Snapshot)
+        exportFeatures(timestamp, ExportedFeatureType.SpeedLimit, speedLimitsFlow, ExportType.Snapshot)
     }
 
-    private suspend fun exportSpeedLimits(timestamp: Instant, speedLimitsFlow: Flow<SpeedLimit>, type: ExportType) {
+    private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: ExportType) {
         when (exporterConfig.target) {
             ExportTarget.File -> try {
                 val path =
                     Files.createTempFile(
-                        "TNITS_SpeedLimits_${timestamp.truncateToSeconds().toString().replace(":", "-")}_snapshot",
+                        "TNITS_${featureType.name}_${timestamp.truncateToSeconds().toString().replace(":", "-")}_snapshot",
                         if (exporterConfig.gzip) ".xml.gz" else ".xml",
                     )
-                log.info("Lagrer fullstendig fartsgrense-snapshot til ${path.toAbsolutePath()}")
+                log.info("Lagrer $exportType eksport av $featureType til ${path.toAbsolutePath()}")
 
                 openStream(path).use { outputStream ->
-                    writeSpeedLimitsToXml(timestamp, outputStream, speedLimitsFlow, type)
+                    writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
                 }
             } catch (e: Exception) {
                 log.error("Eksport til fil feilet", e)
             }
 
             ExportTarget.S3 -> try {
-                val objectKey = generateS3Key(timestamp, type)
-                log.info("Lagrer fullstendig fartsgrense-snapshot til S3: s3://${exporterConfig.bucket}/$objectKey")
+                val objectKey = generateS3Key(timestamp, exportType, featureType)
+                log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
 
-                openS3Stream(timestamp, type).use { outputStream ->
-                    writeSpeedLimitsToXml(timestamp, outputStream, speedLimitsFlow, type)
+                openS3Stream(objectKey).use { outputStream ->
+                    writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
                 }
                 return
             } catch (e: Exception) {
@@ -106,7 +107,13 @@ class SpeedLimitExporter(
         Update,
     }
 
-    suspend fun writeSpeedLimitsToXml(timestamp: Instant, outputStream: OutputStream, speedLimitsFlow: Flow<SpeedLimit>, exportType: ExportType) {
+    suspend fun writeFeaturesToXml(
+        timestamp: Instant,
+        outputStream: OutputStream,
+        featureType: ExportedFeatureType,
+        featureFlow: Flow<TnitsFeature>,
+        exportType: ExportType,
+    ) {
         log.measure("Generating $exportType", logStart = true) {
             writeXmlDocument(
                 outputStream,
@@ -115,64 +122,85 @@ class SpeedLimitExporter(
             ) {
                 "metadata" {
                     "Metadata" {
-                        "datasetId" { "NVDB-TNITS-SpeedLimits_$timestamp" }
+                        "datasetId" { "NVDB-TNITS-${featureType}_$timestamp" }
                         "datasetCreationTime" { timestamp }
                     }
                 }
                 "type" { exportType }
                 "roadFeatures" {
-                    speedLimitsFlow.collectIndexed { i, speedLimit ->
-                        writeSpeedLimit(speedLimit, i)
+                    featureFlow.collectIndexed { i, feature ->
+                        writeFeature(feature, i)
                     }
                 }
             }
         }
     }
 
-    private fun XmlStreamDsl.writeSpeedLimit(speedLimit: SpeedLimit, index: Int) {
+    private fun getRoadFeatureSourceCode(vegobjektType: Int) = when (vegobjektType) {
+        105 -> "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation"
+        else -> error("Unknown vegobjekt type: $vegobjektType")
+    }
+
+    private fun getRoadFeatureTypeCode(vegobjektType: Int) = when (vegobjektType) {
+        105 -> "speedLimit"
+        else -> error("Unknown vegobjekt type: $vegobjektType")
+    }
+
+    private fun XmlStreamDsl.writeFeatureProperty(property: RoadFeatureProperty) {
+        when (property) {
+            is IntProperty -> text(property.value.toString())
+        }
+    }
+
+    private fun XmlStreamDsl.writeFeature(feature: TnitsFeature, index: Int) {
         "RoadFeature" {
             attribute("gml:id", "RF-$index")
             "id" {
                 "RoadFeatureId" {
-                    "id" { speedLimit.id }
+                    "id" { feature.id }
                     "providerId" { "nvdb.no" }
                 }
             }
-            "validFrom" { speedLimit.validFrom }
-            speedLimit.validTo?.let {
+            "validFrom" { feature.validFrom }
+            feature.validTo?.let {
                 "validTo" { it }
             }
             "beginLifespanVersion" {
-                speedLimit.beginLifespanVersion
+                feature.beginLifespanVersion
             }
-            speedLimit.validTo?.let {
+            feature.validTo?.let {
                 "endLifespanVersion" {
                     it.atStartOfDayIn(OsloZone)
                 }
             }
-            "updateInfo" {
-                "UpdateInfo" {
-                    "type" { speedLimit.updateType }
+            if (feature.updateType != UpdateType.Snapshot) {
+                "updateInfo" {
+                    "UpdateInfo" {
+                        "type" { feature.updateType }
+                    }
                 }
             }
             "source" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation")
+                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
             }
             "type" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#speedLimit")
+                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
             }
-            "properties" {
-                "GenericRoadFeatureProperty" {
-                    "type" {
-                        attribute(
-                            "xlink:href",
-                            "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#maximumSpeedLimit",
-                        )
+            if (feature.properties.any()) {
+                "properties" {
+                    for ((type, property) in feature.properties) {
+                        "GenericRoadFeatureProperty" {
+                            "type" {
+                                attribute(
+                                    "xlink:href",
+                                    "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
+                                )
+                            }
+                            "value" { writeFeatureProperty(property) }
+                        }
                     }
-                    "value" { speedLimit.kmh }
                 }
             }
-            // TODO: OpenLR location reference
             "locationReference" {
                 "GeometryLocationReference" {
                     "encodedGeometry" {
@@ -180,7 +208,7 @@ class SpeedLimitExporter(
                             attribute("srsDimension", "2")
                             attribute("srsName", "EPSG::4326")
                             "gml:posList" {
-                                val coordinates = speedLimit.geometry.coordinates
+                                val coordinates = feature.geometry.coordinates
                                 for (i in coordinates.indices) {
                                     +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
                                     if (i < coordinates.size - 1) {
@@ -192,7 +220,7 @@ class SpeedLimitExporter(
                     }
                 }
             }
-            for (locationReference in speedLimit.locationReferences) {
+            for (locationReference in feature.openLrLocationReferences) {
                 "locationReference" {
                     "OpenLRLocationReference" {
                         "binaryLocationReference" {
@@ -208,7 +236,30 @@ class SpeedLimitExporter(
                     }
                 }
             }
+            for (locationReference in feature.nvdbLocationReferences) {
+                "locationReference" {
+                    "LocationByExternalReference" {
+                        "predefinedLocationReference" {
+                            attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private fun VegobjektStedfesting.toExternalReference(): String {
+        val retning = when (retning) {
+            Retning.MED -> "MED"
+            Retning.MOT -> "MOT"
+            else -> "-"
+        }
+        val sideposisjon = when (sideposisjon) {
+            null -> "-"
+            else -> sideposisjon.name
+        }
+        val kjorefelt = kjorefelt.joinToString("#").ifEmpty { "-" }
+        return "$startposisjon-$sluttposisjon@$veglenkesekvensId:$retning:$sideposisjon:$kjorefelt"
     }
 
     companion object {
@@ -225,11 +276,11 @@ class SpeedLimitExporter(
                     "http://spec.tn-its.eu/schemas/ TNITS.xsd",
             )
 
-        fun generateS3Key(timestamp: Instant, exportType: ExportType, gzip: Boolean, vegobjekttype: Int = 105): String {
-            val paddedType = vegobjekttype.toString().padStart(4, '0')
+        fun generateS3Key(timestamp: Instant, exportType: ExportType, gzip: Boolean, featureType: ExportedFeatureType): String {
+            val paddedType = featureType.typeId.toString().padStart(4, '0')
             val timestampStr = timestamp.truncateToSeconds().toString().replace(":", "-")
             val extension = if (gzip) ".xml.gz" else ".xml"
-            return "$paddedType-speed-limits/$timestampStr/${exportType.name.lowercase()}$extension"
+            return "$paddedType-${featureType.typeCode}/$timestampStr/${exportType.name.lowercase()}$extension"
         }
     }
 }

@@ -3,7 +3,7 @@ package no.vegvesen.nvdb.tnits
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldStartWith
+import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import kotlin.time.Instant
 
 class SpeedLimitExporterTest :
@@ -14,11 +14,11 @@ class SpeedLimitExporterTest :
             val timestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act & Assert
-            val snapshotKey = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, false, 105)
-            val updateKey = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Update, false, 105)
+            val snapshotKey = TnitsFeatureExporter.generateS3Key(timestamp, TnitsFeatureExporter.ExportType.Snapshot, false, ExportedFeatureType.SpeedLimit)
+            val updateKey = TnitsFeatureExporter.generateS3Key(timestamp, TnitsFeatureExporter.ExportType.Update, false, ExportedFeatureType.SpeedLimit)
 
-            snapshotKey shouldBe "0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml"
-            updateKey shouldBe "0105-speed-limits/2025-01-15T10-30-00Z/update.xml"
+            snapshotKey shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml"
+            updateKey shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/update.xml"
         }
 
         "generateS3Key should include .gz extension when gzip is enabled" {
@@ -26,24 +26,10 @@ class SpeedLimitExporterTest :
             val timestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
-            val key = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, true, 105)
+            val key = TnitsFeatureExporter.generateS3Key(timestamp, TnitsFeatureExporter.ExportType.Snapshot, true, ExportedFeatureType.SpeedLimit)
 
             // Assert
-            key shouldBe "0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml.gz"
-        }
-
-        "generateS3Key should work with different vegobjekttypes" {
-            // Arrange
-            val timestamp = Instant.parse("2025-01-15T10:30:00Z")
-
-            // Act & Assert
-            val barrierKey = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, false, 1)
-            val trafficSignKey = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, false, 95)
-            val speedLimitKey = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, false, 105)
-
-            barrierKey shouldStartWith "0001-speed-limits/"
-            trafficSignKey shouldStartWith "0095-speed-limits/"
-            speedLimitKey shouldStartWith "0105-speed-limits/"
+            key shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
         }
 
         "generateS3Key should replace colons in timestamp with hyphens" {
@@ -51,10 +37,10 @@ class SpeedLimitExporterTest :
             val timestamp = Instant.parse("2025-01-15T10:30:45.123Z")
 
             // Act
-            val key = SpeedLimitExporter.generateS3Key(timestamp, SpeedLimitExporter.ExportType.Snapshot, false, 105)
+            val key = TnitsFeatureExporter.generateS3Key(timestamp, TnitsFeatureExporter.ExportType.Snapshot, false, ExportedFeatureType.SpeedLimit)
 
             // Assert
             key shouldContain "2025-01-15T10-30-45Z"
-            key shouldBe "0105-speed-limits/2025-01-15T10-30-45Z/snapshot.xml"
+            key shouldBe "0105-speedLimit/2025-01-15T10-30-45Z/snapshot.xml"
         }
     })

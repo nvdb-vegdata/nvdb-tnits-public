@@ -7,13 +7,19 @@ import io.minio.*
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.parseWkt
+import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.model.IntProperty
+import no.vegvesen.nvdb.tnits.model.RoadFeaturePropertyType
+import no.vegvesen.nvdb.tnits.model.TnitsFeature
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import org.testcontainers.containers.MinIOContainer
 import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
 class S3IntegrationTest :
@@ -96,7 +102,7 @@ class S3IntegrationTest :
 
             // Act
             S3OutputStream(minioClient, testBucket, objectKey, "application/gzip").use { outputStream ->
-                java.util.zip.GZIPOutputStream(outputStream).use { gzipStream ->
+                GZIPOutputStream(outputStream).use { gzipStream ->
                     gzipStream.write(testData.toByteArray())
                 }
             }
@@ -129,29 +135,33 @@ class S3IntegrationTest :
 
         "SpeedLimitExporter should export to S3 with correct folder structure" {
             // Arrange
-            val mockSpeedLimit = SpeedLimit(
+            val mockSpeedLimit = TnitsFeature(
                 id = 123L,
-                kmh = 80,
-                validFrom = kotlinx.datetime.LocalDate(2025, 1, 15),
+                validFrom = LocalDate(2025, 1, 15),
                 validTo = null,
                 beginLifespanVersion = Instant.parse("2025-01-15T10:30:00Z"),
                 updateType = UpdateType.Add,
                 geometry = parseWkt("LINESTRING (500000 6600000, 500100 6600100)", SRID.UTM33),
-                locationReferences = emptyList(),
+                type = ExportedFeatureType.SpeedLimit,
+                properties = mapOf(
+                    RoadFeaturePropertyType.MaximumSpeedLimit to IntProperty(80),
+                ),
+                openLrLocationReferences = emptyList(),
+                nvdbLocationReferences = emptyList(),
             )
 
             val mockGenerator = mockk<SpeedLimitGenerator> {
                 every { generateSpeedLimitsSnapshot() } returns flowOf(mockSpeedLimit)
             }
 
-            val exporter = SpeedLimitExporter(mockGenerator, exporterConfig, minioClient)
+            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient)
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
             exporter.exportSpeedLimitsFullSnapshot(exportTimestamp)
 
             // Assert - verify object was uploaded with correct key
-            val expectedKey = "0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml"
+            val expectedKey = "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml"
 
             val statResponse = minioClient.statObject(
                 StatObjectArgs.builder()
@@ -178,15 +188,19 @@ class S3IntegrationTest :
 
         "SpeedLimitExporter should export GZIP compressed files to S3" {
             // Arrange
-            val mockSpeedLimit = SpeedLimit(
+            val mockSpeedLimit = TnitsFeature(
                 id = 456L,
-                kmh = 60,
-                validFrom = kotlinx.datetime.LocalDate(2025, 1, 15),
+                type = ExportedFeatureType.SpeedLimit,
+                properties = mapOf(
+                    RoadFeaturePropertyType.MaximumSpeedLimit to IntProperty(60),
+                ),
+                validFrom = LocalDate(2025, 1, 15),
                 validTo = null,
                 beginLifespanVersion = Instant.parse("2025-01-15T10:30:00Z"),
                 updateType = UpdateType.Add,
                 geometry = parseWkt("LINESTRING (501000 6601000, 501100 6601100)", SRID.UTM33),
-                locationReferences = emptyList(),
+                openLrLocationReferences = emptyList(),
+                nvdbLocationReferences = emptyList(),
             )
 
             val mockGenerator = mockk<SpeedLimitGenerator> {
@@ -195,14 +209,14 @@ class S3IntegrationTest :
 
             val appConfig = exporterConfig.copy(gzip = true)
 
-            val exporter = SpeedLimitExporter(mockGenerator, appConfig, minioClient)
+            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient)
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")
 
             // Act
             exporter.exportSpeedLimitsFullSnapshot(exportTimestamp)
 
             // Assert - verify GZIP object was uploaded
-            val expectedKey = "0105-speed-limits/2025-01-15T11-45-30Z/snapshot.xml.gz"
+            val expectedKey = "0105-speedLimit/2025-01-15T11-45-30Z/snapshot.xml.gz"
 
             val statResponse = minioClient.statObject(
                 StatObjectArgs.builder()

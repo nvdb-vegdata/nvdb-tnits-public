@@ -14,12 +14,9 @@ import no.vegvesen.nvdb.tnits.model.toDomainVegobjekter
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Clock
 import kotlin.time.Instant
-
-private val dirtyCheckForTypes = supportingVegobjektTyper
 
 class VegobjekterService(
     private val keyValueStore: KeyValueRocksDbStore,

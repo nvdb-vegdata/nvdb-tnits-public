@@ -3,17 +3,17 @@ package no.vegvesen.nvdb.tnits.services
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.messages.Item
-import no.vegvesen.nvdb.tnits.SpeedLimitExporter
+import no.vegvesen.nvdb.tnits.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Instant
 
 class S3TimestampService(private val minioClient: MinioClient, private val bucketName: String) : WithLogger {
 
-    fun getLastSnapshotTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, SpeedLimitExporter.ExportType.Snapshot)
+    fun getLastSnapshotTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, TnitsFeatureExporter.ExportType.Snapshot)
 
-    fun getLastUpdateTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, SpeedLimitExporter.ExportType.Update)
+    fun getLastUpdateTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, TnitsFeatureExporter.ExportType.Update)
 
-    private fun getLastExportTimestamp(vegobjekttype: Int, exportType: SpeedLimitExporter.ExportType): Instant? = try {
+    private fun getLastExportTimestamp(vegobjekttype: Int, exportType: TnitsFeatureExporter.ExportType): Instant? = try {
         val paddedType = vegobjekttype.toString().padStart(4, '0')
         val prefix = "$paddedType-speed-limits/"
 
@@ -36,7 +36,7 @@ class S3TimestampService(private val minioClient: MinioClient, private val bucke
         null
     }
 
-    private fun listExportsByType(prefix: String, exportType: SpeedLimitExporter.ExportType): List<Item> {
+    private fun listExportsByType(prefix: String, exportType: TnitsFeatureExporter.ExportType): List<Item> {
         val exportTypeString = exportType.name.lowercase()
         val results = mutableListOf<Item>()
 

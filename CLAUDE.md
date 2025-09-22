@@ -55,9 +55,9 @@ The application now supports exporting TN-ITS XML files directly to S3-compatibl
 - **S3 Configuration**: Add S3 settings to `AppConfig` with endpoint, bucket, credentials
 - **Automatic Fallback**: Falls back to local file export if S3 is unavailable
 - **Streaming Upload**: Uses `S3OutputStream` with piped streams for memory-efficient uploads
-- **Folder Structure**: Files are organized as `{vegobjekttype-padded}-speed-limits/{timestamp}/{type}.xml[.gz]`
-  - Example: `0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml.gz`
-  - Speed limits use vegobjekttype 105, resulting in `0105-speed-limits/` folder
+- **Folder Structure**: Files are organized as `{typeId-padded}-${typeName}/{timestamp}/{type}.xml[.gz]`
+  - Example: `0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz`
+  - Speed limits use vegobjekttype 105, resulting in `0105-speedLimit/` folder
 - **GZIP Support**: Maintains GZIP compression when uploading to S3
 
 ### Logging System
