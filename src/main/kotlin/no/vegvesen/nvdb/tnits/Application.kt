@@ -27,6 +27,7 @@ suspend fun main(args: Array<String>) {
     NvdbTnitsApp
         .subcommands(SnapshotCommand, UpdateCommand, BackupCommand, AutoCommand)
         .main(args)
+    log.info("All tasks completed, shutting down...")
 }
 
 object NvdbTnitsApp : SuspendingCliktCommand() {
@@ -109,6 +110,7 @@ object BackupCommand : BaseCommand() {
 
 object AutoCommand : BaseCommand() {
     override suspend fun run() {
+        initializeServices()
         echo("TODO: Implementer automatisk modus basert på konfigurasjon")
         echo("Denne modusen vil sjekke konfigurasjon for å avgjøre om det skal:")
         echo("- Kjøre fullt snapshot")

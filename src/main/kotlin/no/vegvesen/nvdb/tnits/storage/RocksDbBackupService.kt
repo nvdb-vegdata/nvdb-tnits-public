@@ -4,14 +4,21 @@ import io.minio.GetObjectArgs
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
 import io.minio.StatObjectArgs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import no.vegvesen.nvdb.tnits.config.BackupConfig
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
+import org.slf4j.event.Level
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.CompletableFuture
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -26,7 +33,9 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     companion object {
         private const val BACKUP_OBJECT_NAME = "rocksdb-backup.zip"
-        private const val BUFFER_SIZE = 256 * 1024
+        private const val BUFFER_SIZE = 2 * 1024 * 1024 // 2MB buffer for better I/O performance
+        private const val PIPE_BUFFER_SIZE = 1024 * 1024 // 1MB pipe buffer
+        private const val MULTIPART_SIZE = 10L * 1024 * 1024 // 10MB multipart size
     }
 
     /**
@@ -48,7 +57,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
                 log.debug("Using temp backup directory: {}", tempBackupPath)
 
                 // Create backup using RocksDB's BackupEngine
-                log.measure("Creating local backup using RocksDB BackupEngine", logStart = true) {
+                log.measure("Creating local backup using RocksDB BackupEngine", logStart = true, level = Level.DEBUG) {
                     createLocalBackup(tempBackupPath)
                 }
 
@@ -58,15 +67,15 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
                     log.error("Local backup directory is empty or missing after backup creation")
                     return false
                 }
-                log.info("Verified local backup exists with files: ${backupFiles.size} items")
+                log.debug("Verified local backup exists with {} items", backupFiles.size)
 
                 // Compress and upload to S3
-                log.info("Starting compression and S3 upload...")
+                log.debug("Starting backup archive creation and S3 upload...")
                 val success = compressAndUploadBackup(tempBackupPath)
-                log.info("Compression and upload result: $success")
+                log.debug("Archive creation and upload result: {}", success)
 
                 // Clean up temp backup directory
-                log.info("Cleaning up temp backup directory")
+                log.debug("Cleaning up temp backup directory")
                 tempBackupPath.toFile().deleteRecursively()
 
                 if (success) {
@@ -106,7 +115,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
             // Create a proper temporary directory for restore
             val tempRestorePath = Files.createTempDirectory("rocksdb-restore")
-            log.info("Using temp restore directory: $tempRestorePath")
+            log.debug("Using temp restore directory: {}", tempRestorePath)
 
             // Download and extract backup
             downloadAndExtractBackup(tempRestorePath)
@@ -127,29 +136,24 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     private fun createLocalBackup(backupPath: Path) {
         try {
-            log.info("Initializing BackupEngine with path: $backupPath")
-            val backupEngineOptions = BackupEngineOptions(backupPath.toString())
-            log.info("BackupEngineOptions created successfully")
+            log.debug("Initializing BackupEngine with path: {}", backupPath)
 
-            BackupEngine.open(Env.getDefault(), backupEngineOptions).use { backupEngine ->
-                log.info("BackupEngine opened successfully")
-                log.info("Getting RocksDB database instance...")
-                val database = rocksDbContext.getDatabase()
-                log.info("Database instance obtained: ${database.javaClass.simpleName}")
+            BackupEngineOptions(backupPath.toString()).use { backupEngineOptions ->
+                log.debug("BackupEngineOptions created successfully")
 
-                log.info("Creating new backup...")
-                backupEngine.createNewBackup(database)
-                log.info("BackupEngine.createNewBackup() completed successfully")
+                BackupEngine.open(Env.getDefault(), backupEngineOptions).use { backupEngine ->
+                    log.debug("BackupEngine opened successfully")
+                    log.debug("Getting RocksDB database instance...")
+                    val database = rocksDbContext.getDatabase()
+                    log.debug("Database instance obtained: {}", database.javaClass.simpleName)
+
+                    log.debug("Creating new backup...")
+                    backupEngine.createNewBackup(database)
+                    log.debug("BackupEngine.createNewBackup() completed successfully")
+                }
             }
 
-            // Verify backup files were created
-            val backupFiles = backupPath.toFile().walkTopDown().toList()
-            log.info("Backup files created: ${backupFiles.size} total files/directories")
-            backupFiles.take(10).forEach { file ->
-                log.info("  - ${file.relativeTo(backupPath.toFile())} (${if (file.isDirectory) "DIR" else "FILE ${file.length()} bytes"})")
-            }
-
-            log.info("Local backup created successfully at: $backupPath")
+            log.debug("Local backup created successfully at: {}", backupPath)
         } catch (e: Exception) {
             log.error("Failed to create local backup at $backupPath", e)
             throw e
@@ -157,47 +161,72 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
     }
 
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
-        // TODO: Speed up compression. Buffered streams?
-        ByteArrayOutputStream().use { byteArrayOut ->
+        log.measure("Creating and uploading backup archive: $backupPath", logStart = true) {
+            streamBackupToS3(backupPath)
+        }
+    } catch (e: Exception) {
+        log.error("Failed to create and upload backup", e)
+        false
+    }
 
-            log.measure("Compressing directory: $backupPath", logStart = true) {
-                ZipOutputStream(byteArrayOut).use { zipOut ->
-                    compressDirectoryToZip(backupPath.toFile(), zipOut)
-                }
-            }
+    private fun streamBackupToS3(backupPath: Path): Boolean {
+        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+        log.debug("Starting streaming backup to S3 - bucket: {}, key: {}", backupConfig.bucket, objectKey)
 
-            val compressedData = byteArrayOut.toByteArray()
-            log.debug("Compressed backup size: ${compressedData.size} bytes")
+        val pipedOutputStream = PipedOutputStream()
+        val pipedInputStream = PipedInputStream(pipedOutputStream, PIPE_BUFFER_SIZE)
+        val uploadFuture = CompletableFuture<Boolean>()
 
-            if (compressedData.isEmpty()) {
-                log.error("Compressed data is empty - compression failed")
-                return false
-            }
-
-            ByteArrayInputStream(compressedData).use { inputStream ->
-                val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
-                log.debug("Uploading to S3 - bucket: ${backupConfig.bucket}, key: $objectKey")
-
+        // Start S3 upload in background coroutine
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
                 minioClient.putObject(
                     PutObjectArgs.builder()
                         .bucket(backupConfig.bucket)
                         .`object`(objectKey)
-                        .stream(inputStream, compressedData.size.toLong(), -1)
+                        .stream(pipedInputStream, -1, MULTIPART_SIZE)
                         .contentType("application/zip")
                         .build(),
                 )
-                log.info("S3 upload completed successfully")
+                log.debug("S3 upload completed successfully")
+                uploadFuture.complete(true)
+            } catch (e: Exception) {
+                log.error("S3 upload failed", e)
+                uploadFuture.complete(false)
+            } finally {
+                try {
+                    pipedInputStream.close()
+                } catch (e: IOException) {
+                    log.debug("Error closing piped input stream", e)
+                }
             }
-
-            log.info("Backup uploaded to S3: s3://${backupConfig.bucket}/${backupConfig.path}/$BACKUP_OBJECT_NAME")
-            true
         }
-    } catch (e: Exception) {
-        log.error("Failed to compress and upload backup", e)
-        false
+
+        // Create ZIP archive directly to the piped stream
+        try {
+            ZipOutputStream(pipedOutputStream).use { zipOut ->
+                // Configure for no compression (store only)
+                zipOut.setLevel(Deflater.NO_COMPRESSION)
+                addDirectoryToZip(backupPath.toFile(), zipOut)
+            }
+        } catch (e: Exception) {
+            log.error("Failed to create ZIP archive", e)
+            return false
+        } finally {
+            try {
+                pipedOutputStream.close()
+            } catch (e: IOException) {
+                log.debug("Error closing piped output stream", e)
+            }
+        }
+
+        // Wait for upload completion
+        return runBlocking {
+            uploadFuture.get()
+        }
     }
 
-    private fun compressDirectoryToZip(directory: File, zipOut: ZipOutputStream) {
+    private fun addDirectoryToZip(directory: File, zipOut: ZipOutputStream) {
         val buffer = ByteArray(BUFFER_SIZE)
 
         fun addFileToZip(file: File, basePath: String) {
@@ -253,7 +282,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
             }
         }
 
-        log.debug("Backup extracted to: $restorePath")
+        log.debug("Backup extracted to: {}", restorePath)
     }
 
     private fun extractZipDirectory(zipInput: ZipInputStream, targetDirectory: File) {
@@ -294,14 +323,8 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
         // Delete existing database directory
         val dbPath = Paths.get(rocksDbContext.dbPath)
         if (dbPath.exists()) {
-            log.debug("Deleting existing database directory: $dbPath")
+            log.debug("Deleting existing database directory: {}", dbPath)
             dbPath.toFile().deleteRecursively()
-        }
-
-        // Debug: List backup files before restore
-        log.debug("Backup path contents before restore:")
-        backupPath.toFile().walkTopDown().take(20).forEach { file ->
-            log.debug("  - ${file.relativeTo(backupPath.toFile())} (${if (file.isDirectory) "DIR" else "FILE ${file.length()} bytes"})")
         }
 
         // Restore from backup to the current context's database path
@@ -330,18 +353,6 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
         options.close()
         restoreOptions.close()
-
-        // Debug: Check what was restored
-        log.debug("Checking restored database directory: ${rocksDbContext.dbPath}")
-        val restoredDbPath = Paths.get(rocksDbContext.dbPath)
-        if (restoredDbPath.exists()) {
-            log.debug("Restored database files:")
-            restoredDbPath.toFile().listFiles()?.take(10)?.forEach { file ->
-                log.debug("  - ${file.name} (${if (file.isDirectory) "DIR" else "FILE ${file.length()} bytes"})")
-            }
-        } else {
-            log.error("Restored database directory does not exist: ${rocksDbContext.dbPath}")
-        }
 
         // Reinitialize the RocksDB context
         rocksDbContext.reinitialize()

@@ -1,6 +1,9 @@
 package no.vegvesen.nvdb.tnits.storage
 
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
+import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
+import org.slf4j.event.Level
 import java.io.File
 
 /**
@@ -9,7 +12,9 @@ import java.io.File
  *
  * Provides Unit-of-Work atomic batch operations via [writeBatch] method.
  */
-open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression: Boolean = true) : AutoCloseable {
+open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression: Boolean = true) :
+    AutoCloseable,
+    WithLogger {
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions
@@ -442,22 +447,38 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
     }
 
     override fun close() {
-        if (::columnFamilies.isInitialized) {
-            columnFamilies.values.forEach { columnFamily ->
-                columnFamily.close()
+        log.measure("RocksDB shutdown and cleanup", logStart = true, level = Level.INFO) {
+            if (::columnFamilies.isInitialized) {
+                log.measure("Closing ${columnFamilies.size} column families", level = Level.DEBUG) {
+                    columnFamilies.values.forEach { columnFamily ->
+                        columnFamily.close()
+                    }
+                }
             }
-        }
-        if (::db.isInitialized) {
-            db.close()
-        }
-        if (::dbOptions.isInitialized) {
-            dbOptions.close()
-        }
-        if (::columnFamilyOptions.isInitialized) {
-            columnFamilyOptions.close()
-        }
-        if (::options.isInitialized) {
-            options.close()
+
+            if (::db.isInitialized) {
+                log.measure("Closing RocksDB database (WAL flush and compaction)", logStart = true, level = Level.DEBUG) {
+                    db.close()
+                }
+            }
+
+            if (::dbOptions.isInitialized) {
+                log.measure("Closing database options", level = Level.DEBUG) {
+                    dbOptions.close()
+                }
+            }
+
+            if (::columnFamilyOptions.isInitialized) {
+                log.measure("Closing column family options", level = Level.DEBUG) {
+                    columnFamilyOptions.close()
+                }
+            }
+
+            if (::options.isInitialized) {
+                log.measure("Closing options", level = Level.DEBUG) {
+                    options.close()
+                }
+            }
         }
     }
 

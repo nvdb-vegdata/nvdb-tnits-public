@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Backup" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="no.vegvesen.nvdb.tnits.ApplicationKt" />
+    <module name="nvdb-tnits-prototype.main" />
+    <option name="PROGRAM_PARAMETERS" value="backup" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
