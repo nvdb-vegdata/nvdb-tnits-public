@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
@@ -10,16 +9,15 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.delay
-import java.io.InputStream
 
 class S3OutputStreamTest :
     StringSpec({
 
+        val contentType = "application/text"
         "S3OutputStream should write data to MinIO via piped stream" {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             val putObjectArgsSlot = slot<PutObjectArgs>()
-            val inputStreamSlot = slot<InputStream>()
 
             every { mockMinioClient.putObject(capture(putObjectArgsSlot)) } returns mockk()
 
@@ -28,7 +26,7 @@ class S3OutputStreamTest :
             val objectKey = "test-object-key"
 
             // Act
-            S3OutputStream(mockMinioClient, bucket, objectKey).use { outputStream ->
+            S3OutputStream(mockMinioClient, bucket, objectKey, contentType).use { outputStream ->
                 outputStream.write(testData)
             }
 
@@ -51,7 +49,7 @@ class S3OutputStreamTest :
             val objectKey = "test-object-key"
 
             // Act
-            S3OutputStream(mockMinioClient, bucket, objectKey).use { outputStream ->
+            S3OutputStream(mockMinioClient, bucket, objectKey, contentType).use { outputStream ->
                 outputStream.write(65) // 'A'
                 outputStream.write(66) // 'B'
                 outputStream.write(67) // 'C'
@@ -74,7 +72,7 @@ class S3OutputStreamTest :
             val objectKey = "test-object-key"
 
             // Act
-            S3OutputStream(mockMinioClient, bucket, objectKey).use { outputStream ->
+            S3OutputStream(mockMinioClient, bucket, objectKey, contentType).use { outputStream ->
                 outputStream.write(testData, 7, 5) // "World" portion
             }
 
@@ -118,7 +116,7 @@ class S3OutputStreamTest :
             val objectKey = "test-object-key"
 
             // Act & Assert (should not throw)
-            S3OutputStream(mockMinioClient, bucket, objectKey).use { outputStream ->
+            S3OutputStream(mockMinioClient, bucket, objectKey, contentType).use { outputStream ->
                 outputStream.write(testData)
                 outputStream.flush() // Should not throw
             }

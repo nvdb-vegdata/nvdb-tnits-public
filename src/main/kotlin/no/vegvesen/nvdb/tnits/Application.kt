@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import no.vegvesen.nvdb.tnits.Services.Companion.withServices
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.utilities.measure
@@ -24,10 +25,11 @@ val supportingVegobjektTyper = setOf(VegobjektTyper.FELTSTREKNING, VegobjektType
 val log: Logger = LoggerFactory.getLogger("tnits")
 
 suspend fun main(args: Array<String>) {
+    log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
     NvdbTnitsApp
         .subcommands(SnapshotCommand, UpdateCommand, BackupCommand, AutoCommand)
         .main(args)
-    log.info("All tasks completed, shutting down...")
+    log.info("NVDB TN-ITS application finished")
 }
 
 object NvdbTnitsApp : SuspendingCliktCommand() {
@@ -42,75 +44,58 @@ abstract class BaseCommand : SuspendingCliktCommand() {
         .flag()
         .help("Ikke ta automatisk backup etter vellykket operasjon")
 
-    protected suspend fun initializeServices(): Pair<Services, Instant> {
-        log.info("Starter NVDB TN-ITS konsollapplikasjon...")
-
-        val services = Services()
-        with(services) {
-            performRestoreIfNeeded()
-            performBackfill()
-
-            val now: Instant = performUpdateAndGetTimestamp()
-
-            log.info("Oppdateringer fullført!")
-
-            log.measure("Bygger vegnett-cache", true) {
-                cachedVegnett.initialize()
-            }
-
-            return services to now
-        }
-    }
-
-    protected fun performBackupIfNeeded(services: Services) {
+    protected fun Services.performBackupIfNeeded() {
         if (!noBackup) {
             log.info("Tar automatisk backup av RocksDB...")
-            val success = services.rocksDbBackupService.createBackup()
-            if (success) {
-                log.info("Automatisk RocksDB backup fullført")
-            } else {
-                log.error("Automatisk RocksDB backup feilet")
-            }
+            rocksDbBackupService.createBackup()
         }
     }
 }
 
+private suspend fun Services.synchronizeVegobjekterAndVegnett(): Instant {
+    performRestoreIfNeeded()
+    performBackfill()
+
+    val now: Instant = performUpdateAndGetTimestamp()
+
+    log.info("Oppdateringer fullført!")
+
+    log.measure("Bygger vegnett-cache", true) {
+        cachedVegnett.initialize()
+    }
+    return now
+}
+
 object SnapshotCommand : BaseCommand() {
     override suspend fun run() {
-        val (services, now) = initializeServices()
-        with(services) {
+        withServices {
+            val now = synchronizeVegobjekterAndVegnett()
             exportSpeedLimitsSnapshot(now)
-            performBackupIfNeeded(services)
+            performBackupIfNeeded()
         }
     }
 }
 
 object UpdateCommand : BaseCommand() {
     override suspend fun run() {
-        val (services, now) = initializeServices()
-        with(services) {
+        withServices {
+            val now = synchronizeVegobjekterAndVegnett()
             exportSpeedLimitsUpdate(now)
-            performBackupIfNeeded(services)
+            performBackupIfNeeded()
         }
     }
 }
 
 object BackupCommand : BaseCommand() {
     override suspend fun run() {
-        log.info("Starter backup-operasjon...")
-        val services = Services()
-        val success = services.rocksDbBackupService.createBackup()
-        if (success) {
-            log.info("RocksDB backup fullført")
-        } else {
-            log.error("RocksDB backup feilet")
+        withServices {
+            rocksDbBackupService.createBackup()
         }
     }
 }
 
 object AutoCommand : BaseCommand() {
     override suspend fun run() {
-        initializeServices()
         echo("TODO: Implementer automatisk modus basert på konfigurasjon")
         echo("Denne modusen vil sjekke konfigurasjon for å avgjøre om det skal:")
         echo("- Kjøre fullt snapshot")

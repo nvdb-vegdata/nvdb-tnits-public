@@ -2,12 +2,7 @@ package no.vegvesen.nvdb.tnits.storage
 
 import io.minio.GetObjectArgs
 import io.minio.MinioClient
-import io.minio.PutObjectArgs
 import io.minio.StatObjectArgs
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import no.vegvesen.nvdb.tnits.config.BackupConfig
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
@@ -17,7 +12,6 @@ import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
 import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -34,8 +28,6 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
     companion object {
         private const val BACKUP_OBJECT_NAME = "rocksdb-backup.zip"
         private const val BUFFER_SIZE = 2 * 1024 * 1024 // 2MB buffer for better I/O performance
-        private const val PIPE_BUFFER_SIZE = 1024 * 1024 // 1MB pipe buffer
-        private const val MULTIPART_SIZE = 10L * 1024 * 1024 // 10MB multipart size
     }
 
     /**
@@ -162,68 +154,21 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
         log.measure("Creating and uploading backup archive: $backupPath", logStart = true) {
-            streamBackupToS3(backupPath)
+            val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+            log.debug("Starting backup upload to S3 - bucket: {}, key: {}", backupConfig.bucket, objectKey)
+
+            S3OutputStream(minioClient, backupConfig.bucket, objectKey, "application/zip").use { s3Stream ->
+                ZipOutputStream(s3Stream).use { zipOut ->
+                    zipOut.setLevel(Deflater.NO_COMPRESSION)
+                    addDirectoryToZip(backupPath.toFile(), zipOut)
+                }
+            }
+            log.debug("Backup upload completed successfully")
+            true
         }
     } catch (e: Exception) {
         log.error("Failed to create and upload backup", e)
         false
-    }
-
-    private fun streamBackupToS3(backupPath: Path): Boolean {
-        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
-        log.debug("Starting streaming backup to S3 - bucket: {}, key: {}", backupConfig.bucket, objectKey)
-
-        val pipedOutputStream = PipedOutputStream()
-        val pipedInputStream = PipedInputStream(pipedOutputStream, PIPE_BUFFER_SIZE)
-        val uploadFuture = CompletableFuture<Boolean>()
-
-        // Start S3 upload in background coroutine
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                minioClient.putObject(
-                    PutObjectArgs.builder()
-                        .bucket(backupConfig.bucket)
-                        .`object`(objectKey)
-                        .stream(pipedInputStream, -1, MULTIPART_SIZE)
-                        .contentType("application/zip")
-                        .build(),
-                )
-                log.debug("S3 upload completed successfully")
-                uploadFuture.complete(true)
-            } catch (e: Exception) {
-                log.error("S3 upload failed", e)
-                uploadFuture.complete(false)
-            } finally {
-                try {
-                    pipedInputStream.close()
-                } catch (e: IOException) {
-                    log.debug("Error closing piped input stream", e)
-                }
-            }
-        }
-
-        // Create ZIP archive directly to the piped stream
-        try {
-            ZipOutputStream(pipedOutputStream).use { zipOut ->
-                // Configure for no compression (store only)
-                zipOut.setLevel(Deflater.NO_COMPRESSION)
-                addDirectoryToZip(backupPath.toFile(), zipOut)
-            }
-        } catch (e: Exception) {
-            log.error("Failed to create ZIP archive", e)
-            return false
-        } finally {
-            try {
-                pipedOutputStream.close()
-            } catch (e: IOException) {
-                log.debug("Error closing piped output stream", e)
-            }
-        }
-
-        // Wait for upload completion
-        return runBlocking {
-            uploadFuture.get()
-        }
     }
 
     private fun addDirectoryToZip(directory: File, zipOut: ZipOutputStream) {

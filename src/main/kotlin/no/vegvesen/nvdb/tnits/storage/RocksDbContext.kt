@@ -449,35 +449,25 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
     override fun close() {
         log.measure("RocksDB shutdown and cleanup", logStart = true, level = Level.INFO) {
             if (::columnFamilies.isInitialized) {
-                log.measure("Closing ${columnFamilies.size} column families", level = Level.DEBUG) {
-                    columnFamilies.values.forEach { columnFamily ->
-                        columnFamily.close()
-                    }
+                columnFamilies.values.forEach { columnFamily ->
+                    columnFamily.close()
                 }
             }
 
             if (::db.isInitialized) {
-                log.measure("Closing RocksDB database (WAL flush and compaction)", logStart = true, level = Level.DEBUG) {
-                    db.close()
-                }
+                db.close()
             }
 
             if (::dbOptions.isInitialized) {
-                log.measure("Closing database options", level = Level.DEBUG) {
-                    dbOptions.close()
-                }
+                dbOptions.close()
             }
 
             if (::columnFamilyOptions.isInitialized) {
-                log.measure("Closing column family options", level = Level.DEBUG) {
-                    columnFamilyOptions.close()
-                }
+                columnFamilyOptions.close()
             }
 
             if (::options.isInitialized) {
-                log.measure("Closing options", level = Level.DEBUG) {
-                    options.close()
-                }
+                options.close()
             }
         }
     }

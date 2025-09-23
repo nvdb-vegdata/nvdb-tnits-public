@@ -32,7 +32,13 @@ fun ObjectMapper.initialize(): ObjectMapper = apply {
     setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 }
 
-class Services : WithLogger {
+/**
+ * Core composition root for the application.
+ * Initializes and holds references to all services, repositories, and clients.
+ */
+class Services :
+    WithLogger,
+    AutoCloseable {
 
     val config = loadConfig()
 
@@ -131,8 +137,29 @@ class Services : WithLogger {
 
     val rocksDbBackupService = RocksDbBackupService(rocksDbContext, minioClient, config.backup)
 
+    override fun close() {
+        runCatching {
+            uberiketHttpClient.close()
+        }
+        runCatching {
+            datakatalogHttpClient.close()
+        }
+        runCatching {
+            minioClient.close()
+        }
+        runCatching {
+            rocksDbContext.close()
+        }
+    }
+
     companion object {
         val marshaller: BinaryMarshaller = BinaryMarshallerFactory().create()
         val objectMapper = jacksonObjectMapper().initialize()
+
+        inline fun withServices(block: Services.() -> Unit) {
+            Services().use { services ->
+                services.block()
+            }
+        }
     }
 }

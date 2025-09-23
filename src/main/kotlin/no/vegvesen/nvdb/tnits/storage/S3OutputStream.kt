@@ -2,17 +2,12 @@ package no.vegvesen.nvdb.tnits.storage
 
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.OutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.*
 
 private val log = LoggerFactory.getLogger(S3OutputStream::class.java)
 
@@ -20,12 +15,20 @@ class S3OutputStream(
     private val minioClient: MinioClient,
     private val bucket: String,
     private val objectKey: String,
-    private val contentType: String = "application/xml",
+    private val contentType: String,
+    private val uploadTimeoutMinutes: Long = 10,
 ) : OutputStream() {
 
     private val pipedOutputStream = PipedOutputStream()
     private val pipedInputStream = PipedInputStream(pipedOutputStream, PIPE_BUFFER_SIZE)
     private val uploadFuture = CompletableFuture<Unit>()
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "S3Upload-$bucket-$objectKey").apply {
+            isDaemon = true
+        }
+    }
+
+    @Volatile
     private var closed = false
 
     init {
@@ -33,7 +36,7 @@ class S3OutputStream(
     }
 
     private fun startUpload() {
-        CoroutineScope(Dispatchers.IO).launch {
+        executor.submit {
             try {
                 log.info("Starting S3 upload: s3://$bucket/$objectKey")
 
@@ -91,14 +94,31 @@ class S3OutputStream(
             log.warn("Error closing piped output stream", e)
         }
 
-        runBlocking {
-            try {
-                uploadFuture.get()
-                log.debug("S3 upload completed during close(): s3://$bucket/$objectKey")
-            } catch (e: Exception) {
-                log.error("S3 upload failed during close(): s3://$bucket/$objectKey", e)
-                throw IOException("S3 upload failed: ${e.message}", e)
+        try {
+            uploadFuture.get(uploadTimeoutMinutes, TimeUnit.MINUTES)
+            log.debug("S3 upload completed during close(): s3://$bucket/$objectKey")
+        } catch (e: TimeoutException) {
+            log.error("S3 upload timed out after $uploadTimeoutMinutes minutes: s3://$bucket/$objectKey")
+            throw IOException("S3 upload timed out after $uploadTimeoutMinutes minutes", e)
+        } catch (e: Exception) {
+            log.error("S3 upload failed during close(): s3://$bucket/$objectKey", e)
+            throw IOException("S3 upload failed: ${e.message}", e.cause ?: e)
+        } finally {
+            shutdownExecutor()
+        }
+    }
+
+    private fun shutdownExecutor() {
+        try {
+            executor.shutdown()
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                log.warn("Executor did not terminate gracefully, forcing shutdown")
+                executor.shutdownNow()
             }
+        } catch (e: InterruptedException) {
+            log.warn("Interrupted while waiting for executor shutdown")
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
         }
     }
 
