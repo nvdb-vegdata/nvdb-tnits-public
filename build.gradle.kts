@@ -68,6 +68,9 @@ dependencies {
     // Minio S3
     implementation("io.minio:minio:8.5.17")
 
+    // CLI parsing
+    implementation("com.github.ajalt.clikt:clikt:5.0.3")
+
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")

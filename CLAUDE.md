@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Kotlin console application prototype for synchronizing road network data (veglenker) from the Norwegian Road Database (NVDB) using pure RocksDB storage. The application performs:
+This is a Kotlin CLI application prototype for synchronizing road network data (veglenker) from the Norwegian Road Database (NVDB) using pure RocksDB storage. The application performs:
 
 1. Initial backfill of all road network data from NVDB
 2. Incremental updates by processing change events from NVDB's event stream
@@ -14,9 +14,9 @@ This is a Kotlin console application prototype for synchronizing road network da
 
 ## Architecture
 
-The application follows a console-based architecture with RocksDB as the primary storage layer:
+The application follows a CLI-based architecture with RocksDB as the primary storage layer:
 
-- **Application.kt**: Main entry point with suspend main() function and interactive menu for data synchronization and TN-ITS export
+- **Application.kt**: Main entry point with Clikt-based CLI commands for data synchronization and TN-ITS export
 - **config/**: Configuration modules for S3, backup, and application settings
 - **geometry/**: Spatial geometry processing utilities for coordinate transformation and intersection calculations
 - **extensions/**: Utility extension functions for common operations
@@ -56,17 +56,37 @@ Key operations:
 
 The dirty checking system enables efficient delta processing for TN-ITS exports by tracking only changed data.
 
-### Console Application Flow
+### CLI Application Architecture
+
+The application uses **Clikt 5.0.3** for command-line interface parsing with the following structure:
+
+#### CLI Implementation Details
+
+- **Main Command**: `NvdbTnitsApp` extends `CliktCommand` and coordinates subcommands
+- **Base Command**: `BaseCommand` abstract class provides shared functionality for commands that need service initialization and backup
+- **Dependency**: `com.github.ajalt.clikt:clikt:5.0.3` added to build.gradle.kts
+- **Coroutine Support**: Uses `runBlocking` to bridge between Clikt's synchronous command execution and the application's suspend functions
+- **Service Integration**: Preserves existing `Services` dependency injection pattern for business logic
+
+#### Main CLI Commands
+
+- **`nvdb-tnits snapshot`**: Generate TN-ITS speed limit full snapshot
+- **`nvdb-tnits update`**: Generate TN-ITS speed limit delta update
+- **`nvdb-tnits backup`**: Create RocksDB backup to S3
+- **`nvdb-tnits auto`**: Automatic mode based on configuration (TODO: not yet implemented)
+
+#### Command Options
+
+- **`--no-backup`**: Available on `snapshot` and `update` commands to skip automatic backup after successful operation
+- **`--help`**: Available on all commands for usage information
+
+#### Application Flow
 
 1. **Startup**: Restore RocksDB backup from S3 if available and database is empty
 2. **Backfill**: If first run, download all road network data from NVDB
 3. **Incremental Updates**: Process change events from NVDB's event stream
-4. **Interactive Menu**:
-
-- Generate TN-ITS speed limit snapshots
-- Generate TN-ITS delta updates
-- Create RocksDB backup to S3
-- Exit application
+4. **Command Execution**: Execute the specified CLI command
+5. **Automatic Backup**: After successful `snapshot` or `update` operations (unless `--no-backup` is specified)
 
 ### S3/MinIO Export
 
@@ -110,7 +130,32 @@ class MyService : WithLogger {
 ```bash
 ./gradlew build          # Full build including tests
 ./gradlew test           # Run tests only
-./gradlew run            # Start the console application
+./gradlew run            # Show CLI help (no arguments)
+```
+
+### CLI Usage
+
+```bash
+# Show main help
+./gradlew run
+
+# Generate full snapshot
+./gradlew run --args="snapshot"
+
+# Generate delta update
+./gradlew run --args="update"
+
+# Create backup only
+./gradlew run --args="backup"
+
+# Auto mode (TODO: not implemented)
+./gradlew run --args="auto"
+
+# Skip automatic backup after snapshot
+./gradlew run --args="snapshot --no-backup"
+
+# Show help for specific command
+./gradlew run --args="snapshot --help"
 ```
 
 #### Running specific tests
@@ -149,7 +194,7 @@ The project includes OpenAPI client generation from several API specifications:
 
 ### Testing
 
-Tests use Kotest 6.0 framework and can be run individually or as a suite. The application includes unit tests for the console application logic.
+Tests use Kotest 6.0 framework and can be run individually or as a suite. The application includes unit tests for the CLI application logic.
 
 #### Running Tests
 
@@ -275,7 +320,7 @@ The application includes comprehensive backup functionality:
 - **RocksDbBackupService**: Uses RocksDB's native BackupEngine for consistent snapshots
 - **S3 Integration**: Automatic compression and upload to S3-compatible storage (MinIO)
 - **Startup Restore**: Automatically restores from S3 backup if local database is empty
-- **Manual Backup**: Interactive menu option for on-demand backup creation
+- **Manual Backup**: CLI backup command for on-demand backup creation
 - **Atomic Operations**: Backup and restore operations ensure data consistency
 
 ## Important Implementation Notes
@@ -295,7 +340,7 @@ The application includes comprehensive backup functionality:
 - **Type Safety**: Uses ColumnFamily enum instead of raw ColumnFamilyHandle instances for type-safe database operations
 - **Simplified API**: Complex operations like multiGetAsList are abstracted away with clean batchGet wrapper methods
 
-The console application includes interactive TN-ITS speed limit export and can be extended with additional road object types.
+The CLI application includes TN-ITS speed limit export functionality and can be extended with additional road object types.
 
 ## NVDB API Usage
 

@@ -1,5 +1,11 @@
 package no.vegvesen.nvdb.tnits
 
+import com.github.ajalt.clikt.command.SuspendingCliktCommand
+import com.github.ajalt.clikt.command.main
+import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.help
+import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -17,65 +23,101 @@ val supportingVegobjektTyper = setOf(VegobjektTyper.FELTSTREKNING, VegobjektType
 
 val log: Logger = LoggerFactory.getLogger("tnits")
 
-suspend fun main() {
-    log.info("Starter NVDB TN-ITS konsollapplikasjon...")
+suspend fun main(args: Array<String>) {
+    NvdbTnitsApp
+        .subcommands(SnapshotCommand, UpdateCommand, BackupCommand, AutoCommand)
+        .main(args)
+}
 
-    with(Services()) {
-        performRestoreIfNeeded()
-        performBackfill()
-
-        val now: Instant = performUpdateAndGetTimestamp()
-
-        log.info("Oppdateringer fullført!")
-
-        log.measure("Bygger vegnett-cache", true) {
-            cachedVegnett.initialize()
-        }
-
-        handleInput(now)
+object NvdbTnitsApp : SuspendingCliktCommand() {
+    override suspend fun run() {
+        // This method is called for subcommands, but we don't want to print anything here
+        // The help is handled automatically by Clikt when no subcommand is provided
     }
 }
 
-private suspend fun Services.handleInput(now: Instant) {
-    do {
-        println("Trykk:")
-        println(" 1 for å generere fullt snapshot av TN-ITS fartsgrenser")
-        println(" 2 for å generere delta snapshot")
-        println(" 3 for å ta backup av RocksDB til S3")
-        println(" 4 for å avslutte")
+abstract class BaseCommand : SuspendingCliktCommand() {
+    protected val noBackup by option("--no-backup")
+        .flag()
+        .help("Ikke ta automatisk backup etter vellykket operasjon")
 
-        val input: String = readln().trim()
+    protected suspend fun initializeServices(): Pair<Services, Instant> {
+        log.info("Starter NVDB TN-ITS konsollapplikasjon...")
 
-        when (input) {
-            "1" -> {
-                exportSpeedLimitsSnapshot(now)
+        val services = Services()
+        with(services) {
+            performRestoreIfNeeded()
+            performBackfill()
+
+            val now: Instant = performUpdateAndGetTimestamp()
+
+            log.info("Oppdateringer fullført!")
+
+            log.measure("Bygger vegnett-cache", true) {
+                cachedVegnett.initialize()
             }
 
-            "2" -> {
-                exportSpeedLimitsUpdate(now)
-            }
-
-            "3" -> {
-                log.info("Tar backup av RocksDB...")
-                val success = rocksDbBackupService.createBackup()
-                if (success) {
-                    log.info("RocksDB backup fullført")
-                } else {
-                    log.error("RocksDB backup feilet")
-                }
-            }
-
-            "4" -> {
-                log.info("Avslutter applikasjonen...")
-                return
-            }
-
-            else -> log.info("Ugyldig valg, vennligst prøv igjen.")
+            return services to now
         }
-    } while (true)
+    }
+
+    protected fun performBackupIfNeeded(services: Services) {
+        if (!noBackup) {
+            log.info("Tar automatisk backup av RocksDB...")
+            val success = services.rocksDbBackupService.createBackup()
+            if (success) {
+                log.info("Automatisk RocksDB backup fullført")
+            } else {
+                log.error("Automatisk RocksDB backup feilet")
+            }
+        }
+    }
 }
 
-private suspend fun Services.exportSpeedLimitsUpdate(now: Instant) {
+object SnapshotCommand : BaseCommand() {
+    override suspend fun run() {
+        val (services, now) = initializeServices()
+        with(services) {
+            exportSpeedLimitsSnapshot(now)
+            performBackupIfNeeded(services)
+        }
+    }
+}
+
+object UpdateCommand : BaseCommand() {
+    override suspend fun run() {
+        val (services, now) = initializeServices()
+        with(services) {
+            exportSpeedLimitsUpdate(now)
+            performBackupIfNeeded(services)
+        }
+    }
+}
+
+object BackupCommand : BaseCommand() {
+    override suspend fun run() {
+        log.info("Starter backup-operasjon...")
+        val services = Services()
+        val success = services.rocksDbBackupService.createBackup()
+        if (success) {
+            log.info("RocksDB backup fullført")
+        } else {
+            log.error("RocksDB backup feilet")
+        }
+    }
+}
+
+object AutoCommand : BaseCommand() {
+    override suspend fun run() {
+        echo("TODO: Implementer automatisk modus basert på konfigurasjon")
+        echo("Denne modusen vil sjekke konfigurasjon for å avgjøre om det skal:")
+        echo("- Kjøre fullt snapshot")
+        echo("- Kjøre delta oppdatering")
+        echo("- Begge deler")
+    }
+}
+
+private fun Services.exportSpeedLimitsUpdate(now: Instant) {
     log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
     // Plan A: Finn endrede vegobjekter basert på DIRTY tabeller
 
