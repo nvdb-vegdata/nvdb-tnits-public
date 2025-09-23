@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.utilities.measure
 import org.slf4j.Logger
@@ -76,11 +77,16 @@ private suspend fun Services.handleInput(now: Instant) {
 
 private suspend fun Services.exportSpeedLimitsUpdate(now: Instant) {
     log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
-    val since = s3TimestampService.getLastUpdateTimestamp()
-        ?: s3TimestampService.getLastSnapshotTimestamp()
+    // Plan A: Finn endrede vegobjekter basert på DIRTY tabeller
+
+//    dirtyCheckingRepository.getDirtyVegobjektIds()
+
+    // Plan B (backup): Finn siste eksport-tidspunkt fra S3 og finn vegobjekter endret siden da
+    val since = s3TimestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
+        ?: s3TimestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
         ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
 
-    tnitsFeatureExporter.generateSpeedLimitsDeltaUpdate(now, since)
+//    tnitsFeatureExporter.generateSpeedLimitsDeltaUpdate(now, since)
 }
 
 private suspend fun Services.exportSpeedLimitsSnapshot(now: Instant) {
@@ -139,7 +145,7 @@ private suspend fun Services.performUpdateAndGetTimestamp(): Instant {
     return now
 }
 
-private suspend fun Services.performRestoreIfNeeded() {
+private fun Services.performRestoreIfNeeded() {
     try {
         if (!rocksDbContext.existsAndHasData()) {
             log.info("RocksDB database is empty or missing, checking for backup to restore...")

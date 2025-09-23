@@ -30,8 +30,8 @@ class TnitsFeatureExporter(
     private val minioClient: MinioClient,
 ) : WithLogger {
 
-    suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, since: Instant) {
-        val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(since)
+    suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, ids: Set<Long>) {
+        val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(ids)
 
         exportFeatures(now, ExportedFeatureType.SpeedLimit, speedLimitsFlow, ExportType.Update)
     }
@@ -277,10 +277,16 @@ class TnitsFeatureExporter(
             )
 
         fun generateS3Key(timestamp: Instant, exportType: ExportType, gzip: Boolean, featureType: ExportedFeatureType): String {
-            val paddedType = featureType.typeId.toString().padStart(4, '0')
+            val typePrefix = getTypePrefix(featureType)
             val timestampStr = timestamp.truncateToSeconds().toString().replace(":", "-")
             val extension = if (gzip) ".xml.gz" else ".xml"
-            return "$paddedType-${featureType.typeCode}/$timestampStr/${exportType.name.lowercase()}$extension"
+            return "$typePrefix/$timestampStr/${exportType.name.lowercase()}$extension"
+        }
+
+        fun getTypePrefix(featureType: ExportedFeatureType): String {
+            val paddedType = featureType.typeId.toString().padStart(4, '0')
+            val typePrefix = "$paddedType-${featureType.typeCode}"
+            return typePrefix
         }
     }
 }

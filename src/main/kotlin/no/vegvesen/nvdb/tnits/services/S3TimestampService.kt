@@ -4,22 +4,24 @@ import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.messages.Item
 import no.vegvesen.nvdb.tnits.TnitsFeatureExporter
+import no.vegvesen.nvdb.tnits.TnitsFeatureExporter.Companion.getTypePrefix
+import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
+import org.hsqldb.lib.tar.TarHeaderField
 import kotlin.time.Instant
 
 class S3TimestampService(private val minioClient: MinioClient, private val bucketName: String) : WithLogger {
 
-    fun getLastSnapshotTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, TnitsFeatureExporter.ExportType.Snapshot)
+    fun getLastSnapshotTimestamp(featureType: ExportedFeatureType): Instant? = getLastExportTimestamp(featureType, TnitsFeatureExporter.ExportType.Snapshot)
 
-    fun getLastUpdateTimestamp(vegobjekttype: Int = 105): Instant? = getLastExportTimestamp(vegobjekttype, TnitsFeatureExporter.ExportType.Update)
+    fun getLastUpdateTimestamp(featureType: ExportedFeatureType): Instant? = getLastExportTimestamp(featureType, TnitsFeatureExporter.ExportType.Update)
 
-    private fun getLastExportTimestamp(vegobjekttype: Int, exportType: TnitsFeatureExporter.ExportType): Instant? = try {
-        val paddedType = vegobjekttype.toString().padStart(4, '0')
-        val prefix = "$paddedType-speed-limits/"
+    private fun getLastExportTimestamp(featureType: ExportedFeatureType, exportType: TnitsFeatureExporter.ExportType): Instant? = try {
+        val typePrefix = getTypePrefix(featureType) + "/"
 
-        log.debug("Searching for last ${exportType.name.lowercase()} export in S3 bucket: $bucketName, prefix: $prefix")
+        log.debug("Searching for last {} export in S3 bucket: {}, prefix: {}", exportType.name.lowercase(), bucketName, TarHeaderField.prefix)
 
-        val exports = listExportsByType(prefix, exportType)
+        val exports = listExportsByType(typePrefix, exportType)
         val latestTimestamp = exports
             .mapNotNull { parseTimestampFromS3Key(it.objectName()) }
             .maxOrNull()
@@ -27,7 +29,7 @@ class S3TimestampService(private val minioClient: MinioClient, private val bucke
         if (latestTimestamp == null && exports.isNotEmpty()) {
             log.warn("Found ${exports.size} ${exportType.name.lowercase()} exports but could not parse any timestamps")
         } else {
-            log.debug("Found ${exports.size} ${exportType.name.lowercase()} exports, latest timestamp: $latestTimestamp")
+            log.debug("Found {} {} exports, latest timestamp: {}", exports.size, exportType.name.lowercase(), latestTimestamp)
         }
 
         latestTimestamp

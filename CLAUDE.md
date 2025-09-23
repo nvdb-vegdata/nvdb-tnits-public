@@ -33,8 +33,28 @@ The application uses RocksDB column families for organizing data:
 - **KEY_VALUE**: Application state tracking (backfill progress, last processed event IDs, timestamps)
 - **VEGLENKER**: Road network links (veglenker) with NVDB IDs, link numbers, and full road data
 - **VEGOBJEKTER**: Road objects like speed limits with positioning data
+- **DIRTY_VEGLENKESEKVENSER**: Tracks dirty veglenkesekvens IDs for incremental processing
+- **DIRTY_VEGOBJEKTER**: Tracks dirty vegobjekt IDs by type for incremental processing
 
 All data uses Protocol Buffers serialization for efficient storage and retrieval.
+
+### Dirty Checking System
+
+The application includes a sophisticated dirty checking system for efficient incremental processing:
+
+- **DirtyCheckingRepository**: Interface for managing dirty state tracking
+- **DirtyCheckingRocksDbStore**: RocksDB-based implementation for dirty state management
+- **Dirty Vegobjekt Tracking**: Tracks changed vegobjekter by type using `DIRTY_VEGOBJEKTER` column family
+- **Stedfesting Relationship Queries**: Finds vegobjekter positioned on dirty veglenkesekvenser
+- **Batch Clear Operations**: Efficiently clears dirty state after processing
+
+Key operations:
+- `getDirtyVegobjektIds(vegobjektType)`: Retrieves all dirty vegobjekt IDs for a specific type
+- `findStedfestingVegobjektIds(veglenkesekvensIds, vegobjektType)`: Finds vegobjekter positioned on given veglenkesekvenser
+- `clearDirtyVegobjektIds(vegobjektType, vegobjektIds)`: Clears specific dirty IDs
+- `clearAllDirtyVegobjektIds(vegobjektType)`: Clears all dirty IDs for a type
+
+The dirty checking system enables efficient delta processing for TN-ITS exports by tracking only changed data.
 
 ### Console Application Flow
 
@@ -214,7 +234,7 @@ High-performance embedded storage for veglenker data using RocksDB with Protocol
 #### Storage Architecture:
 
 - **RocksDbContext**: Core context managing database connection, column families, and providing utility methods
-- **Repository Pattern**: Type-specific stores (`VeglenkerRocksDbStore`, `VegobjekterRocksDbStore`, `KeyValueRocksDbStore`)
+- **Repository Pattern**: Type-specific stores (`VeglenkerRocksDbStore`, `VegobjekterRocksDbStore`, `KeyValueRocksDbStore`, `DirtyCheckingRocksDbStore`)
 - **RocksDbBackupService**: S3 backup and restore using RocksDB's native BackupEngine
 - **Wrapper Methods**: All RocksDB operations go through type-safe wrapper methods that accept `ColumnFamily` enum
 - **Encapsulation**: Raw RocksDB and ColumnFamilyHandle instances are fully encapsulated

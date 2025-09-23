@@ -1,13 +1,15 @@
 package no.vegvesen.nvdb.tnits
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
-import no.vegvesen.nvdb.tnits.extensions.toOffsetDateTime
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
@@ -74,12 +76,7 @@ class SpeedLimitGenerator(
         hardcodedFartsgrenseTillatteVerdier
     }
 
-    fun generateSpeedLimitsUpdate(since: Instant): Flow<TnitsFeature> = flow {
-        var paginationId = 0L
-        var totalCount = 0
-
-        val sinceOffset = since.toOffsetDateTime()
-
+    fun generateSpeedLimitsUpdate(ids: Set<Long>): Flow<TnitsFeature> = flow {
 //        while (true) {
 //            val changedIds =
 //                transaction {
@@ -181,16 +178,12 @@ class SpeedLimitGenerator(
 
         workItems.mapNotNull { workItem ->
             try {
-                createSpeedLimit(workItem)
-            } catch (e: CancellationException) {
-                throw e // Re-throw cancellation exceptions
+                createFeature(workItem)
             } catch (e: Exception) {
                 log.error("Warning: Error processing speed limit ${workItem.id}", e)
                 null // Skip this item but continue processing others
             }
         }
-    } catch (e: CancellationException) {
-        throw e // Propagate cancellation
     } catch (e: Exception) {
         log.error("Error processing ID range ${idRange.startId}-${idRange.endId}", e)
         emptyList() // Return empty list for this range but don't fail the entire process
@@ -216,7 +209,7 @@ class SpeedLimitGenerator(
         }
     }
 
-    private fun createSpeedLimit(workItem: TnitsFeatureUpsertWorkItem): TnitsFeature {
+    private fun createFeature(workItem: TnitsFeatureUpsertWorkItem): TnitsFeature {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
         val overlappendeVeglenker = veglenkerBatchLookup(veglenkesekvensIds)
@@ -233,12 +226,12 @@ class SpeedLimitGenerator(
             }
 
         require(lineStrings.isNotEmpty()) {
-            "Finner ingen veglenker for fartsgrense ${workItem.id} med stedfesting ${workItem.stedfestingLinjer}"
+            "Finner ingen veglenker for ${workItem.type} ${workItem.id} med stedfesting ${workItem.stedfestingLinjer}"
         }
 
         val geometry =
             mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
-                ?: error("Could not determine geometry for fartsgrense ${workItem.id}")
+                ?: error("Klarte ikke lage geometri for ${workItem.type} ${workItem.id}")
 
         val openLrLocationReferences =
             openLrService.toOpenLr(

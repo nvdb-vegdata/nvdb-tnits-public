@@ -101,9 +101,13 @@ class Services : WithLogger {
 
     val vegobjekterRepository: VegobjekterRepository = VegobjekterRocksDbStore(rocksDbContext)
 
+    val dirtyCheckingRepository: DirtyCheckingRepository = DirtyCheckingRocksDbStore(rocksDbContext)
+
     val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository)
 
     val openLrService: OpenLrService = OpenLrService(cachedVegnett)
+
+    val vegobjekterHashStore = VegobjekterHashStore(rocksDbContext)
 
     val vegobjekterService = VegobjekterService(keyValueStore, uberiketApi, vegobjekterRepository, rocksDbContext)
 

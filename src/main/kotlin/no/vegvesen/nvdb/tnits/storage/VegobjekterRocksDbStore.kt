@@ -200,9 +200,9 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
 
     companion object {
 
-        private fun getVegobjektId(key: ByteArray): Long = ByteBuffer.wrap(key, 5, 8).long
+        fun getVegobjektId(key: ByteArray): Long = ByteBuffer.wrap(key, 5, 8).long
 
-        private fun getStedfestingVegobjektId(key: ByteArray): Long = ByteBuffer.wrap(key, 13, 8).long
+        fun getStedfestingVegobjektId(key: ByteArray): Long = ByteBuffer.wrap(key, 13, 8).long
 
         /**
          * Key structure: [1 byte prefix][4 bytes vegobjektType][8 bytes vegobjektId] = 13 bytes
@@ -220,17 +220,17 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         /**
          * Key structure: [1 byte prefix][4 bytes vegobjektType] = 5 bytes
          */
-        private fun getVegobjektTypePrefix(vegobjektType: Int): ByteArray = ByteBuffer.allocate(5).put(VEGOBJEKT_KEY_PREFIX).putInt(vegobjektType).array()
+        fun getVegobjektTypePrefix(vegobjektType: Int): ByteArray = ByteBuffer.allocate(5).put(VEGOBJEKT_KEY_PREFIX).putInt(vegobjektType).array()
 
         /**
          * Key structure: [1 byte prefix][4 bytes vegobjektType] = 5 bytes
          */
-        private fun getStedfestingPrefix(vegobjektType: Int): ByteArray = ByteBuffer.allocate(5).put(STEDFESTING_KEY_PREFIX).putInt(vegobjektType).array()
+        fun getStedfestingPrefix(vegobjektType: Int): ByteArray = ByteBuffer.allocate(5).put(STEDFESTING_KEY_PREFIX).putInt(vegobjektType).array()
 
         /**
          * Key structure: [1 byte prefix][4 bytes vegobjektType][8 bytes veglenkesekvensId] = 13 bytes
          */
-        private fun getStedfestingPrefix(vegobjektType: Int, veglenkesekvensId: Long): ByteArray =
+        fun getStedfestingPrefix(vegobjektType: Int, veglenkesekvensId: Long): ByteArray =
             ByteBuffer.allocate(13).put(STEDFESTING_KEY_PREFIX).putInt(vegobjektType).putLong(veglenkesekvensId).array()
 
         const val VEGOBJEKT_KEY_PREFIX: Byte = 0
