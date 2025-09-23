@@ -6,6 +6,7 @@ import io.minio.PutObjectArgs
 import io.minio.StatObjectArgs
 import no.vegvesen.nvdb.tnits.config.BackupConfig
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
+import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
 import java.io.*
 import java.nio.file.Files
@@ -39,44 +40,43 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
         }
 
         return try {
-            log.info("Starting RocksDB backup...")
-            log.info("Backup config - enabled: ${backupConfig.enabled}, bucket: ${backupConfig.bucket}, path: ${backupConfig.path}")
+            log.measure("Performing RocksDB backup", logStart = true) {
+                log.debug("Backup config - bucket: ${backupConfig.bucket}, path: ${backupConfig.path}")
 
-            // Create a proper temporary directory
-            val tempBackupPath = Files.createTempDirectory("rocksdb-backup")
-            log.info("Using temp backup directory: $tempBackupPath")
+                // Create a proper temporary directory
+                val tempBackupPath = Files.createTempDirectory("rocksdb-backup")
+                log.debug("Using temp backup directory: {}", tempBackupPath)
 
-            log.info("Created temporary backup directory: $tempBackupPath")
+                // Create backup using RocksDB's BackupEngine
+                log.measure("Creating local backup using RocksDB BackupEngine", logStart = true) {
+                    createLocalBackup(tempBackupPath)
+                }
 
-            // Create backup using RocksDB's BackupEngine
-            log.info("Creating local backup using RocksDB BackupEngine...")
-            createLocalBackup(tempBackupPath)
-            log.info("Local backup creation completed")
+                // Verify backup was created
+                val backupFiles = tempBackupPath.toFile().listFiles()
+                if (!tempBackupPath.exists() || backupFiles == null || backupFiles.isEmpty()) {
+                    log.error("Local backup directory is empty or missing after backup creation")
+                    return false
+                }
+                log.info("Verified local backup exists with files: ${backupFiles.size} items")
 
-            // Verify backup was created
-            val backupFiles = tempBackupPath.toFile().listFiles()
-            if (!tempBackupPath.exists() || backupFiles == null || backupFiles.isEmpty()) {
-                log.error("Local backup directory is empty or missing after backup creation")
-                return false
+                // Compress and upload to S3
+                log.info("Starting compression and S3 upload...")
+                val success = compressAndUploadBackup(tempBackupPath)
+                log.info("Compression and upload result: $success")
+
+                // Clean up temp backup directory
+                log.info("Cleaning up temp backup directory")
+                tempBackupPath.toFile().deleteRecursively()
+
+                if (success) {
+                    log.info("RocksDB backup completed successfully")
+                } else {
+                    log.error("RocksDB backup failed during upload")
+                }
+
+                success
             }
-            log.info("Verified local backup exists with files: ${backupFiles.size} items")
-
-            // Compress and upload to S3
-            log.info("Starting compression and S3 upload...")
-            val success = compressAndUploadBackup(tempBackupPath)
-            log.info("Compression and upload result: $success")
-
-            // Clean up temp backup directory
-            log.info("Cleaning up temp backup directory")
-            tempBackupPath.toFile().deleteRecursively()
-
-            if (success) {
-                log.info("RocksDB backup completed successfully")
-            } else {
-                log.error("RocksDB backup failed during upload")
-            }
-
-            success
         } catch (e: Exception) {
             log.error("Failed to create RocksDB backup", e)
             false
@@ -157,18 +157,17 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
     }
 
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
-        log.info("Starting backup compression...")
-
         // TODO: Speed up compression. Buffered streams?
         ByteArrayOutputStream().use { byteArrayOut ->
-            ZipOutputStream(byteArrayOut).use { zipOut ->
-                log.info("Compressing directory: $backupPath")
-                compressDirectoryToZip(backupPath.toFile(), zipOut)
-                log.info("Directory compression completed")
+
+            log.measure("Compressing directory: $backupPath", logStart = true) {
+                ZipOutputStream(byteArrayOut).use { zipOut ->
+                    compressDirectoryToZip(backupPath.toFile(), zipOut)
+                }
             }
 
             val compressedData = byteArrayOut.toByteArray()
-            log.info("Compressed backup size: ${compressedData.size} bytes")
+            log.debug("Compressed backup size: ${compressedData.size} bytes")
 
             if (compressedData.isEmpty()) {
                 log.error("Compressed data is empty - compression failed")
@@ -177,7 +176,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
             ByteArrayInputStream(compressedData).use { inputStream ->
                 val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
-                log.info("Uploading to S3 - bucket: ${backupConfig.bucket}, key: $objectKey")
+                log.debug("Uploading to S3 - bucket: ${backupConfig.bucket}, key: $objectKey")
 
                 minioClient.putObject(
                     PutObjectArgs.builder()

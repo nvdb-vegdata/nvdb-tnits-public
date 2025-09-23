@@ -247,7 +247,7 @@ class SpeedLimitGenerator(
             validFrom = workItem.validFrom,
             validTo = workItem.validTo,
             geometry = geometry,
-            updateType = UpdateType.Add,
+            updateType = workItem.updateType,
             beginLifespanVersion = workItem.beginLifespanVersion,
         )
     }
