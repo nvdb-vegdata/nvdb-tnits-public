@@ -62,11 +62,6 @@ subprojects {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
             freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-            optIn.addAll(
-                "kotlin.time.ExperimentalTime",
-                "kotlinx.coroutines.ExperimentalCoroutinesApi",
-            )
-            freeCompilerArgs.add("-Xsuppress-warning=DEPRECATION")
             freeCompilerArgs.add("-Xcontext-parameters")
         }
     }

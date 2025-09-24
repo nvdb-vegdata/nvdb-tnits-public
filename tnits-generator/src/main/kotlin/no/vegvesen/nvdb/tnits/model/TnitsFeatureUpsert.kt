@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.model
 
 import kotlinx.datetime.LocalDate
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.UpdateType
@@ -28,7 +27,6 @@ data class TnitsFeatureUpsert(
     val updateType: UpdateType,
     val beginLifespanVersion: Instant,
 ) : TnitsFeature {
-    @OptIn(ExperimentalSerializationApi::class)
     val hash by lazy {
         ProtoBuf.encodeToByteArray(serializer(), this).getHash()
     }

@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.model
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializer
 import kotlinx.serialization.builtins.ByteArraySerializer
@@ -13,7 +12,6 @@ import org.locationtech.jts.io.WKBReader
 import org.locationtech.jts.io.WKBWriter
 
 @Serializer(forClass = Geometry::class)
-@OptIn(ExperimentalSerializationApi::class)
 object JtsGeometrySerializer : KSerializer<Geometry> {
     fun createWriter(): WKBWriter = WKBWriter(2)
 

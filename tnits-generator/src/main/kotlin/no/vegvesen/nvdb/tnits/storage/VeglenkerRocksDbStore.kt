@@ -1,12 +1,10 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.Veglenke
 import org.rocksdb.RocksDBException
 
-@OptIn(ExperimentalSerializationApi::class)
 class VeglenkerRocksDbStore(private val rocksDbContext: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER) :
     VeglenkerRepository {
     override fun get(veglenkesekvensId: Long): List<Veglenke>? {

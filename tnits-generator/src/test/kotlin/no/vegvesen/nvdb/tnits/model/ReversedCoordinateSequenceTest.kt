@@ -184,7 +184,7 @@ class ReversedCoordinateSequenceTest :
             val originalSeq = geometryFactory.coordinateSequenceFactory.create(coordinates)
             val reversedSeq = ReversedCoordinateSequence(originalSeq)
 
-            val cloned = reversedSeq.clone()
+            val cloned = reversedSeq.copy()
             cloned.shouldBeInstanceOf<ReversedCoordinateSequence>()
             cloned shouldNotBe reversedSeq
 

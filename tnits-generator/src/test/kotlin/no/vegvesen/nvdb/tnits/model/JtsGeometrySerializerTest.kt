@@ -4,14 +4,12 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.geometry.SRID
 import no.vegvesen.nvdb.tnits.geometry.projectTo
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 
-@OptIn(ExperimentalSerializationApi::class)
 class JtsGeometrySerializerTest :
     StringSpec({
 

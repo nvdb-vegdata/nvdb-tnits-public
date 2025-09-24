@@ -67,7 +67,16 @@ dependencies {
     testImplementation("org.testcontainers:minio:1.21.3")
 }
 
-// Java toolchain and Kotlin compile options are inherited from root project
+// Java toolchain is inherited from root project, but we need specific Kotlin compile options
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        optIn.addAll(
+            "kotlin.time.ExperimentalTime",
+            "kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "kotlinx.serialization.ExperimentalSerializationApi",
+        )
+    }
+}
 
 application {
     mainClass.set("no.vegvesen.nvdb.tnits.ApplicationKt")

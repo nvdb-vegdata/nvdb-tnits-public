@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Snapshot" type="JetRunConfigurationType">
     <option name="MAIN_CLASS_NAME" value="no.vegvesen.nvdb.tnits.ApplicationKt" />
-    <module name="nvdb-tnits-prototype.main" />
+    <module name="nvdb-tnits-public.tnits-generator.main" />
     <option name="PROGRAM_PARAMETERS" value="snapshot" />
     <shortenClasspath name="NONE" />
     <method v="2">

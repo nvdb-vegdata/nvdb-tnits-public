@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import kotlinx.datetime.LocalDate
+import no.vegvesen.nvdb.tnits.model.ChangeType
 import no.vegvesen.nvdb.tnits.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
@@ -15,40 +16,46 @@ import kotlin.time.Clock
 class DirtyCheckingRocksDbStoreTest :
     StringSpec({
 
-        "getDirtyVegobjektIds should return empty set when no dirty IDs exist" {
+        "getDirtyVegobjektChanges should return empty set when no dirty changes exist" {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
 
                 // Act
-                val result = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
+                val result = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
 
                 // Assert
                 result.shouldBeEmpty()
             }
         }
 
-        "getDirtyVegobjektIds should return dirty vegobjekt IDs for specific type" {
+        "getDirtyVegobjektChanges should return dirty vegobjekt changes for specific type" {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val fartsgrenseIds = setOf(123L, 456L, 789L)
-                val feltstrekningIds = setOf(111L, 222L)
+                val fartsgrenseChanges = listOf(
+                    VegobjektChange(123L, ChangeType.NEW),
+                    VegobjektChange(456L, ChangeType.MODIFIED),
+                    VegobjektChange(789L, ChangeType.DELETED),
+                )
+                val feltstrekningChanges = listOf(
+                    VegobjektChange(111L, ChangeType.NEW),
+                    VegobjektChange(222L, ChangeType.MODIFIED),
+                )
 
-                // Publish dirty IDs for different types
-                // TODO
-//                dbContext.writeBatch {
-//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
-//                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningIds)
-//                }
+                // Publish dirty changes for different types
+                dbContext.writeBatch {
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningChanges)
+                }
 
                 // Act
-                val fartsgrenseResult = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
-                val feltstrekningSResult = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FELTSTREKNING)
+                val fartsgrenseResult = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                val feltstrekningSResult = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING)
 
                 // Assert
-                fartsgrenseResult shouldContainExactlyInAnyOrder fartsgrenseIds
-                feltstrekningSResult shouldContainExactlyInAnyOrder feltstrekningIds
+                fartsgrenseResult shouldContainExactlyInAnyOrder fartsgrenseChanges
+                feltstrekningSResult shouldContainExactlyInAnyOrder feltstrekningChanges
             }
         }
 
@@ -179,25 +186,33 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val allDirtyIds = setOf(501L, 502L, 503L, 504L)
+                val allDirtyChanges = listOf(
+                    VegobjektChange(501L, ChangeType.NEW),
+                    VegobjektChange(502L, ChangeType.MODIFIED),
+                    VegobjektChange(503L, ChangeType.NEW),
+                    VegobjektChange(504L, ChangeType.DELETED),
+                )
                 val idsToClear = setOf(502L, 504L)
 
-                // Publish dirty IDs
-                // TODO
-//                dbContext.writeBatch {
-//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyIds)
-//                }
+                // Publish dirty changes
+                dbContext.writeBatch {
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyChanges)
+                }
 
                 // Verify initial state
-                val initialDirtyIds = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
-                initialDirtyIds shouldContainExactlyInAnyOrder allDirtyIds
+                val initialDirtyChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                initialDirtyChanges shouldContainExactlyInAnyOrder allDirtyChanges
 
                 // Act
                 dirtyCheckingStore.clearDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE, idsToClear)
 
                 // Assert
-                val remainingDirtyIds = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
-                remainingDirtyIds shouldContainExactlyInAnyOrder setOf(501L, 503L)
+                val remainingDirtyChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                val expectedRemaining = listOf(
+                    VegobjektChange(501L, ChangeType.NEW),
+                    VegobjektChange(503L, ChangeType.NEW),
+                )
+                remainingDirtyChanges shouldContainExactlyInAnyOrder expectedRemaining
             }
         }
 
@@ -205,19 +220,21 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val dirtyIds = setOf(601L, 602L)
+                val dirtyChanges = listOf(
+                    VegobjektChange(601L, ChangeType.NEW),
+                    VegobjektChange(602L, ChangeType.MODIFIED),
+                )
 
-                // TODO
-//                dbContext.writeBatch {
-//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyIds)
-//                }
+                dbContext.writeBatch {
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyChanges)
+                }
 
                 // Act
                 dirtyCheckingStore.clearDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE, emptySet())
 
                 // Assert
-                val remainingDirtyIds = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
-                remainingDirtyIds shouldContainExactlyInAnyOrder dirtyIds
+                val remainingDirtyChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                remainingDirtyChanges shouldContainExactlyInAnyOrder dirtyChanges
             }
         }
 
@@ -225,26 +242,32 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val fartsgrenseIds = setOf(701L, 702L, 703L)
-                val feltstrekningsIds = setOf(801L, 802L)
+                val fartsgrenseChanges = listOf(
+                    VegobjektChange(701L, ChangeType.NEW),
+                    VegobjektChange(702L, ChangeType.MODIFIED),
+                    VegobjektChange(703L, ChangeType.DELETED),
+                )
+                val feltstrekningChanges = listOf(
+                    VegobjektChange(801L, ChangeType.NEW),
+                    VegobjektChange(802L, ChangeType.MODIFIED),
+                )
 
-                // Publish dirty IDs for different types
-                // TODO
-//                dbContext.writeBatch {
-//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
-//                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningsIds)
-//                }
+                // Publish dirty changes for different types
+                dbContext.writeBatch {
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningChanges)
+                }
 
                 // Verify initial state
-                dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE) shouldContainExactlyInAnyOrder fartsgrenseIds
-                dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningsIds
+                dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE) shouldContainExactlyInAnyOrder fartsgrenseChanges
+                dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningChanges
 
                 // Act
                 dirtyCheckingStore.clearAllDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
 
                 // Assert
-                dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE).shouldBeEmpty()
-                dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningsIds
+                dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE).shouldBeEmpty()
+                dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningChanges
             }
         }
 
@@ -257,7 +280,7 @@ class DirtyCheckingRocksDbStoreTest :
                 dirtyCheckingStore.clearAllDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
 
                 // Assert
-                val result = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
+                val result = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
                 result.shouldBeEmpty()
             }
         }

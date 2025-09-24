@@ -4,10 +4,10 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import kotlin.time.Instant
 
 class KeyValueRocksDbStoreTest :
     StringSpec({

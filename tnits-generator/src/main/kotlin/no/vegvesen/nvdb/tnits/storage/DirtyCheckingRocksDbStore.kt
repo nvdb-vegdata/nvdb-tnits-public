@@ -1,17 +1,19 @@
 package no.vegvesen.nvdb.tnits.storage
 
+import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getStedfestingPrefix
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getStedfestingVegobjektId
-import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegobjektId
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegobjektKey
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegobjektTypePrefix
 
 class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : DirtyCheckingRepository {
 
-    override fun getDirtyVegobjektIds(vegobjektType: Int): Set<Long> {
+    override fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> {
         val prefix = getVegobjektTypePrefix(vegobjektType)
-        return rocksDbContext.streamKeysByPrefix(ColumnFamily.DIRTY_VEGOBJEKTER, prefix)
-            .map { getVegobjektId(it) }
+        return rocksDbContext.streamValuesByPrefix(ColumnFamily.DIRTY_VEGOBJEKTER, prefix)
+            .map { value ->
+                ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
+            }
             .toSet()
     }
 

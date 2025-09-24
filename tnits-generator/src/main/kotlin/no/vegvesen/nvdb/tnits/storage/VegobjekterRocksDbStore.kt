@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.IdRange
@@ -9,7 +8,6 @@ import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
 import java.nio.ByteBuffer
 
-@OptIn(ExperimentalSerializationApi::class)
 class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : VegobjekterRepository {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 

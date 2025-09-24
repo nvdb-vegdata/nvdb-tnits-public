@@ -39,7 +39,7 @@ class ReversedCoordinateSequence(private val base: CoordinateSequence) : Coordin
     }
 
     @Deprecated("Deprecated in Java")
-    override fun clone(): Any = ReversedCoordinateSequence(base.clone() as CoordinateSequence)
+    override fun clone(): Any = ReversedCoordinateSequence(base.copy() as CoordinateSequence)
 
     override fun copy(): CoordinateSequence = ReversedCoordinateSequence(base.copy())
 }

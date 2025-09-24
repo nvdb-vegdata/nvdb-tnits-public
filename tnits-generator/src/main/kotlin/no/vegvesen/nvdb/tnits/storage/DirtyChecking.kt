@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.model.ChangeType
@@ -15,7 +14,6 @@ fun WriteBatchContext.publishChangedVeglenkesekvenser(veglenkesekvensIds: Set<Lo
     write(ColumnFamily.DIRTY_VEGLENKESEKVENSER, operations)
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 fun WriteBatchContext.publishChangedVegobjekter(vegobjektType: Int, changes: Collection<VegobjektChange>) {
     val operations = changes.map {
         val value = ProtoBuf.encodeToByteArray(VegobjektChange.serializer(), it)

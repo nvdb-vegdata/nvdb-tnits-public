@@ -93,6 +93,7 @@ object UpdateCommand : BaseCommand() {
 object BackupCommand : BaseCommand() {
     override suspend fun run() {
         withServices {
+            synchronizeVegobjekterAndVegnett()
             rocksDbBackupService.createBackup()
         }
     }
@@ -119,7 +120,10 @@ private suspend fun Services.getChangedVegobjektIds(typeId: Int, since: Instant,
 
 private suspend fun Services.exportUpdate(now: Instant, featureType: ExportedFeatureType) {
     log.info("Genererer delta snapshot av TN-ITS ${featureType.typeCode}...")
-    val ids = dirtyCheckingRepository.getDirtyVegobjektIds(featureType.typeId).ifEmpty {
+    val changes = dirtyCheckingRepository.getDirtyVegobjektChanges(featureType.typeId)
+    val ids = if (changes.isNotEmpty()) {
+        changes.map { it.id }.toSet()
+    } else {
         val since = getTimestampFromLastExport()
         getChangedVegobjektIds(featureType.typeId, since, now)
     }

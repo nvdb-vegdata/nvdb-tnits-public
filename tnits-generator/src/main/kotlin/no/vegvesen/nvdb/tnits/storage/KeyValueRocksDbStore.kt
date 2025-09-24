@@ -1,12 +1,10 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.serializer
 import org.rocksdb.RocksDBException
 
-@OptIn(ExperimentalSerializationApi::class)
 class KeyValueRocksDbStore(private val rocksDbContext: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) {
 
     fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
