@@ -68,22 +68,26 @@ class TnitsFeatureGenerator(
         hardcodedFartsgrenseTillatteVerdier
     }
 
-    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>): Flow<TnitsFeatureUpsert> = flow {
+    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>): Flow<TnitsFeature> = flow {
         changesById.keys.forEachChunked(fetchSize) { ids ->
             val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
 
-            TnitsFeatureUpsert(
-                id = TODO(),
-                type = TODO(),
-                geometry = TODO(),
-                properties = TODO(),
-                openLrLocationReferences = TODO(),
-                nvdbLocationReferences = TODO(),
-                validFrom = TODO(),
-                validTo = TODO(),
-                updateType = TODO(),
-                beginLifespanVersion = TODO(),
-            )
+            vegobjekterById.map { (id, vegobjekt) ->
+                val changeType = changesById[id]!!
+
+                if (changeType == ChangeType.DELETED) {
+                    emit(
+                        TnitsFeatureRemoved(
+                            id = id,
+                            type = featureType,
+                        ),
+                    )
+                } else if (vegobjekt == null) {
+                    log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
+                } else {
+                    TODO()
+                }
+            }
         }
     }
 
@@ -183,6 +187,7 @@ class TnitsFeatureGenerator(
 
     private fun fetchSnapshotWorkItemsForRange(idRange: IdRange, propertyMapper: VegobjektPropertyMapper): List<TnitsFeatureUpsertWorkItem> {
         val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
+            .filter { !it.fjernet }
 
         return vegobjekter.mapNotNull { vegobjekt ->
             TnitsFeatureUpsertWorkItem(

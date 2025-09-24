@@ -9,14 +9,20 @@ import org.locationtech.jts.geom.Geometry
 import org.openlr.locationreference.LineLocationReference
 import kotlin.time.Instant
 
-sealed interface TnitsFeature
+sealed interface TnitsFeature {
+    val id: Long
+    val type: ExportedFeatureType
+    val updateType: UpdateType
+}
 
-data class TnitsFeatureRemoved(val id: Long, val type: ExportedFeatureType) : TnitsFeature
+data class TnitsFeatureRemoved(override val id: Long, override val type: ExportedFeatureType) : TnitsFeature {
+    override val updateType: UpdateType = UpdateType.Remove
+}
 
 @Serializable
 data class TnitsFeatureUpsert(
-    val id: Long,
-    val type: ExportedFeatureType,
+    override val id: Long,
+    override val type: ExportedFeatureType,
     @Serializable(with = JtsGeometrySerializer::class)
     val geometry: Geometry,
     val properties: Map<RoadFeaturePropertyType, RoadFeatureProperty>,
@@ -24,7 +30,7 @@ data class TnitsFeatureUpsert(
     val nvdbLocationReferences: List<VegobjektStedfesting>,
     val validFrom: LocalDate,
     val validTo: LocalDate? = null,
-    val updateType: UpdateType,
+    override val updateType: UpdateType,
     val beginLifespanVersion: Instant,
 ) : TnitsFeature {
     val hash by lazy {

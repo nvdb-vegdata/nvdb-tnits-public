@@ -13,6 +13,7 @@ import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
+import no.vegvesen.nvdb.tnits.storage.VegobjektChange
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
@@ -30,11 +31,10 @@ class TnitsFeatureExporter(
     private val minioClient: MinioClient,
 ) : WithLogger {
 
-    suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, ids: Set<Long>) {
-        TODO()
-//        val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, ids)
-//
-//        exportFeatures(timestamp, featureType, featureFlow, ExportType.Update)
+    suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, changes: Collection<VegobjektChange>) {
+        val changesById = changes.associate { it.id to it.changeType }
+        val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, changesById)
+        exportFeatures(timestamp, featureType, featureFlow, ExportType.Update)
     }
 
     private fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
@@ -73,7 +73,7 @@ class TnitsFeatureExporter(
         exportFeatures(timestamp, featureType, speedLimitsFlow, ExportType.Snapshot)
     }
 
-    private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeatureUpsert>, exportType: ExportType) {
+    private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: ExportType) {
         when (exporterConfig.target) {
             ExportTarget.File -> try {
                 val path =
@@ -113,7 +113,7 @@ class TnitsFeatureExporter(
         timestamp: Instant,
         outputStream: OutputStream,
         featureType: ExportedFeatureType,
-        featureFlow: Flow<TnitsFeatureUpsert>,
+        featureFlow: Flow<TnitsFeature>,
         exportType: ExportType,
     ) {
         log.measure("Generating $exportType", logStart = true) {
@@ -138,23 +138,13 @@ class TnitsFeatureExporter(
         }
     }
 
-    private fun getRoadFeatureSourceCode(vegobjektType: Int) = when (vegobjektType) {
-        105 -> "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation"
-        else -> error("Unknown vegobjekt type: $vegobjektType")
-    }
-
-    private fun getRoadFeatureTypeCode(vegobjektType: Int) = when (vegobjektType) {
-        105 -> "speedLimit"
-        else -> error("Unknown vegobjekt type: $vegobjektType")
-    }
-
     private fun XmlStreamDsl.writeFeatureProperty(property: RoadFeatureProperty) {
         when (property) {
             is IntProperty -> text(property.value.toString())
         }
     }
 
-    private fun XmlStreamDsl.writeFeature(feature: TnitsFeatureUpsert, index: Int) {
+    private fun XmlStreamDsl.writeFeature(feature: TnitsFeature, index: Int) {
         "RoadFeature" {
             attribute("gml:id", "RF-$index")
             "id" {
@@ -163,17 +153,11 @@ class TnitsFeatureExporter(
                     "providerId" { "nvdb.no" }
                 }
             }
-            "validFrom" { feature.validFrom }
-            feature.validTo?.let {
-                "validTo" { it }
+            "source" {
+                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
             }
-            "beginLifespanVersion" {
-                feature.beginLifespanVersion
-            }
-            feature.validTo?.let {
-                "endLifespanVersion" {
-                    it.atStartOfDayIn(OsloZone)
-                }
+            "type" {
+                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
             }
             if (feature.updateType != UpdateType.Snapshot) {
                 "updateInfo" {
@@ -182,67 +166,75 @@ class TnitsFeatureExporter(
                     }
                 }
             }
-            "source" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
-            }
-            "type" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
-            }
-            if (feature.properties.any()) {
-                "properties" {
-                    for ((type, property) in feature.properties) {
-                        "GenericRoadFeatureProperty" {
-                            "type" {
-                                attribute(
-                                    "xlink:href",
-                                    "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
-                                )
+            if (feature is TnitsFeatureUpsert) {
+                "validFrom" { feature.validFrom }
+                feature.validTo?.let {
+                    "validTo" { it }
+                }
+                "beginLifespanVersion" {
+                    feature.beginLifespanVersion
+                }
+                feature.validTo?.let {
+                    "endLifespanVersion" {
+                        it.atStartOfDayIn(OsloZone)
+                    }
+                }
+                if (feature.properties.any()) {
+                    "properties" {
+                        for ((type, property) in feature.properties) {
+                            "GenericRoadFeatureProperty" {
+                                "type" {
+                                    attribute(
+                                        "xlink:href",
+                                        "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
+                                    )
+                                }
+                                "value" { writeFeatureProperty(property) }
                             }
-                            "value" { writeFeatureProperty(property) }
                         }
                     }
                 }
-            }
-            "locationReference" {
-                "GeometryLocationReference" {
-                    "encodedGeometry" {
-                        "gml:LineString" {
-                            attribute("srsDimension", "2")
-                            attribute("srsName", "EPSG::4326")
-                            "gml:posList" {
-                                val coordinates = feature.geometry.coordinates
-                                for (i in coordinates.indices) {
-                                    +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
-                                    if (i < coordinates.size - 1) {
-                                        +" "
+                "locationReference" {
+                    "GeometryLocationReference" {
+                        "encodedGeometry" {
+                            "gml:LineString" {
+                                attribute("srsDimension", "2")
+                                attribute("srsName", "EPSG::4326")
+                                "gml:posList" {
+                                    val coordinates = feature.geometry.coordinates
+                                    for (i in coordinates.indices) {
+                                        +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
+                                        if (i < coordinates.size - 1) {
+                                            +" "
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-            for (locationReference in feature.openLrLocationReferences) {
-                "locationReference" {
-                    "OpenLRLocationReference" {
-                        "binaryLocationReference" {
-                            "BinaryLocationReference" {
-                                "base64String" {
-                                    marshaller.marshallToBase64String(locationReference)
-                                }
-                                "openLRBinaryVersion" {
-                                    attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                for (locationReference in feature.openLrLocationReferences) {
+                    "locationReference" {
+                        "OpenLRLocationReference" {
+                            "binaryLocationReference" {
+                                "BinaryLocationReference" {
+                                    "base64String" {
+                                        marshaller.marshallToBase64String(locationReference)
+                                    }
+                                    "openLRBinaryVersion" {
+                                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            for (locationReference in feature.nvdbLocationReferences) {
-                "locationReference" {
-                    "LocationByExternalReference" {
-                        "predefinedLocationReference" {
-                            attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+                for (locationReference in feature.nvdbLocationReferences) {
+                    "locationReference" {
+                        "LocationByExternalReference" {
+                            "predefinedLocationReference" {
+                                attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+                            }
                         }
                     }
                 }

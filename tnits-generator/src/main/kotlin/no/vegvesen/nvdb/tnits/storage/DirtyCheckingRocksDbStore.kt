@@ -1,6 +1,7 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import kotlinx.serialization.protobuf.ProtoBuf
+import no.vegvesen.nvdb.tnits.model.ChangeType
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getStedfestingPrefix
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getStedfestingVegobjektId
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegobjektKey
@@ -9,12 +10,17 @@ import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegob
 class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : DirtyCheckingRepository {
 
     override fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> {
-        val prefix = getVegobjektTypePrefix(vegobjektType)
-        return rocksDbContext.streamValuesByPrefix(ColumnFamily.DIRTY_VEGOBJEKTER, prefix)
+        val directChanges = rocksDbContext.streamValuesByPrefix(ColumnFamily.DIRTY_VEGOBJEKTER, getVegobjektTypePrefix(vegobjektType))
             .map { value ->
                 ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
             }
             .toSet()
+        val indirectChanges = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toList().let { veglenkesekvensIds ->
+            findStedfestingVegobjektIds(veglenkesekvensIds.toSet(), vegobjektType)
+                .map { vegobjektId -> VegobjektChange(vegobjektId, ChangeType.MODIFIED) }
+                .toSet()
+        }
+        return directChanges + indirectChanges
     }
 
     override fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<Long>, vegobjektType: Int): Set<Long> {

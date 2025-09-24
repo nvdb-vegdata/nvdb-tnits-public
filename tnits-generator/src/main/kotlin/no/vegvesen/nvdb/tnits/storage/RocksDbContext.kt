@@ -336,6 +336,16 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
         return values
     }
 
+    fun streamAllKeys(columnFamily: ColumnFamily): Sequence<ByteArray> = sequence {
+        newIterator(columnFamily).use {
+            it.seekToFirst()
+            while (it.isValid) {
+                yield(it.key().clone())
+                it.next()
+            }
+        }
+    }
+
     fun streamKeysByPrefix(columnFamily: ColumnFamily, prefix: ByteArray, startKey: ByteArray = prefix): Sequence<ByteArray> =
         scanByPrefixSequence(columnFamily, prefix, wantValue = false, startKey) { k, _ -> k }
 

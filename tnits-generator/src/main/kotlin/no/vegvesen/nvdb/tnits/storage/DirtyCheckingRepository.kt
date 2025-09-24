@@ -2,7 +2,8 @@ package no.vegvesen.nvdb.tnits.storage
 
 interface DirtyCheckingRepository {
     /**
-     * Retrieves all dirty vegobjekt changes for a specific type.
+     * Retrieves all dirty vegobjekt changes for a specific type. Includes both direct changes
+     * to vegobjekter and indirect changes due to related veglenkesekvenser becoming dirty.
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
      * @return Set of VegobjektChange objects containing ID and change type information
