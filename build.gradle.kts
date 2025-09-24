@@ -2,14 +2,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "2.2.20"
-    kotlin("plugin.serialization") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20" apply false
     id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
     id("com.github.ben-manes.versions") version "0.52.0"
     id("maven-publish")
 }
 
 group = "no.vegvesen.nvdb.tnits"
-version = "1.0.0"
+version = properties["version"]?.toString() ?: "1.0.0-SNAPSHOT"
 
 ktlint {
     version.set("1.7.1")
@@ -39,14 +39,12 @@ publishing {
     }
 }
 
-// Root project has no dependencies - all functionality moved to submodules
-dependencies {
-}
-
 // Configure common settings for all subprojects
 subprojects {
     apply(plugin = "java")
-    apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "com.github.ben-manes.versions")
 
     repositories {
         maven { url = uri("https://repo.osgeo.org/repository/release/") }
@@ -75,6 +73,11 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+    }
+
+    // Configure ktlint for all subprojects
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        version.set("1.7.1")
     }
 }
 

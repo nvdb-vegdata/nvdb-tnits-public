@@ -1,7 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("plugin.serialization")
+    kotlin("jvm")
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.15.0"
     application
@@ -58,7 +56,6 @@ dependencies {
     // CLI parsing
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
 
-
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")
@@ -71,7 +68,6 @@ dependencies {
 }
 
 // Java toolchain and Kotlin compile options are inherited from root project
-
 
 application {
     mainClass.set("no.vegvesen.nvdb.tnits.ApplicationKt")
