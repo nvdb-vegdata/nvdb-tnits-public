@@ -119,8 +119,8 @@ class Services :
 
     val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository, rocksDbContext)
 
-    val speedLimitGenerator =
-        SpeedLimitGenerator(
+    val tnitsFeatureGenerator =
+        TnitsFeatureGenerator(
             veglenkerBatchLookup = { ids ->
                 ids.associateWith {
                     cachedVegnett.getVeglenker(it)
@@ -131,7 +131,7 @@ class Services :
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val tnitsFeatureExporter = TnitsFeatureExporter(speedLimitGenerator, config.exporter, minioClient)
+    val tnitsFeatureExporter = TnitsFeatureExporter(tnitsFeatureGenerator, config.exporter, minioClient)
 
     val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 

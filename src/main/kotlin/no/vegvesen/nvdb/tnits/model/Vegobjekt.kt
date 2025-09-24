@@ -28,6 +28,7 @@ data class Vegobjekt(
     val egenskaper: Map<Int, EgenskapVerdi>,
     val stedfestinger: List<VegobjektStedfesting>,
     val originalStartdato: LocalDate?,
+    val fjernet: Boolean = false,
 )
 
 @Serializable

@@ -8,9 +8,8 @@ import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
-import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.model.toDomainVegobjektUpdates
-import no.vegvesen.nvdb.tnits.model.toDomainVegobjekter
+import no.vegvesen.nvdb.tnits.gateways.VEGOBJEKTER_PAGE_SIZE
+import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
@@ -64,71 +63,101 @@ class VegobjekterService(
         } while (vegobjekter.isNotEmpty())
     }
 
-    private suspend fun getOriginalStartdatoWhereDifferent(typeId: Int, vegobjekter: List<Vegobjekt>): Map<Long, LocalDate> {
+    private suspend fun getOriginalStartdatoWhereDifferent(typeId: Int, vegobjekter: Collection<Vegobjekt>): Map<Long, LocalDate> {
         val vegobjekterThatAreNotFirstVersion = vegobjekter.filter { it.versjon > 1 }.map { it.id }.toSet()
         val validFromById = uberiketApi.getVegobjekterPaginated(typeId, vegobjekterThatAreNotFirstVersion, setOf(InkluderIVegobjekt.GYLDIGHETSPERIODE))
             .toList().groupBy { it.id }.mapValues { it.value.first().gyldighetsperiode!!.startdato.toKotlinLocalDate() }
         return validFromById
     }
 
-    suspend fun updateVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
-        var lastHendelseId =
-            keyValueStore.get<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(
-                typeId,
-                keyValueStore.get<Instant>("vegobjekter_${typeId}_backfill_completed")
-                    ?: error("Backfill for type $typeId er ikke ferdig"),
-            )
+    data class VegobjektChanges(val changesById: MutableMap<Long, ChangeType>, val lastHendelseId: Long)
 
-        var hendelseCount = 0
+    suspend fun getVegobjektChanges(typeId: Int, lastHendelseId: Long): VegobjektChanges {
+        val changesById = mutableMapOf<Long, ChangeType>()
 
-        log.info("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $lastHendelseId")
+        var start = lastHendelseId
 
         do {
-            val response =
-                uberiketApi.getVegobjektHendelser(
-                    typeId = typeId,
-                    start = lastHendelseId,
-                )
+            val response = uberiketApi.getVegobjektHendelser(typeId = typeId, start = start)
 
-            if (response.hendelser.isNotEmpty()) {
-                lastHendelseId = response.hendelser.last().hendelseId
-                val changedIds = response.hendelser.map { it.vegobjektId }.toSet()
-                val vegobjekter = mutableMapOf<Long, Vegobjekt?>()
+            val hendelser = response.hendelser
 
-                val validFromById = mutableMapOf<Long, LocalDate>()
+            start = hendelser.lastOrNull()?.hendelseId ?: start
 
-                changedIds.forEachChunked(100) { chunk ->
-                    var start: Long? = null
-                    do {
-                        val batch = uberiketApi.streamVegobjekter(typeId = typeId, start = start, ider = chunk).toList()
+            for (hendelse in hendelser) {
+                when {
+                    hendelse.hendelseType == "VegobjektImportert" -> changesById[hendelse.vegobjektId] = ChangeType.NEW
+                    hendelse.hendelseType == "VegobjektVersjonOpprettet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
+                        ChangeType.NEW
 
-                        if (batch.isNotEmpty()) {
-                            for (vegobjekt in batch) {
-                                vegobjekter[vegobjekt.id] = vegobjekt
-                            }
-                            if (fetchOriginalStartDate) {
-                                getOriginalStartdatoWhereDifferent(typeId, batch)
-                                    .let(validFromById::plus)
-                            }
-                            start = batch.last().id
-                        }
-                    } while (batch.isNotEmpty())
-                    for (id in chunk.filter { it !in vegobjekter }) {
-                        vegobjekter[id] = null // Deleted
-                    }
+                    hendelse.hendelseType == "VegobjektVersjonFjernet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
+                        ChangeType.DELETED
+
+                    changesById[hendelse.vegobjektId] != ChangeType.NEW -> changesById[hendelse.vegobjektId] = ChangeType.MODIFIED
                 }
-
-                rocksDbContext.writeBatch {
-                    vegobjekterRepository.batchUpdate(typeId, vegobjekter.toDomainVegobjektUpdates(validFromById))
-                    keyValueStore.put("vegobjekter_${typeId}_last_hendelse_id", lastHendelseId)
-                }
-                log.info("Behandlet ${response.hendelser.size} hendelser for type $typeId, siste ID: $lastHendelseId")
-                hendelseCount += response.hendelser.size
             }
-        } while (response.hendelser.isNotEmpty())
-        log.info("Oppdatering av vegobjekter type $typeId fullført. Siste hendelse-ID: $lastHendelseId")
-        return hendelseCount
+        } while (hendelser.isNotEmpty())
+
+        return VegobjektChanges(changesById, start)
     }
+
+    suspend fun updateVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
+        val previousHendelseId = getLastHendelseId(typeId)
+
+        log.info("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $previousHendelseId")
+
+        val (changesById, latestHendelseId) = getVegobjektChanges(typeId, previousHendelseId)
+
+        if (changesById.isEmpty()) {
+            log.info("Ingen endringer funnet for type $typeId siden hendelse-ID $previousHendelseId")
+            return 0
+        }
+
+        val vegobjekterById = fetchVegobjekterByIds(typeId, changesById.keys)
+
+        val validFromById = mutableMapOf<Long, LocalDate>()
+
+        if (fetchOriginalStartDate) {
+            getOriginalStartdatoWhereDifferent(typeId, vegobjekterById.values)
+                .let(validFromById::plus)
+        }
+
+        val updatesById = changesById.mapValues { (id, changeType) ->
+            if (changeType == ChangeType.DELETED) {
+                VegobjektUpdate(id, changeType)
+            } else {
+                val apiVegobjekt = vegobjekterById[id]
+                    ?: error("Forventet vegobjekt med ID $id for endringstype $changeType")
+                val domainVegobjekt = apiVegobjekt.toDomain(validFromById[id])
+                VegobjektUpdate(id, changeType, domainVegobjekt)
+            }
+        }
+
+        rocksDbContext.writeBatch {
+            vegobjekterRepository.batchUpdate(typeId, updatesById)
+            keyValueStore.put("vegobjekter_${typeId}_last_hendelse_id", latestHendelseId)
+        }
+
+        return changesById.size
+    }
+
+    private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Collection<Long>): MutableMap<Long, Vegobjekt> {
+        val vegobjekterById = mutableMapOf<Long, Vegobjekt>()
+
+        ids.forEachChunked(VEGOBJEKTER_PAGE_SIZE) { ids ->
+            uberiketApi.streamVegobjekter(typeId = typeId, ider = ids).collect {
+                vegobjekterById[it.id] = it
+            }
+        }
+        return vegobjekterById
+    }
+
+    private suspend fun getLastHendelseId(typeId: Int): Long =
+        keyValueStore.get<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(
+            typeId,
+            keyValueStore.get<Instant>("vegobjekter_${typeId}_backfill_completed")
+                ?: error("Backfill for type $typeId er ikke ferdig"),
+        )
 }
 
 fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val stedfesting = this.stedfesting) {

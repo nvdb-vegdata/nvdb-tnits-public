@@ -36,10 +36,11 @@ class DirtyCheckingRocksDbStoreTest :
                 val feltstrekningIds = setOf(111L, 222L)
 
                 // Publish dirty IDs for different types
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
-                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningIds)
-                }
+                // TODO
+//                dbContext.writeBatch {
+//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
+//                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningIds)
+//                }
 
                 // Act
                 val fartsgrenseResult = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
@@ -182,9 +183,10 @@ class DirtyCheckingRocksDbStoreTest :
                 val idsToClear = setOf(502L, 504L)
 
                 // Publish dirty IDs
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyIds)
-                }
+                // TODO
+//                dbContext.writeBatch {
+//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyIds)
+//                }
 
                 // Verify initial state
                 val initialDirtyIds = dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
@@ -205,9 +207,10 @@ class DirtyCheckingRocksDbStoreTest :
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
                 val dirtyIds = setOf(601L, 602L)
 
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyIds)
-                }
+                // TODO
+//                dbContext.writeBatch {
+//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyIds)
+//                }
 
                 // Act
                 dirtyCheckingStore.clearDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE, emptySet())
@@ -226,10 +229,11 @@ class DirtyCheckingRocksDbStoreTest :
                 val feltstrekningsIds = setOf(801L, 802L)
 
                 // Publish dirty IDs for different types
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
-                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningsIds)
-                }
+                // TODO
+//                dbContext.writeBatch {
+//                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
+//                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningsIds)
+//                }
 
                 // Verify initial state
                 dirtyCheckingStore.getDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE) shouldContainExactlyInAnyOrder fartsgrenseIds

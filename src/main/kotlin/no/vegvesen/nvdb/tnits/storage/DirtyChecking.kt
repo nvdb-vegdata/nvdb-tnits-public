@@ -1,20 +1,28 @@
 package no.vegvesen.nvdb.tnits.storage
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoBuf
+import no.vegvesen.nvdb.tnits.model.ChangeType
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore.Companion.getVegobjektKey
 import kotlin.time.Clock
 
 fun WriteBatchContext.publishChangedVeglenkesekvenser(veglenkesekvensIds: Set<Long>) {
     val now = Clock.System.now()
-    val dirtyVeglenkesekvenserUpserts = veglenkesekvensIds.map {
+    val operations = veglenkesekvensIds.map {
         BatchOperation.Put(it.toByteArray(), now.toEpochMilliseconds().toByteArray())
     }
-    write(ColumnFamily.DIRTY_VEGLENKESEKVENSER, dirtyVeglenkesekvenserUpserts)
+    write(ColumnFamily.DIRTY_VEGLENKESEKVENSER, operations)
 }
 
-fun WriteBatchContext.publishChangedVegobjekter(vegobjektType: Int, vegobjektIds: Set<Long>) {
-    val now = Clock.System.now()
-    val dirtyVegobjekterUpserts = vegobjektIds.map {
-        BatchOperation.Put(getVegobjektKey(vegobjektType, it), now.toEpochMilliseconds().toByteArray())
+@OptIn(ExperimentalSerializationApi::class)
+fun WriteBatchContext.publishChangedVegobjekter(vegobjektType: Int, changes: Collection<VegobjektChange>) {
+    val operations = changes.map {
+        val value = ProtoBuf.encodeToByteArray(VegobjektChange.serializer(), it)
+        BatchOperation.Put(getVegobjektKey(vegobjektType, it.id), value)
     }
-    write(ColumnFamily.DIRTY_VEGOBJEKTER, dirtyVegobjekterUpserts)
+    write(ColumnFamily.DIRTY_VEGOBJEKTER, operations)
 }
+
+@Serializable
+data class VegobjektChange(val id: Long, val changeType: ChangeType)

@@ -10,6 +10,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
+import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
@@ -20,15 +21,6 @@ import no.vegvesen.nvdb.tnits.utilities.measure
 import kotlin.time.Instant
 
 typealias VeglenkerBatchLookup = (Collection<Long>) -> Map<Long, List<Veglenke>>
-
-data class SpeedLimitWorkItem(
-    val id: Long,
-    val kmh: Int,
-    val stedfestingLinjer: List<VegobjektStedfesting>,
-    val validFrom: LocalDate,
-    val validTo: LocalDate?,
-    val beginLifespanVersion: Instant,
-)
 
 data class TnitsFeatureUpsertWorkItem(
     val id: Long,
@@ -48,7 +40,7 @@ data class TnitsFeatureUpsertWorkItem(
 
 data class IdRange(val startId: Long, val endId: Long)
 
-class SpeedLimitGenerator(
+class TnitsFeatureGenerator(
     private val veglenkerBatchLookup: VeglenkerBatchLookup,
     private val datakatalogApi: DatakatalogApi,
     private val openLrService: OpenLrService,
@@ -76,30 +68,34 @@ class SpeedLimitGenerator(
         hardcodedFartsgrenseTillatteVerdier
     }
 
-    fun generateSpeedLimitsUpdate(ids: Set<Long>): Flow<TnitsFeature> = flow {
-//        while (true) {
-//            val changedIds =
-//                transaction {
-//                    Vegobjekter
-//                        .select(Vegobjekter.vegobjektId)
-//                        .where {
-//                            (Vegobjekter.vegobjektType eq VegobjektTyper.FARTSGRENSE) and
-//                                (Vegobjekter.sistEndret greaterEq sinceOffset) and
-//                                (Vegobjekter.vegobjektId greater paginationId)
-//                        }.orderBy(Vegobjekter.vegobjektId)
-//                        .limit(superBatchSize)
-//                        .map { it[Vegobjekter.vegobjektId] }
-//                }
-//            if (changedIds.isEmpty()) {
-//                break
-//            }
-//            paginationId = changedIds.last()
-//        }
+    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>): Flow<TnitsFeatureUpsert> = flow {
+        changesById.keys.forEachChunked(fetchSize) { ids ->
+            val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
 
-        TODO()
+            TnitsFeatureUpsert(
+                id = TODO(),
+                type = TODO(),
+                geometry = TODO(),
+                properties = TODO(),
+                openLrLocationReferences = TODO(),
+                nvdbLocationReferences = TODO(),
+                validFrom = TODO(),
+                validTo = TODO(),
+                updateType = TODO(),
+                beginLifespanVersion = TODO(),
+            )
+        }
     }
 
-    fun getSpeedLimitProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
+    fun interface VegobjektPropertyMapper {
+        fun getFeatureProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty>
+    }
+
+    fun getPropertyMapper(type: ExportedFeatureType): VegobjektPropertyMapper = when (type) {
+        ExportedFeatureType.SpeedLimit -> VegobjektPropertyMapper(::getSpeedLimitProperties)
+    }
+
+    private fun getSpeedLimitProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
         val kmhEnum = vegobjekt.egenskaper[EgenskapsTyper.FARTSGRENSE] as? EnumVerdi ?: return emptyMap()
         val kmh = kmhByEgenskapVerdi[kmhEnum.verdi] ?: error("Ukjent verdi for fartsgrense: ${kmhEnum.verdi}")
         return mapOf(
@@ -107,23 +103,24 @@ class SpeedLimitGenerator(
         )
     }
 
-    fun generateSpeedLimitsSnapshot(): Flow<TnitsFeature> = flow {
-        val totalCount = vegobjekterRepository.countVegobjekter(VegobjektTyper.FARTSGRENSE)
+    fun generateSnapshot(featureType: ExportedFeatureType): Flow<TnitsFeatureUpsert> = flow {
+        val totalCount = vegobjekterRepository.countVegobjekter(featureType.typeId)
 
         var count = 0
 
-        vegobjekterRepository.findVegobjektIds(VegobjektTyper.FARTSGRENSE).chunked(superBatchSize).forEach { ids ->
+        vegobjekterRepository.findVegobjektIds(featureType.typeId).chunked(superBatchSize).forEach { ids ->
 
-            log.measure("Behandler superbatch med ${ids.size} fartsgrenser, starter med id ${ids.first()}, totalt $count av $totalCount") {
+            log.measure("Behandler superbatch med ${ids.size} ${featureType.typeCode}, starter med id ${ids.first()}, totalt $count av $totalCount") {
                 // Create ranges of work for parallel processing
                 val idRanges = createIdRanges(ids)
 
                 // Process ranges in parallel - each worker fetches and processes its range
-                val speedLimits: List<TnitsFeature> = processIdRangesInParallel(idRanges, ::getSpeedLimitProperties)
+                val getFeatureProperties = getPropertyMapper(featureType)
+                val features: List<TnitsFeatureUpsert> = processIdRangesInParallel(idRanges, getFeatureProperties)
 
-                count += speedLimits.size
-                speedLimits.sortedBy { it.id }.forEach { speedLimit ->
-                    emit(speedLimit)
+                count += features.size
+                features.sortedBy { it.id }.forEach { feature ->
+                    emit(feature)
                 }
             }
         }
@@ -153,23 +150,18 @@ class SpeedLimitGenerator(
         }
     }
 
-    private suspend fun processIdRangesInParallel(
-        idRanges: List<IdRange>,
-        getFeatureProperties: (vegobjekt: Vegobjekt) -> Map<RoadFeaturePropertyType, RoadFeatureProperty>,
-    ): List<TnitsFeature> = coroutineScope {
-        idRanges
-            .map { idRange ->
-                async {
-                    processIdRange(idRange, getFeatureProperties)
-                }
-            }.awaitAll()
-            .flatten()
-    }
+    private suspend fun processIdRangesInParallel(idRanges: List<IdRange>, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> =
+        coroutineScope {
+            idRanges
+                .map { idRange ->
+                    async {
+                        processIdRange(idRange, getFeatureProperties)
+                    }
+                }.awaitAll()
+                .flatten()
+        }
 
-    private fun processIdRange(
-        idRange: IdRange,
-        getFeatureProperties: (vegobjekt: Vegobjekt) -> Map<RoadFeaturePropertyType, RoadFeatureProperty>,
-    ): List<TnitsFeature> = try {
+    private fun processIdRange(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> = try {
         // Each worker fetches and processes its own data range
         val workItems = fetchSnapshotWorkItemsForRange(idRange, getFeatureProperties)
         check(workItems.size <= fetchSize) {
@@ -189,17 +181,14 @@ class SpeedLimitGenerator(
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
-    private fun fetchSnapshotWorkItemsForRange(
-        idRange: IdRange,
-        getXmlProperties: (vegobjekt: Vegobjekt) -> Map<RoadFeaturePropertyType, RoadFeatureProperty>,
-    ): List<TnitsFeatureUpsertWorkItem> {
+    private fun fetchSnapshotWorkItemsForRange(idRange: IdRange, propertyMapper: VegobjektPropertyMapper): List<TnitsFeatureUpsertWorkItem> {
         val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
 
         return vegobjekter.mapNotNull { vegobjekt ->
             TnitsFeatureUpsertWorkItem(
                 id = vegobjekt.id,
                 type = ExportedFeatureType.from(vegobjekt.type),
-                properties = getXmlProperties(vegobjekt),
+                properties = propertyMapper.getFeatureProperties(vegobjekt),
                 stedfestingLinjer = vegobjekt.stedfestinger,
                 validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
                 validTo = vegobjekt.sluttdato,
@@ -209,7 +198,7 @@ class SpeedLimitGenerator(
         }
     }
 
-    private fun createFeature(workItem: TnitsFeatureUpsertWorkItem): TnitsFeature {
+    private fun createFeature(workItem: TnitsFeatureUpsertWorkItem): TnitsFeatureUpsert {
         val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
 
         val overlappendeVeglenker = veglenkerBatchLookup(veglenkesekvensIds)
@@ -238,7 +227,7 @@ class SpeedLimitGenerator(
                 workItem.stedfestingLinjer,
             )
 
-        return TnitsFeature(
+        return TnitsFeatureUpsert(
             id = workItem.id,
             type = workItem.type,
             properties = workItem.properties,

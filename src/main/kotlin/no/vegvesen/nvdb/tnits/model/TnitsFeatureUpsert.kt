@@ -10,8 +10,12 @@ import org.locationtech.jts.geom.Geometry
 import org.openlr.locationreference.LineLocationReference
 import kotlin.time.Instant
 
+sealed interface TnitsFeature
+
+data class TnitsFeatureRemoved(val id: Long, val type: ExportedFeatureType) : TnitsFeature
+
 @Serializable
-data class TnitsFeature(
+data class TnitsFeatureUpsert(
     val id: Long,
     val type: ExportedFeatureType,
     @Serializable(with = JtsGeometrySerializer::class)
@@ -23,7 +27,7 @@ data class TnitsFeature(
     val validTo: LocalDate? = null,
     val updateType: UpdateType,
     val beginLifespanVersion: Instant,
-) {
+) : TnitsFeature {
     @OptIn(ExperimentalSerializationApi::class)
     val hash by lazy {
         ProtoBuf.encodeToByteArray(serializer(), this).getHash()

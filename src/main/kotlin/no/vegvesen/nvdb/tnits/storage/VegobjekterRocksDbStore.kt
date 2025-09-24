@@ -5,10 +5,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.IdRange
 import no.vegvesen.nvdb.tnits.mainVegobjektTyper
-import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
-import no.vegvesen.nvdb.tnits.model.Vegobjekt
-import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.model.overlaps
+import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
 import java.nio.ByteBuffer
 
@@ -19,6 +16,12 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
     override fun findVegobjektIds(vegobjektType: Int): Sequence<Long> {
         val prefix = getVegobjektTypePrefix(vegobjektType)
         return rocksDbContext.streamKeysByPrefix(columnFamily, prefix).map(::getVegobjektId)
+    }
+
+    override fun findVegobjekter(vegobjektType: Int, ids: Collection<Long>): Map<Long, Vegobjekt?> {
+        val keys = ids.map { getVegobjektKey(vegobjektType, it) }
+        val values = rocksDbContext.getBatch(columnFamily, keys).map { it?.toVegobjekt() }
+        return ids.mapIndexed { i, id -> id to values[i] }.toMap()
     }
 
     override fun countVegobjekter(vegobjektType: Int): Int {
@@ -105,23 +108,26 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
     }
 
     context(context: WriteBatchContext)
-    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, Vegobjekt?>) {
+    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>) {
         val dirtyVeglenkesekvenser = mutableSetOf<Long>()
-        for ((vegobjektId, vegobjekt) in updates) {
+        for ((vegobjektId, update) in updates) {
             val vegobjektKey = getVegobjektKey(vegobjektType, vegobjektId)
 
-            if (vegobjekt == null) {
+            if (update.changeType == ChangeType.DELETED) {
                 val existingVegobjekt = rocksDbContext.get(columnFamily, vegobjektKey)?.toVegobjekt()
                     ?: continue // Already deleted
+                val vegobjektDeletion = createVegobjektDeletion(existingVegobjekt)
+                context.write(columnFamily, vegobjektDeletion)
 
                 val stedfestingerDeletions = existingVegobjekt.stedfestinger.map {
                     dirtyVeglenkesekvenser.add(it.veglenkesekvensId)
                     getStedfestingKey(it.veglenkesekvensId, vegobjektType, vegobjektId)
                 }.toSet().map { BatchOperation.Delete(it) }
 
-                context.write(columnFamily, BatchOperation.Delete(vegobjektKey))
                 context.write(columnFamily, stedfestingerDeletions)
             } else {
+                val vegobjekt = update.vegobjekt
+                    ?: error("Vegobjekt must be provided for change type ${update.changeType} (id=$vegobjektId)")
                 val vegobjektUpsert = createVegobjektUpsert(vegobjekt)
                 context.write(columnFamily, vegobjektUpsert)
 
@@ -138,7 +144,7 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
 
         // TODO: Consider returning changed IDs instead and handling publishing outside the repository
         if (vegobjektType in mainVegobjektTyper) {
-            context.publishChangedVegobjekter(vegobjektType, updates.keys)
+            context.publishChangedVegobjekter(vegobjektType, updates.map { VegobjektChange(it.key, it.value.changeType) })
         }
 
         if (vegobjektType in supportingVegobjektTyper) {
@@ -178,6 +184,8 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         val removedVedlenkesekvensIds = existingStedfestinger.keys - stedfestingerByVeglenkesekvens.keys
         return removedVedlenkesekvensIds
     }
+
+    private fun createVegobjektDeletion(vegobjekt: Vegobjekt): BatchOperation.Put = createVegobjektUpsert(vegobjekt.copy(fjernet = true))
 
     private fun createVegobjektUpsert(vegobjekt: Vegobjekt): BatchOperation.Put {
         val serializedVegobjekt = ProtoBuf.encodeToByteArray(Vegobjekt.serializer(), vegobjekt)

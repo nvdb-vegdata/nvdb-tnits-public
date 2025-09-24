@@ -25,15 +25,16 @@ import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
 class TnitsFeatureExporter(
-    private val speedLimitGenerator: SpeedLimitGenerator,
+    private val tnitsFeatureGenerator: TnitsFeatureGenerator,
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
 ) : WithLogger {
 
-    suspend fun generateSpeedLimitsDeltaUpdate(now: Instant, ids: Set<Long>) {
-        val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsUpdate(ids)
-
-        exportFeatures(now, ExportedFeatureType.SpeedLimit, speedLimitsFlow, ExportType.Update)
+    suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, ids: Set<Long>) {
+        TODO()
+//        val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, ids)
+//
+//        exportFeatures(timestamp, featureType, featureFlow, ExportType.Update)
     }
 
     private fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
@@ -65,13 +66,14 @@ class TnitsFeatureExporter(
         }
     }
 
-    suspend fun exportSpeedLimitsFullSnapshot(timestamp: Instant) {
-        val speedLimitsFlow = speedLimitGenerator.generateSpeedLimitsSnapshot()
+    suspend fun exportSnapshot(timestamp: Instant, featureType: ExportedFeatureType) {
+        log.info("Eksporterer fullt snapshot av ${featureType.typeCode}...")
+        val speedLimitsFlow = tnitsFeatureGenerator.generateSnapshot(featureType)
 
-        exportFeatures(timestamp, ExportedFeatureType.SpeedLimit, speedLimitsFlow, ExportType.Snapshot)
+        exportFeatures(timestamp, featureType, speedLimitsFlow, ExportType.Snapshot)
     }
 
-    private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: ExportType) {
+    private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeatureUpsert>, exportType: ExportType) {
         when (exporterConfig.target) {
             ExportTarget.File -> try {
                 val path =
@@ -111,7 +113,7 @@ class TnitsFeatureExporter(
         timestamp: Instant,
         outputStream: OutputStream,
         featureType: ExportedFeatureType,
-        featureFlow: Flow<TnitsFeature>,
+        featureFlow: Flow<TnitsFeatureUpsert>,
         exportType: ExportType,
     ) {
         log.measure("Generating $exportType", logStart = true) {
@@ -152,7 +154,7 @@ class TnitsFeatureExporter(
         }
     }
 
-    private fun XmlStreamDsl.writeFeature(feature: TnitsFeature, index: Int) {
+    private fun XmlStreamDsl.writeFeature(feature: TnitsFeatureUpsert, index: Int) {
         "RoadFeature" {
             attribute("gml:id", "RF-$index")
             "id" {

@@ -8,8 +8,12 @@ import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.launch
 import no.vegvesen.nvdb.tnits.Services.Companion.withServices
+import no.vegvesen.nvdb.tnits.extensions.toOffsetDateTime
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.utilities.measure
@@ -70,7 +74,7 @@ object SnapshotCommand : BaseCommand() {
     override suspend fun run() {
         withServices {
             val now = synchronizeVegobjekterAndVegnett()
-            exportSpeedLimitsSnapshot(now)
+            tnitsFeatureExporter.exportSnapshot(now, ExportedFeatureType.SpeedLimit)
             performBackupIfNeeded()
         }
     }
@@ -80,7 +84,7 @@ object UpdateCommand : BaseCommand() {
     override suspend fun run() {
         withServices {
             val now = synchronizeVegobjekterAndVegnett()
-            exportSpeedLimitsUpdate(now)
+            exportUpdate(now, ExportedFeatureType.SpeedLimit)
             performBackupIfNeeded()
         }
     }
@@ -104,24 +108,29 @@ object AutoCommand : BaseCommand() {
     }
 }
 
-private fun Services.exportSpeedLimitsUpdate(now: Instant) {
-    log.info("Genererer delta snapshot av TN-ITS fartsgrenser...")
-    // Plan A: Finn endrede vegobjekter basert på DIRTY tabeller
+private suspend fun Services.getChangedVegobjektIds(typeId: Int, since: Instant, until: Instant): Set<Long> {
+    val untilOffset = until.toOffsetDateTime()
+    // TODO: Vi håndterer bare direkte endringer, ikke endringer som følge av endringer i vegnett eller FRC
+    return uberiketApi.getVegobjektHendelserPaginated(typeId, since)
+        .takeWhile { it.tidspunkt < untilOffset }
+        .map { it.vegobjektId }
+        .toSet()
+}
 
-//    dirtyCheckingRepository.getDirtyVegobjektIds()
+private suspend fun Services.exportUpdate(now: Instant, featureType: ExportedFeatureType) {
+    log.info("Genererer delta snapshot av TN-ITS ${featureType.typeCode}...")
+    val ids = dirtyCheckingRepository.getDirtyVegobjektIds(featureType.typeId).ifEmpty {
+        val since = getTimestampFromLastExport()
+        getChangedVegobjektIds(featureType.typeId, since, now)
+    }
+    tnitsFeatureExporter.exportUpdate(now, featureType, ids)
+}
 
-    // Plan B (backup): Finn siste eksport-tidspunkt fra S3 og finn vegobjekter endret siden da
-    val since = s3TimestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
+private fun Services.getTimestampFromLastExport(): Instant = (
+    s3TimestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
         ?: s3TimestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
         ?: error("Ingen tidligere snapshot eller oppdateringstidspunkt funnet for fartsgrenser")
-
-//    tnitsFeatureExporter.generateSpeedLimitsDeltaUpdate(now, since)
-}
-
-private suspend fun Services.exportSpeedLimitsSnapshot(now: Instant) {
-    log.info("Genererer fullt snapshot av TN-ITS fartsgrenser...")
-    tnitsFeatureExporter.exportSpeedLimitsFullSnapshot(now)
-}
+    )
 
 private suspend fun Services.performBackfill() {
     coroutineScope {
@@ -154,13 +163,13 @@ private suspend fun Services.performUpdateAndGetTimestamp(): Instant {
                 async {
                     veglenkesekvenserService.updateVeglenkesekvenser()
                 }
-            val vegobjekterHendelseCounts =
+            val changedMainVegobjekterCounts =
                 mainVegobjektTyper.map { typeId ->
                     async {
                         vegobjekterService.updateVegobjekter(typeId, true)
                     }
                 }
-            val vegobjekterSupportingHendelseCounts =
+            val changedSupportingVegobjekterCounts =
                 supportingVegobjektTyper.map { typeId ->
                     async {
                         vegobjekterService.updateVegobjekter(typeId, false)
@@ -168,7 +177,8 @@ private suspend fun Services.performUpdateAndGetTimestamp(): Instant {
                 }
 
             val total =
-                veglenkesekvensHendelseCount.await() + vegobjekterHendelseCounts.sumOf { it.await() } + vegobjekterSupportingHendelseCounts.sumOf { it.await() }
+                veglenkesekvensHendelseCount.await() + changedMainVegobjekterCounts.sumOf { it.await() } +
+                    changedSupportingVegobjekterCounts.sumOf { it.await() }
         } while (total > 0)
     }
     return now

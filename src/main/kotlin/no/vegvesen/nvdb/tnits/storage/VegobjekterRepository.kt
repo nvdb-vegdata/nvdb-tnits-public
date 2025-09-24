@@ -3,10 +3,11 @@ package no.vegvesen.nvdb.tnits.storage
 import no.vegvesen.nvdb.tnits.IdRange
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.model.VegobjektUpdate
 
 interface VegobjekterRepository {
     context(_: WriteBatchContext)
-    fun batchUpdate(vegobjektType: Int, updates: Map<Long, Vegobjekt?>)
+    fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>)
 
     context(_: WriteBatchContext)
     fun batchInsert(vegobjektType: Int, vegobjekter: List<Vegobjekt>)
@@ -21,4 +22,5 @@ interface VegobjekterRepository {
 
     fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<Vegobjekt>>
     fun countVegobjekter(vegobjektType: Int): Int
+    fun findVegobjekter(vegobjektType: Int, ids: Collection<Long>): Map<Long, Vegobjekt?>
 }
