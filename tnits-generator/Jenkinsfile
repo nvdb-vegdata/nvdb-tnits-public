@@ -1,7 +1,10 @@
 @Library("nvdb-jenkins-assistant@main") _
 
 def config
-node { config = readYaml file: 'jenkins/config.yml' }
+node {
+    checkout(scm).each { k, v -> env.setProperty(k, v) }
+    config = readYaml file: 'jenkins/config.yml'
+}
 
 def deployName = 'nvdbapiles-tnits-generator'
 
