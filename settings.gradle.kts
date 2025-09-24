@@ -1,3 +1,3 @@
-rootProject.name = "nvdb-tnits-prototype"
+rootProject.name = "nvdb-tnits-public"
 
 include("tnits-generator")
