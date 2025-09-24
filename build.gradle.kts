@@ -7,7 +7,12 @@ plugins {
     id("org.openapi.generator") version "7.15.0"
     id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
     id("com.github.ben-manes.versions") version "0.52.0"
-    application
+//    application
+    id("maven-publish")
+}
+
+tasks.named("jar") {
+    enabled = false
 }
 
 group = "no.vegvesen.nvdb.tnits"
@@ -20,6 +25,25 @@ ktlint {
 repositories {
     maven { url = uri("https://repo.osgeo.org/repository/release/") }
     mavenCentral()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = properties["artrepoUser"].toString()
+                password = properties["artrepoPass"].toString()
+            }
+            val releaseRepo = "https://artrepo.vegvesen.no/artifactory/libs-release-local"
+            val snapshotRepo = "https://artrepo.vegvesen.no/artifactory/libs-snapshot-local"
+            url = uri(if ((version.toString()).endsWith("SNAPSHOT")) snapshotRepo else releaseRepo)
+        }
+    }
 }
 
 dependencies {
@@ -82,9 +106,9 @@ dependencies {
     testImplementation("org.testcontainers:minio:1.21.3")
 }
 
-application {
-    mainClass.set("no.vegvesen.nvdb.tnits.ApplicationKt")
-}
+//application {
+//    mainClass.set("no.vegvesen.nvdb.tnits.ApplicationKt")
+//}
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {

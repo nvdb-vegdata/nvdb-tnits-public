@@ -1,0 +1,6 @@
+credentials:
+  refreshToken: 'refreshToken-Nvdbapil'
+releaseBranch: 'main'
+iktlosning: 'nvdbapil'
+baseImage: 'openjdk21'
+slackChannel: 'digital-drivkraft-pr'
