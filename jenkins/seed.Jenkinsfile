@@ -10,7 +10,7 @@ pipeline {
 		stage('Seed'){
 			steps {
 				script {config = readYaml file:'jenkins/config.yml'}
-				mono rootFolder: 'nvdb-tnits-prototype', credentialsId: config.credentials.git, view: 'TN-ITS Eksport - Prototype'
+				mono rootFolder: 'nvdb-tnits-public', credentialsId: config.credentials.git, view: 'TN-ITS Eksport'
 			}
 		}
 	}
