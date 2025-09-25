@@ -36,6 +36,10 @@ class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : Di
         return vegobjektIds
     }
 
+    override fun clearAllDirtyVeglenkesekvenser() {
+        rocksDbContext.clear(ColumnFamily.DIRTY_VEGLENKESEKVENSER)
+    }
+
     override fun clearDirtyVegobjektIds(vegobjektType: Int, vegobjektIds: Set<Long>) {
         if (vegobjektIds.isEmpty()) return
 

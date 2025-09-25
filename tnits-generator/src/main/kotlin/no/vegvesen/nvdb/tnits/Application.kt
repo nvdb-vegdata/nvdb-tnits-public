@@ -122,9 +122,19 @@ private suspend fun Services.exportUpdate(now: Instant, featureType: ExportedFea
     log.info("Genererer delta snapshot av TN-ITS ${featureType.typeCode}...")
     val vegobjektChanges = dirtyCheckingRepository.getDirtyVegobjektChanges(featureType.typeId)
 
+    if (vegobjektChanges.isEmpty()) {
+        log.info("Ingen endringer siden forrige eksport, hopper over eksport")
+        return
+    }
+
+    log.info("Eksporterer ${vegobjektChanges.size} endrede vegobjekter for TN-ITS ${featureType.typeCode}...")
+
     // TODO: Handle if we lose dirty checking data (e.g., after a crash), by checking timestamp for latest export, and fetching hendelser
 
     tnitsFeatureExporter.exportUpdate(now, featureType, vegobjektChanges)
+
+    dirtyCheckingRepository.clearAllDirtyVegobjektIds(featureType.typeId)
+    dirtyCheckingRepository.clearAllDirtyVeglenkesekvenser()
 }
 
 private fun Services.getTimestampFromLastExport(): Instant = (

@@ -284,6 +284,85 @@ class DirtyCheckingRocksDbStoreTest :
                 result.shouldBeEmpty()
             }
         }
+
+        "clearAllDirtyVeglenkesekvenser should remove all dirty veglenkesekvens IDs" {
+            withTempDb { dbContext ->
+                // Arrange
+                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+                val dirtyVeglenkesekvensIds = setOf(1001L, 1002L, 1003L)
+
+                // Create vegobjekt positioned on one of the dirty veglenkesekvenser to test indirect changes
+                val vegobjekt = createTestVegobjekt(
+                    id = 901L,
+                    type = VegobjektTyper.FARTSGRENSE,
+                    stedfestinger = listOf(
+                        VegobjektStedfesting(1001L, 0.0, 1.0),
+                    ),
+                )
+                vegobjekterStore.insert(vegobjekt)
+
+                // Publish dirty veglenkesekvenser
+                dbContext.writeBatch {
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
+                }
+
+                // Verify initial state - should include indirect changes
+                val initialChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                initialChanges shouldHaveSize 1
+                initialChanges shouldContain VegobjektChange(901L, ChangeType.MODIFIED)
+
+                // Act
+                dirtyCheckingStore.clearAllDirtyVeglenkesekvenser()
+
+                // Assert - dirty veglenkesekvenser cleared, so no indirect changes
+                val remainingChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                remainingChanges.shouldBeEmpty()
+            }
+        }
+
+        "clearAllDirtyVeglenkesekvenser should handle empty state gracefully" {
+            withTempDb { dbContext ->
+                // Arrange
+                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
+
+                // Act
+                dirtyCheckingStore.clearAllDirtyVeglenkesekvenser()
+
+                // Assert - should not throw any exceptions
+                val changes = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                changes.shouldBeEmpty()
+            }
+        }
+
+        "clearAllDirtyVeglenkesekvenser should only affect veglenkesekvenser and not vegobjekt changes" {
+            withTempDb { dbContext ->
+                // Arrange
+                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
+                val dirtyVeglenkesekvensIds = setOf(2001L, 2002L)
+                val dirtyVegobjektChanges = listOf(
+                    VegobjektChange(1001L, ChangeType.NEW),
+                    VegobjektChange(1002L, ChangeType.MODIFIED),
+                )
+
+                // Publish both dirty veglenkesekvenser and direct vegobjekt changes
+                dbContext.writeBatch {
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyVegobjektChanges)
+                }
+
+                // Verify initial state includes both direct and indirect changes
+                val initialChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                initialChanges shouldContainExactlyInAnyOrder dirtyVegobjektChanges
+
+                // Act
+                dirtyCheckingStore.clearAllDirtyVeglenkesekvenser()
+
+                // Assert - only direct vegobjekt changes should remain
+                val remainingChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+                remainingChanges shouldContainExactlyInAnyOrder dirtyVegobjektChanges
+            }
+        }
     })
 
 private fun createTestVegobjekt(id: Long, type: Int, stedfestinger: List<VegobjektStedfesting>): Vegobjekt = Vegobjekt(

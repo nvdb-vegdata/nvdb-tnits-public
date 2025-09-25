@@ -1,19 +1,19 @@
 package no.vegvesen.nvdb.tnits
 
 import io.minio.MinioClient
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.uberiket.Retning
-import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.model.*
+import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import no.vegvesen.nvdb.tnits.storage.VegobjektChange
+import no.vegvesen.nvdb.tnits.storage.VegobjekterHashStore
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
@@ -29,12 +29,29 @@ class TnitsFeatureExporter(
     private val tnitsFeatureGenerator: TnitsFeatureGenerator,
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
+    private val hashStore: VegobjekterHashStore,
+    private val rocksDbContext: RocksDbContext,
 ) : WithLogger {
 
     suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, changes: Collection<VegobjektChange>) {
         val changesById = changes.associate { it.id to it.changeType }
         val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, changesById)
+            .chunked(1000).map { features ->
+
+                val hashes = hashStore.batchGet(featureType.typeId, features.map { it.id })
+
+                features.filter { hashes[it.id] != it.hash }
+            }
+            .flatMapConcat { it.asFlow() }
+
         exportFeatures(timestamp, featureType, featureFlow, ExportType.Update)
+
+        rocksDbContext.writeBatch {
+            featureFlow.chunked(1000).collect { featuresToUpdateHash ->
+                val hashesById = featuresToUpdateHash.associate { it.id to it.hash }
+                hashStore.batchUpdate(featureType.typeId, hashesById)
+            }
+        }
     }
 
     private fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
@@ -124,7 +141,7 @@ class TnitsFeatureExporter(
             ) {
                 "metadata" {
                     "Metadata" {
-                        "datasetId" { "NVDB-TNITS-${featureType}_$timestamp" }
+                        "datasetId" { "NVDB-TNITS-${featureType}_${timestamp.truncateToSeconds()}" }
                         "datasetCreationTime" { timestamp }
                     }
                 }
@@ -219,7 +236,7 @@ class TnitsFeatureExporter(
                             "binaryLocationReference" {
                                 "BinaryLocationReference" {
                                     "base64String" {
-                                        marshaller.marshallToBase64String(locationReference)
+                                        locationReference
                                     }
                                     "openLRBinaryVersion" {
                                         attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")

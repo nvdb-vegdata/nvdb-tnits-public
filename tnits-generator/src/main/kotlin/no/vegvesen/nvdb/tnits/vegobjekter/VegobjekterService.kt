@@ -8,7 +8,6 @@ import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
-import no.vegvesen.nvdb.tnits.gateways.VEGOBJEKTER_PAGE_SIZE
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
@@ -141,10 +140,12 @@ class VegobjekterService(
         return changesById.size
     }
 
+    private val vegobjekterFetchSize = 100
+
     private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Collection<Long>): MutableMap<Long, Vegobjekt> {
         val vegobjekterById = mutableMapOf<Long, Vegobjekt>()
 
-        ids.forEachChunked(VEGOBJEKTER_PAGE_SIZE) { ids ->
+        ids.forEachChunked(vegobjekterFetchSize) { ids ->
             uberiketApi.streamVegobjekter(typeId = typeId, ider = ids).collect {
                 vegobjekterById[it.id] = it
             }

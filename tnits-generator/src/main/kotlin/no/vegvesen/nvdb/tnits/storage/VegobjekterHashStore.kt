@@ -7,11 +7,18 @@ class VegobjekterHashStore(private val rocksDbContext: RocksDbContext) {
 
     context(context: WriteBatchContext)
     fun batchUpdate(vegobjektType: Int, hashesById: Map<Long, Long>) {
-        val operations = hashesById.map { (vegobjektId, hash) ->
-            val key = getVegobjektHashKey(vegobjektType, vegobjektId)
-            BatchOperation.Put(key, hash.toByteArray())
-        }
+        val operations = getOperations(hashesById, vegobjektType)
         context.write(columnFamily, operations)
+    }
+
+    fun batchUpdate(vegobjektType: Int, hashesById: Map<Long, Long>) {
+        val operations = getOperations(hashesById, vegobjektType)
+        rocksDbContext.writeBatch(columnFamily, operations)
+    }
+
+    private fun getOperations(hashesById: Map<Long, Long>, vegobjektType: Int): List<BatchOperation.Put> = hashesById.map { (vegobjektId, hash) ->
+        val key = getVegobjektHashKey(vegobjektType, vegobjektId)
+        BatchOperation.Put(key, hash.toByteArray())
     }
 
     fun batchGet(vegobjektType: Int, vegobjektIds: List<Long>): Map<Long, Long?> {

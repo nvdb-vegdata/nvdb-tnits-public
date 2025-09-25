@@ -121,17 +121,14 @@ class Services :
 
     val tnitsFeatureGenerator =
         TnitsFeatureGenerator(
-            veglenkerBatchLookup = { ids ->
-                ids.associateWith {
-                    cachedVegnett.getVeglenker(it)
-                }
-            },
+            cachedVegnett = cachedVegnett,
             datakatalogApi = datakatalogApi,
             openLrService = openLrService,
             vegobjekterRepository = vegobjekterRepository,
         )
 
-    val tnitsFeatureExporter = TnitsFeatureExporter(tnitsFeatureGenerator, config.exporter, minioClient)
+    val tnitsFeatureExporter =
+        TnitsFeatureExporter(tnitsFeatureGenerator, config.exporter, minioClient, vegobjekterHashStore, rocksDbContext)
 
     val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 

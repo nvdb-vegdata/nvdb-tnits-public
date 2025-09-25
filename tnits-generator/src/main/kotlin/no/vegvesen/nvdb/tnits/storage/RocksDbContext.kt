@@ -48,7 +48,7 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
         initialize()
     }
 
-    fun writeBatch(block: WriteBatchContext.() -> Unit) {
+    inline fun writeBatch(block: WriteBatchContext.() -> Unit) {
         val operations = WriteBatchContext(block)
         WriteBatch().use {
             for ((columnFamily, ops) in operations) {
@@ -62,7 +62,7 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
             }
 
             WriteOptions().use { writeOpts ->
-                db.write(writeOpts, it)
+                getDatabase().write(writeOpts, it)
             }
         }
     }

@@ -6,9 +6,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
+import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
@@ -18,30 +18,12 @@ import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
-import kotlin.time.Instant
-
-typealias VeglenkerBatchLookup = (Collection<Long>) -> Map<Long, List<Veglenke>>
-
-data class TnitsFeatureUpsertWorkItem(
-    val id: Long,
-    val type: ExportedFeatureType,
-    val properties: Map<RoadFeaturePropertyType, RoadFeatureProperty>,
-    val stedfestingLinjer: List<VegobjektStedfesting>,
-    val validFrom: LocalDate,
-    val validTo: LocalDate?,
-    val beginLifespanVersion: Instant,
-    val updateType: UpdateType,
-) {
-    fun isValid(): Boolean = when (type) {
-        ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit) &&
-            stedfestingLinjer.isNotEmpty()
-    }
-}
+import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 
 data class IdRange(val startId: Long, val endId: Long)
 
 class TnitsFeatureGenerator(
-    private val veglenkerBatchLookup: VeglenkerBatchLookup,
+    private val cachedVegnett: CachedVegnett,
     private val datakatalogApi: DatakatalogApi,
     private val openLrService: OpenLrService,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
@@ -85,7 +67,16 @@ class TnitsFeatureGenerator(
                 } else if (vegobjekt == null) {
                     log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
                 } else {
-                    TODO()
+                    val propertyMapper = getPropertyMapper(featureType)
+                    val updateType = when (changeType) {
+                        ChangeType.NEW -> UpdateType.Add
+                        ChangeType.MODIFIED -> UpdateType.Modify
+                        else -> error("this should not happen")
+                    }
+                    val feature = processVegobjektToFeature(vegobjekt, propertyMapper)?.copy(updateType = updateType)
+                    if (feature != null) {
+                        emit(feature)
+                    }
                 }
             }
         }
@@ -166,17 +157,19 @@ class TnitsFeatureGenerator(
         }
 
     private fun processIdRange(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> = try {
-        // Each worker fetches and processes its own data range
-        val workItems = fetchSnapshotWorkItemsForRange(idRange, getFeatureProperties)
-        check(workItems.size <= fetchSize) {
-            "Fetched ${workItems.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $fetchSize"
+        // Each worker fetches and processes its own data range directly
+        val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
+            .filter { !it.fjernet }
+
+        check(vegobjekter.size <= fetchSize) {
+            "Fetched ${vegobjekter.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $fetchSize"
         }
 
-        workItems.mapNotNull { workItem ->
+        vegobjekter.mapNotNull { vegobjekt ->
             try {
-                createFeature(workItem)
+                processVegobjektToFeature(vegobjekt, getFeatureProperties)
             } catch (e: Exception) {
-                log.error("Warning: Error processing speed limit ${workItem.id}", e)
+                log.error("Warning: Error processing speed limit ${vegobjekt.id}", e)
                 null // Skip this item but continue processing others
             }
         }
@@ -185,64 +178,56 @@ class TnitsFeatureGenerator(
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
-    private fun fetchSnapshotWorkItemsForRange(idRange: IdRange, propertyMapper: VegobjektPropertyMapper): List<TnitsFeatureUpsertWorkItem> {
-        val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
-            .filter { !it.fjernet }
+    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper): TnitsFeatureUpsert? {
+        // Early validation - extract properties and validate before expensive operations
+        val properties = propertyMapper.getFeatureProperties(vegobjekt)
+        val type = ExportedFeatureType.from(vegobjekt.type)
 
-        return vegobjekter.mapNotNull { vegobjekt ->
-            TnitsFeatureUpsertWorkItem(
-                id = vegobjekt.id,
-                type = ExportedFeatureType.from(vegobjekt.type),
-                properties = propertyMapper.getFeatureProperties(vegobjekt),
-                stedfestingLinjer = vegobjekt.stedfestinger,
-                validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
-                validTo = vegobjekt.sluttdato,
-                beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
-                updateType = UpdateType.Snapshot,
-            ).takeIf { it.isValid() }
+        // Validate business rules first (equivalent to old isValid() check)
+        val isValid = when (type) {
+            ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit) &&
+                vegobjekt.stedfestinger.isNotEmpty()
         }
-    }
 
-    private fun createFeature(workItem: TnitsFeatureUpsertWorkItem): TnitsFeatureUpsert {
-        val veglenkesekvensIds = workItem.stedfestingLinjer.map { it.veglenkesekvensId }.toSet()
+        if (!isValid) {
+            log.warn("Ugyldig vegobjekt for type ${type.typeCode} med id ${vegobjekt.id}, hopper over")
+            return null
+        }
 
-        val overlappendeVeglenker = veglenkerBatchLookup(veglenkesekvensIds)
+        // Now perform expensive operations only after validation passes
+        val veglenkesekvensIds = vegobjekt.stedfestinger.map { it.veglenkesekvensId }.toSet()
+        val overlappendeVeglenker = veglenkesekvensIds.associateWith(cachedVegnett::getVeglenker)
 
-        val lineStrings =
-            workItem.stedfestingLinjer.flatMap { stedfesting ->
-                overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
-                    calculateIntersectingGeometry(
-                        veglenke.geometri,
-                        veglenke,
-                        stedfesting,
-                    )
-                }
+        val lineStrings = vegobjekt.stedfestinger.flatMap { stedfesting ->
+            overlappendeVeglenker[stedfesting.veglenkesekvensId].orEmpty().mapNotNull { veglenke ->
+                calculateIntersectingGeometry(
+                    veglenke.geometri,
+                    veglenke,
+                    stedfesting,
+                )
             }
+        }
 
         require(lineStrings.isNotEmpty()) {
-            "Finner ingen veglenker for ${workItem.type} ${workItem.id} med stedfesting ${workItem.stedfestingLinjer}"
+            "Finner ingen veglenker for $type ${vegobjekt.id} med stedfesting ${vegobjekt.stedfestinger}"
         }
 
-        val geometry =
-            mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
-                ?: error("Klarte ikke lage geometri for ${workItem.type} ${workItem.id}")
+        val geometry = mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
+            ?: error("Klarte ikke lage geometri for $type ${vegobjekt.id}")
 
-        val openLrLocationReferences =
-            openLrService.toOpenLr(
-                workItem.stedfestingLinjer,
-            )
+        val openLrLocationReferences = openLrService.toOpenLr(vegobjekt.stedfestinger)
 
         return TnitsFeatureUpsert(
-            id = workItem.id,
-            type = workItem.type,
-            properties = workItem.properties,
-            openLrLocationReferences = openLrLocationReferences,
-            nvdbLocationReferences = workItem.stedfestingLinjer,
-            validFrom = workItem.validFrom,
-            validTo = workItem.validTo,
+            id = vegobjekt.id,
+            type = type,
+            properties = properties,
+            openLrLocationReferences = openLrLocationReferences.map(marshaller::marshallToBase64String),
+            nvdbLocationReferences = vegobjekt.stedfestinger,
+            validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
+            validTo = vegobjekt.sluttdato,
             geometry = geometry,
-            updateType = workItem.updateType,
-            beginLifespanVersion = workItem.beginLifespanVersion,
+            updateType = UpdateType.Snapshot,
+            beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
         )
     }
 

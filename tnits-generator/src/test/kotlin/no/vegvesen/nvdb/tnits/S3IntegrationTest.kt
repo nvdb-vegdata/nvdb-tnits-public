@@ -154,7 +154,7 @@ class S3IntegrationTest :
                 every { generateSnapshot(any()) } returns flowOf(mockSpeedLimit)
             }
 
-            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient)
+            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient, mockk(), mockk())
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
@@ -209,7 +209,7 @@ class S3IntegrationTest :
 
             val appConfig = exporterConfig.copy(gzip = true)
 
-            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient)
+            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient, mockk(), mockk())
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")
 
             // Act

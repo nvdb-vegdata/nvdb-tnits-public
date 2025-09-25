@@ -34,4 +34,6 @@ interface DirtyCheckingRepository {
      * @param vegobjektType The vegobjekt type to clear all dirty IDs for
      */
     fun clearAllDirtyVegobjektIds(vegobjektType: Int)
+
+    fun clearAllDirtyVeglenkesekvenser()
 }
