@@ -33,7 +33,7 @@ data class TnitsFeatureUpsert(
     override val id: Long,
     override val type: ExportedFeatureType,
     @Serializable(with = JtsGeometrySerializer::class)
-    val geometry: Geometry,
+    val geometry: Geometry?,
     val properties: Map<RoadFeaturePropertyType, RoadFeatureProperty>,
     val openLrLocationReferences: List<String>,
     val nvdbLocationReferences: List<VegobjektStedfesting>,

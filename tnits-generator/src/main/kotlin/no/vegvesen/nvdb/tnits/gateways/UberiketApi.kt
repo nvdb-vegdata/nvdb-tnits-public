@@ -18,6 +18,8 @@ const val HENDELSER_PAGE_SIZE = 1000
 
 const val VEGOBJEKTER_PAGE_SIZE = 1000
 
+const val FETCH_IDER_BATCH_SIZE = 100
+
 class UberiketApi(private val httpClient: HttpClient) {
 
     suspend fun streamVeglenkesekvenser(
@@ -85,7 +87,7 @@ class UberiketApi(private val httpClient: HttpClient) {
     }
 
     fun getVegobjekterPaginated(typeId: Int, vegobjektIds: Set<Long>, inkluderIVegobjekt: Set<InkluderIVegobjekt>): Flow<Vegobjekt> = flow {
-        vegobjektIds.forEachChunked(100) { chunk ->
+        vegobjektIds.forEachChunked(FETCH_IDER_BATCH_SIZE) { chunk ->
             var start: String? = null
             while (true) {
                 val side = httpClient.get("vegobjekter/$typeId") {

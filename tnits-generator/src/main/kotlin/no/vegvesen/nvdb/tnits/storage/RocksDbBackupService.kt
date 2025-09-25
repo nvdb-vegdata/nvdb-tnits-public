@@ -8,7 +8,9 @@ import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
 import org.slf4j.event.Level
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -131,17 +133,13 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
             log.debug("Initializing BackupEngine with path: {}", backupPath)
 
             BackupEngineOptions(backupPath.toString()).use { backupEngineOptions ->
-                log.debug("BackupEngineOptions created successfully")
 
                 BackupEngine.open(Env.getDefault(), backupEngineOptions).use { backupEngine ->
-                    log.debug("BackupEngine opened successfully")
-                    log.debug("Getting RocksDB database instance...")
                     val database = rocksDbContext.getDatabase()
-                    log.debug("Database instance obtained: {}", database.javaClass.simpleName)
 
-                    log.debug("Creating new backup...")
-                    backupEngine.createNewBackup(database)
-                    log.debug("BackupEngine.createNewBackup() completed successfully")
+                    log.measure("Creating new backup", level = Level.DEBUG) {
+                        backupEngine.createNewBackup(database)
+                    }
                 }
             }
 
@@ -280,7 +278,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
             BackupEngineOptions(backupPath.toString()).use { options ->
                 BackupEngine.open(Env.getDefault(), options).use { backupEngine ->
                     log.debug("BackupEngine opened for restore, available backups:")
-                    val backupInfos = backupEngine.getBackupInfo()
+                    val backupInfos = backupEngine.backupInfo
                     backupInfos.forEach { info ->
                         log.debug("  Backup ID: ${info.backupId()}, Size: ${info.size()} bytes, Timestamp: ${info.timestamp()}")
                     }

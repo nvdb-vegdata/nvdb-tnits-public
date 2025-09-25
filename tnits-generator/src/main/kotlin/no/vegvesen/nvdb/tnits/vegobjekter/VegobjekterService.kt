@@ -5,8 +5,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.InkluderIVegobjekt
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
-import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt
-import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
@@ -15,6 +13,7 @@ import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import kotlin.time.Clock
 import kotlin.time.Instant
+import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 class VegobjekterService(
     private val keyValueStore: KeyValueRocksDbStore,
@@ -62,7 +61,7 @@ class VegobjekterService(
         } while (vegobjekter.isNotEmpty())
     }
 
-    private suspend fun getOriginalStartdatoWhereDifferent(typeId: Int, vegobjekter: Collection<Vegobjekt>): Map<Long, LocalDate> {
+    private suspend fun getOriginalStartdatoWhereDifferent(typeId: Int, vegobjekter: Collection<ApiVegobjekt>): Map<Long, LocalDate> {
         val vegobjekterThatAreNotFirstVersion = vegobjekter.filter { it.versjon > 1 }.map { it.id }.toSet()
         val validFromById = uberiketApi.getVegobjekterPaginated(typeId, vegobjekterThatAreNotFirstVersion, setOf(InkluderIVegobjekt.GYLDIGHETSPERIODE))
             .toList().groupBy { it.id }.mapValues { it.value.first().gyldighetsperiode!!.startdato.toKotlinLocalDate() }
@@ -112,23 +111,15 @@ class VegobjekterService(
             return 0
         }
 
-        val vegobjekterById = fetchVegobjekterByIds(typeId, changesById.keys)
-
-        val validFromById = mutableMapOf<Long, LocalDate>()
-
-        if (fetchOriginalStartDate) {
-            getOriginalStartdatoWhereDifferent(typeId, vegobjekterById.values)
-                .let(validFromById::plus)
-        }
+        val vegobjekterById = fetchVegobjekterByIds(typeId, changesById.keys, fetchOriginalStartDate)
 
         val updatesById = changesById.mapValues { (id, changeType) ->
             if (changeType == ChangeType.DELETED) {
                 VegobjektUpdate(id, changeType)
             } else {
-                val apiVegobjekt = vegobjekterById[id]
+                val vegobjekt = vegobjekterById[id]
                     ?: error("Forventet vegobjekt med ID $id for endringstype $changeType")
-                val domainVegobjekt = apiVegobjekt.toDomain(validFromById[id])
-                VegobjektUpdate(id, changeType, domainVegobjekt)
+                VegobjektUpdate(id, changeType, vegobjekt)
             }
         }
 
@@ -140,18 +131,24 @@ class VegobjekterService(
         return changesById.size
     }
 
-    private val vegobjekterFetchSize = 100
+    private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Set<Long>, fetchOriginalStartDate: Boolean): Map<Long, Vegobjekt> =
+        uberiketApi.getVegobjekterPaginated(typeId, ids, setOf(InkluderIVegobjekt.ALLE)).toList()
+            .groupBy { it.id }
+            .mapValues { (_, versjoner) ->
+                val latest = versjoner.maxBy { it.versjon }
+                val originalStartDate = if (fetchOriginalStartDate) {
+                    val first = versjoner.minBy { it.versjon }
+                    if (latest != first) {
+                        first.gyldighetsperiode!!.startdato.toKotlinLocalDate()
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
 
-    private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Collection<Long>): MutableMap<Long, Vegobjekt> {
-        val vegobjekterById = mutableMapOf<Long, Vegobjekt>()
-
-        ids.forEachChunked(vegobjekterFetchSize) { ids ->
-            uberiketApi.streamVegobjekter(typeId = typeId, ider = ids).collect {
-                vegobjekterById[it.id] = it
+                latest.toDomain(originalStartDate)
             }
-        }
-        return vegobjekterById
-    }
 
     private suspend fun getLastHendelseId(typeId: Int): Long =
         keyValueStore.get<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(
@@ -161,7 +158,7 @@ class VegobjekterService(
         )
 }
 
-fun Vegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val stedfesting = this.stedfesting) {
+fun ApiVegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val stedfesting = this.stedfesting) {
     is StedfestingLinjer ->
         stedfesting.linjer.map {
             VegobjektStedfesting(

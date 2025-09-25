@@ -135,6 +135,8 @@ private suspend fun Services.exportUpdate(now: Instant, featureType: ExportedFea
 
     dirtyCheckingRepository.clearAllDirtyVegobjektIds(featureType.typeId)
     dirtyCheckingRepository.clearAllDirtyVeglenkesekvenser()
+
+    vegobjekterRepository.cleanOldVersions()
 }
 
 private fun Services.getTimestampFromLastExport(): Instant = (

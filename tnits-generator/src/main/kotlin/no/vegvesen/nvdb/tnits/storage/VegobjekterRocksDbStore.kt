@@ -3,12 +3,14 @@ package no.vegvesen.nvdb.tnits.storage
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.IdRange
+import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.supportingVegobjektTyper
+import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import java.nio.ByteBuffer
 
-class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : VegobjekterRepository {
+class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : VegobjekterRepository, WithLogger {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 
     override fun findVegobjektIds(vegobjektType: Int): Sequence<Long> {
@@ -25,6 +27,31 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
     override fun countVegobjekter(vegobjektType: Int): Int {
         val prefix = getVegobjektTypePrefix(vegobjektType)
         return rocksDbContext.countEntriesByPrefix(columnFamily, prefix)
+    }
+
+    override fun cleanOldVersions() {
+        val keysToDelete = mutableListOf<ByteArray>()
+
+        var count = 0
+
+        rocksDbContext.streamValuesByPrefix(columnFamily, byteArrayOf(VEGOBJEKT_KEY_PREFIX)).forEach { value ->
+            val vegobjekt = ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), value)
+            if (vegobjekt.fjernet || vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
+                val key = getVegobjektKey(vegobjekt.type, vegobjekt.id)
+                keysToDelete.add(key)
+                keysToDelete.addAll(
+                    vegobjekt.stedfestinger.map {
+                        getStedfestingKey(it.veglenkesekvensId, vegobjekt.type, vegobjekt.id)
+                    },
+                )
+                count++
+            }
+        }
+
+        if (keysToDelete.isNotEmpty()) {
+            log.info("Sletter $count gamle/utgåtte vegobjekter")
+            rocksDbContext.writeBatch(columnFamily, keysToDelete.map { BatchOperation.Delete(it) })
+        }
     }
 
     override fun findVegobjekter(vegobjektType: Int, idRange: IdRange): List<Vegobjekt> {

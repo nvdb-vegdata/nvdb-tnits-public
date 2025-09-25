@@ -211,19 +211,22 @@ class TnitsFeatureExporter(
                         }
                     }
                 }
-                "locationReference" {
-                    "GeometryLocationReference" {
-                        "encodedGeometry" {
-                            "gml:LineString" {
-                                attribute("srsDimension", "2")
-                                attribute("srsName", "EPSG::4326")
-                                "gml:posList" {
-                                    feature.geometry.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
+                feature.geometry?.let { geometry ->
+                    "locationReference" {
+                        "GeometryLocationReference" {
+                            "encodedGeometry" {
+                                "gml:LineString" {
+                                    attribute("srsDimension", "2")
+                                    attribute("srsName", "EPSG::4326")
+                                    "gml:posList" {
+                                        geometry.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
                 for (locationReference in feature.openLrLocationReferences) {
                     "locationReference" {
                         "OpenLRLocationReference" {

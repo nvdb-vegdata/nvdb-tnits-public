@@ -28,11 +28,6 @@ interface DirtyCheckingRepository {
      */
     fun clearDirtyVegobjektIds(vegobjektType: Int, vegobjektIds: Set<Long>)
 
-    /**
-     * Clears all dirty vegobjekt IDs for a specific type.
-     *
-     * @param vegobjektType The vegobjekt type to clear all dirty IDs for
-     */
     fun clearAllDirtyVegobjektIds(vegobjektType: Int)
 
     fun clearAllDirtyVeglenkesekvenser()

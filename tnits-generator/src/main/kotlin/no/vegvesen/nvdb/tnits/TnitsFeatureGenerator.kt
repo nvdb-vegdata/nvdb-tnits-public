@@ -11,6 +11,7 @@ import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
+import no.vegvesen.nvdb.tnits.extensions.today
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
@@ -73,7 +74,7 @@ class TnitsFeatureGenerator(
                         ChangeType.MODIFIED -> UpdateType.Modify
                         else -> error("this should not happen")
                     }
-                    val feature = processVegobjektToFeature(vegobjekt, propertyMapper)?.copy(updateType = updateType)
+                    val feature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
                     if (feature != null) {
                         emit(feature)
                     }
@@ -150,16 +151,16 @@ class TnitsFeatureGenerator(
             idRanges
                 .map { idRange ->
                     async {
-                        processIdRange(idRange, getFeatureProperties)
+                        processIdRangeForSnapshot(idRange, getFeatureProperties)
                     }
                 }.awaitAll()
                 .flatten()
         }
 
-    private fun processIdRange(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> = try {
+    private fun processIdRangeForSnapshot(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> = try {
         // Each worker fetches and processes its own data range directly
         val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
-            .filter { !it.fjernet }
+            .filter { !it.fjernet && (it.sluttdato == null || it.sluttdato > today) }
 
         check(vegobjekter.size <= fetchSize) {
             "Fetched ${vegobjekter.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $fetchSize"
@@ -167,7 +168,7 @@ class TnitsFeatureGenerator(
 
         vegobjekter.mapNotNull { vegobjekt ->
             try {
-                processVegobjektToFeature(vegobjekt, getFeatureProperties)
+                processVegobjektToFeature(vegobjekt, getFeatureProperties, UpdateType.Snapshot)
             } catch (e: Exception) {
                 log.error("Warning: Error processing speed limit ${vegobjekt.id}", e)
                 null // Skip this item but continue processing others
@@ -178,7 +179,7 @@ class TnitsFeatureGenerator(
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
-    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper): TnitsFeatureUpsert? {
+    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper, updateType: UpdateType): TnitsFeatureUpsert? {
         // Early validation - extract properties and validate before expensive operations
         val properties = propertyMapper.getFeatureProperties(vegobjekt)
         val type = ExportedFeatureType.from(vegobjekt.type)
@@ -187,6 +188,22 @@ class TnitsFeatureGenerator(
         val isValid = when (type) {
             ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit) &&
                 vegobjekt.stedfestinger.isNotEmpty()
+        }
+
+        if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
+            log.warn("Vegobjekt for type ${type.typeCode} med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
+            return TnitsFeatureUpsert(
+                id = vegobjekt.id,
+                type = type,
+                geometry = null,
+                properties = properties,
+                openLrLocationReferences = emptyList(),
+                nvdbLocationReferences = emptyList(),
+                validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
+                validTo = vegobjekt.sluttdato,
+                updateType = updateType,
+                beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
+            )
         }
 
         if (!isValid) {
@@ -212,7 +229,7 @@ class TnitsFeatureGenerator(
             "Finner ingen veglenker for $type ${vegobjekt.id} med stedfesting ${vegobjekt.stedfestinger}"
         }
 
-        val geometry = mergeGeometries(lineStrings)?.simplify(1.0)?.projectTo(SRID.WGS84)
+        val geometry = mergeGeometries(lineStrings)?.projectTo(SRID.UTM33)?.simplify(10.001)?.projectTo(SRID.WGS84)
             ?: error("Klarte ikke lage geometri for $type ${vegobjekt.id}")
 
         val openLrLocationReferences = openLrService.toOpenLr(vegobjekt.stedfestinger)
@@ -226,7 +243,7 @@ class TnitsFeatureGenerator(
             validFrom = vegobjekt.originalStartdato ?: vegobjekt.startdato,
             validTo = vegobjekt.sluttdato,
             geometry = geometry,
-            updateType = UpdateType.Snapshot,
+            updateType = updateType,
             beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
         )
     }
