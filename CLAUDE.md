@@ -48,12 +48,6 @@ The application includes a sophisticated dirty checking system for efficient inc
 - **Stedfesting Relationship Queries**: Finds vegobjekter positioned on dirty veglenkesekvenser
 - **Batch Clear Operations**: Efficiently clears dirty state after processing
 
-Key operations:
-- `getDirtyVegobjektIds(vegobjektType)`: Retrieves all dirty vegobjekt IDs for a specific type
-- `findStedfestingVegobjektIds(veglenkesekvensIds, vegobjektType)`: Finds vegobjekter positioned on given veglenkesekvenser
-- `clearDirtyVegobjektIds(vegobjektType, vegobjektIds)`: Clears specific dirty IDs
-- `clearAllDirtyVegobjektIds(vegobjektType)`: Clears all dirty IDs for a type
-
 The dirty checking system enables efficient delta processing for TN-ITS exports by tracking only changed data.
 
 ### CLI Application Architecture
@@ -214,15 +208,7 @@ Tests use Kotest 6.0 framework and can be run individually or as a suite. The ap
 
 #### Test Structure
 
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/xml/XmlStreamDslTest.kt` - XML streaming DSL tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/GeometryHelpersTest.kt` - Geometry projection and transformation tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/geometry/CalculateIntersectingGeometryTest.kt` - Geometry intersection calculation tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/VeglenkerRocksDbStoreTest.kt` - RocksDB storage layer tests with Protocol Buffers serialization
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/VeglenkerRocksDbStoreClearTest.kt` - RocksDB database clearing and reinitialization tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/RocksDbContextTest.kt` - RocksDB context and wrapper method tests
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/storage/RocksDbBackupIntegrationTest.kt` - RocksDB backup/restore integration tests with TestContainers
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/S3IntegrationTest.kt` - S3 export integration tests with TestContainers MinIO
-- `src/test/kotlin/no/vegvesen/nvdb/tnits/model/JtsGeometrySerializerTest.kt` - JTS geometry serialization tests
+Tests are placed in the matching package as the source code under `src/test/kotlin`. Test resources are placed under `src/test/resources`.
 
 #### Testing Infrastructure
 

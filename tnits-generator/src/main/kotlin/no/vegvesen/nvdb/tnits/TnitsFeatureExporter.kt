@@ -218,13 +218,7 @@ class TnitsFeatureExporter(
                                 attribute("srsDimension", "2")
                                 attribute("srsName", "EPSG::4326")
                                 "gml:posList" {
-                                    val coordinates = feature.geometry.coordinates
-                                    for (i in coordinates.indices) {
-                                        +"${coordinates[i].y.toRounded(5)} ${coordinates[i].x.toRounded(5)}"
-                                        if (i < coordinates.size - 1) {
-                                            +" "
-                                        }
-                                    }
+                                    feature.geometry.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
                                 }
                             }
                         }

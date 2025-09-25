@@ -1,172 +1,205 @@
 <html lang="en">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TN-ITS Speed Limit Map Viewer</title>
-    <!-- Leaflet CSS -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-      }
-      body {
-        display: flex;
-        flex-direction: column;
-      }
-      .content {
-        padding: 1rem;
-        flex-shrink: 0;
-      }
-      header {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-      }
-      input[type='file'] {
-        margin-top: 0.5rem;
-      }
-      #map {
-        flex: 1;
-        width: 100%;
-        min-height: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="content">
-      <header>TN-ITS Speed Limit Map Viewer</header>
-      <p>
-        Select a TN-ITS XML file (speed limits) to visualize the road segments on
-        a map.
-      </p>
-      <input type="file" id="fileInput" accept=".xml" />
-    </div>
-    <div id="map"></div>
+<head>
+  <meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
+  <meta charset="UTF-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>TN-ITS Speed Limit Map Viewer</title>
+  <!-- Leaflet CSS -->
+  <link
+    crossorigin=""
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    rel="stylesheet"
+  />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
 
-    <!-- Leaflet JS -->
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
-    <script>
-      // Initialize the Leaflet map
-      const map = L.map('map')
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map)
-      // Set a default view over Norway (approximate center)
-      map.setView([65.0, 15.0], 4)
+    body {
+      display: flex;
+      flex-direction: column;
+    }
 
-      // Helper function to choose a color based on speed limit
-      function getColor(speed) {
-        const value = parseFloat(speed)
-        if (isNaN(value)) return '#3388ff'
-        if (value <= 40) return '#d73027' // red
-        if (value <= 60) return '#fc8d59' // orange
-        if (value <= 80) return '#fee08b' // yellow
-        if (value <= 100) return '#91cf60' // green
-        return '#1a9850' // dark green for higher speeds
+    .content {
+      padding: 1rem;
+      flex-shrink: 0;
+    }
+
+    header {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type='file'] {
+      margin-top: 0.5rem;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="content">
+  <header>TN-ITS Speed Limit Map Viewer</header>
+  <p>
+    Select a TN-ITS XML file (speed limits) to visualize the road segments on
+    a map.
+  </p>
+  <input accept=".xml" id="fileInput" type="file"/>
+</div>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script
+  crossorigin=""
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+<script>
+  // Initialize the Leaflet map
+  const map = L.map('map')
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(map)
+  // Set a default view over Norway (approximate center)
+  map.setView([65.0, 15.0], 4)
+
+  // Helper function to choose a color based on speed limit
+  function getColor(speed) {
+    const value = parseFloat(speed)
+    if (isNaN(value)) return '#3388ff'
+    if (value <= 40) return '#d73027' // red
+    if (value <= 60) return '#fc8d59' // orange
+    if (value <= 80) return '#fee08b' // yellow
+    if (value <= 100) return '#91cf60' // green
+    return '#1a9850' // dark green for higher speeds
+  }
+
+  // Event listener for file upload
+  document
+    .getElementById('fileInput')
+    .addEventListener('change', function (event) {
+      const file = event.target.files[0]
+      if (!file) {
+        return
       }
+      const reader = new FileReader()
+      reader.onload = function (e) {
+        const text = e.target.result
+        parseAndDisplay(text)
+      }
+      reader.readAsText(file)
+    })
 
-      // Event listener for file upload
-      document
-        .getElementById('fileInput')
-        .addEventListener('change', function (event) {
-          const file = event.target.files[0]
-          if (!file) {
-            return
-          }
-          const reader = new FileReader()
-          reader.onload = function (e) {
-            const text = e.target.result
-            parseAndDisplay(text)
-          }
-          reader.readAsText(file)
-        })
+  // Parse the XML string and draw polylines on the map
+  function parseAndDisplay(xmlText) {
+    // Clear existing layers (except the tile layer)
+    map.eachLayer((layer) => {
+      if (!(layer instanceof L.TileLayer)) {
+        map.removeLayer(layer)
+      }
+    })
+    const parser = new DOMParser()
+    const xmlDoc = parser.parseFromString(xmlText, 'application/xml')
+    const gmlNS = 'http://www.opengis.net/gml/3.2.1'
+    const tnitsNS = 'http://spec.tn-its.eu/schemas/'
+    // Get all RoadFeature elements within the dataset
+    const roadFeatures = xmlDoc.getElementsByTagNameNS(
+      tnitsNS,
+      'RoadFeature'
+    )
+    const polylines = []
+    for (let i = 0; i < roadFeatures.length; i++) {
+      const roadFeature = roadFeatures[i]
 
-      // Parse the XML string and draw polylines on the map
-      function parseAndDisplay(xmlText) {
-        // Clear existing layers (except the tile layer)
-        map.eachLayer((layer) => {
-          if (!(layer instanceof L.TileLayer)) {
-            map.removeLayer(layer)
-          }
-        })
-        const parser = new DOMParser()
-        const xmlDoc = parser.parseFromString(xmlText, 'application/xml')
-        const gmlNS = 'http://www.opengis.net/gml/3.2.1'
-        const tnitsNS = 'http://spec.tn-its.eu/schemas/'
-        // Get all RoadFeature elements within the dataset
-        const roadFeatures = xmlDoc.getElementsByTagNameNS(
+      // Get the vegobjekt ID
+      let vegobjektId = null
+      const idElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'id')
+      if (idElems.length > 0) {
+        const roadFeatureId = idElems[0].getElementsByTagNameNS(
           tnitsNS,
-          'RoadFeature'
-        )
-        const polylines = []
-        for (let i = 0; i < roadFeatures.length; i++) {
-          const roadFeature = roadFeatures[i]
-          // Get the speed limit value
-          let speedValue = null
-          const props = roadFeature.getElementsByTagNameNS(
+          'RoadFeatureId'
+        )[0]
+        if (roadFeatureId) {
+          const idValueElem = roadFeatureId.getElementsByTagNameNS(
             tnitsNS,
-            'GenericRoadFeatureProperty'
-          )
-          if (props.length > 0) {
-            // take the first value element found
-            const valueElem = props[0].getElementsByTagNameNS(
-              tnitsNS,
-              'value'
-            )[0]
-            if (valueElem) {
-              speedValue = valueElem.textContent.trim()
-            }
+            'id'
+          )[0]
+          if (idValueElem) {
+            vegobjektId = idValueElem.textContent.trim()
           }
-          // Get the first gml:posList under encodedGeometry
-          const posListElems = roadFeature.getElementsByTagNameNS(
-            gmlNS,
-            'posList'
-          )
-          if (posListElems.length === 0) continue
-          const coordsString = posListElems[0].textContent.trim()
-          const coordsArray = coordsString.split(/\s+/).map(parseFloat)
-          const latLngs = []
-          for (let j = 0; j < coordsArray.length; j += 2) {
-            const lon = coordsArray[j]
-            const lat = coordsArray[j + 1]
-            if (!isNaN(lat) && !isNaN(lon)) {
-              latLngs.push([lat, lon])
-            }
-          }
-          if (latLngs.length > 0) {
-            const polyline = L.polyline(latLngs, {
-              color: getColor(speedValue),
-              weight: 4,
-              opacity: 0.8,
-            })
-            if (speedValue !== null) {
-              polyline.bindPopup('Speed limit: ' + speedValue + ' km/h')
-            }
-            polylines.push(polyline)
-          }
-        }
-        // Add all polylines to map and fit bounds
-        if (polylines.length > 0) {
-          const group = L.featureGroup(polylines).addTo(map)
-          map.fitBounds(group.getBounds())
-        } else {
-          alert('No speed limit geometry found in the XML file.')
         }
       }
-    </script>
-  </body>
+
+      // Get the speed limit value
+      let speedValue = null
+      const props = roadFeature.getElementsByTagNameNS(
+        tnitsNS,
+        'GenericRoadFeatureProperty'
+      )
+      if (props.length > 0) {
+        // take the first value element found
+        const valueElem = props[0].getElementsByTagNameNS(
+          tnitsNS,
+          'value'
+        )[0]
+        if (valueElem) {
+          speedValue = valueElem.textContent.trim()
+        }
+      }
+      // Get the first gml:posList under encodedGeometry
+      const posListElems = roadFeature.getElementsByTagNameNS(
+        gmlNS,
+        'posList'
+      )
+      if (posListElems.length === 0) continue
+      const coordsString = posListElems[0].textContent.trim()
+      const coordsArray = coordsString.split(/\s+/).map(parseFloat)
+      const latLngs = []
+      for (let j = 0; j < coordsArray.length; j += 2) {
+        const lat = coordsArray[j]
+        const lon = coordsArray[j + 1]
+        if (!isNaN(lat) && !isNaN(lon)) {
+          latLngs.push([lat, lon])
+        }
+      }
+      if (latLngs.length > 0) {
+        const polyline = L.polyline(latLngs, {
+          color: getColor(speedValue),
+          weight: 4,
+          opacity: 0.8,
+        })
+        if (speedValue !== null || vegobjektId !== null) {
+          let popupContent = ''
+          if (vegobjektId !== null) {
+            popupContent += 'Vegobjekt ID: ' + vegobjektId
+          }
+          if (speedValue !== null) {
+            if (popupContent !== '') popupContent += '<br>'
+            popupContent += 'Speed limit: ' + speedValue + ' km/h'
+          }
+          polyline.bindPopup(popupContent)
+        }
+        polylines.push(polyline)
+      }
+    }
+    // Add all polylines to map and fit bounds
+    if (polylines.length > 0) {
+      const group = L.featureGroup(polylines).addTo(map)
+      map.fitBounds(group.getBounds())
+    } else {
+      alert('No speed limit geometry found in the XML file.')
+    }
+  }
+</script>
+</body>
 </html>
