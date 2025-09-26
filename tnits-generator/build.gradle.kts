@@ -1,4 +1,5 @@
 plugins {
+    id("tnits-conventions")
     kotlin("jvm")
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.15.0"
