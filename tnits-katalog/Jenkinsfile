@@ -6,6 +6,7 @@ node {
     config = readYaml file: 'jenkins/config.yml'
 }
 
+def projectRoot = 'tnits-katalog'
 def deployName = 'nvdbapiles-tnits-katalog'
 
 def version
@@ -55,7 +56,7 @@ pipeline {
                     rtGradleDeployer(id: 'jfrog-gradle-deployer', serverId: 'svv-artrepo', releaseRepo: 'libs-release-local', snapshotRepo: 'libs-snapshot-local')
                     sh('rm gradle_output.log -f')
                     tee('gradle_output.log') {
-                        rtGradleRun(useWrapper: true, deployerId: 'jfrog-gradle-deployer', tasks: "clean artifactoryPublish -Pversion=$version")
+                        rtGradleRun(useWrapper: true, deployerId: 'jfrog-gradle-deployer', tasks: "$projectRoot:clean $projectRoot:artifactoryPublish -Pversion=$version")
                     }
                     def buildLog = readFile('gradle_output.log')
                     artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
