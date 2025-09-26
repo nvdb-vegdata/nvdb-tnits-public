@@ -1,0 +1,91 @@
+@Library("nvdb-jenkins-assistant@main") _
+
+def config
+node {
+    checkout(scm).each { k, v -> env.setProperty(k, v) }
+    config = readYaml file: 'jenkins/config.yml'
+}
+
+def deployName = 'nvdbapiles-tnits-katalog'
+
+def version
+def artifactUrl
+
+def FAILED_STAGE
+
+pipeline {
+    agent any
+    tools {
+        jdk 'java-21'
+    }
+    environment {
+        ATLAS_REFRESH_TOKEN_CREDENTIALS_ID = "${config.credentials.refreshToken}"
+    }
+    options {
+        timeout(unit: 'MINUTES', time: 5)
+    }
+    parameters {
+        string(name: 'RESPONSIBLE_USER', defaultValue: '', description: 'Responsible user for bygging. Se https://atlas-docs.atlas.vegvesen.no/brukerdokumentasjon/latest/client/byggserver.html#_ansvarlig_bruker')
+    }
+    stages {
+        stage('Responsible user') {
+            when { branch config.releaseBranch }
+            steps {
+                script { FAILED_STAGE = env.STAGE_NAME }
+                retry(count: 2) { // add retry in case where responsibleUser() fails
+                    script {
+                        // if build is started manually we print the RESPONSIBLE USER
+                        env.RESPONSIBLE_USER ? (echo("✅ Running with responsible user: ${env.RESPONSIBLE_USER}")) : (echo("⚠️ Responsible user not set manually, getting user from last commit..."))
+                        env.RESPONSIBLE_USER ? (env.ATLAS_RESPONSIBLE_USER = env.RESPONSIBLE_USER) : (env.ATLAS_RESPONSIBLE_USER = responsibleUser())
+                    }
+                }
+            }
+        }
+        stage ('Build & Publish artifact') {
+            when { branch config.releaseBranch }
+            steps {
+                script { FAILED_STAGE = env.STAGE_NAME }
+                script {
+                    if (env.BRANCH_NAME ==~ /${config.releaseBranch}/) {
+                        def date = sh(script: 'echo $(date +%Y-%m-%d)', returnStdout: true).trim()
+                        version = "$date.${env.GIT_COMMIT.substring(0, 7)}"
+                    } else {
+                        version = "${env.GIT_COMMIT.substring(0, 7)}-SNAPSHOT"
+                    }
+                    rtGradleDeployer(id: 'jfrog-gradle-deployer', serverId: 'svv-artrepo', releaseRepo: 'libs-release-local', snapshotRepo: 'libs-snapshot-local')
+                    sh('rm gradle_output.log -f')
+                    tee('gradle_output.log') {
+                        rtGradleRun(useWrapper: true, deployerId: 'jfrog-gradle-deployer', tasks: "clean artifactoryPublish -Pversion=$version")
+                    }
+                    def buildLog = readFile('gradle_output.log')
+                    artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
+                    sh('rm gradle_output.log -f')
+                }
+            }
+        }
+        stage ('Build Atlas image') {
+            when { branch config.releaseBranch }
+            steps {
+                script { FAILED_STAGE = env.STAGE_NAME }
+                atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
+                    tagCommit version: "$deployName-$version"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            atlasCleanConfig()
+            script {
+                junit testResults: 'target/surefire-reports/TEST-*.xml', allowEmptyResults: true
+                recordIssues enabledForFailure: true, tools: [java(), javaDoc()]
+            }
+        }
+        failure {
+            script {
+                slackSend failOnError: true, message: "Pipeline: *$deployName:exclamation: *\n>Branch: ${env.BRANCH_NAME}\n>Build <${env.BUILD_URL}|#${env.BUILD_NUMBER}> failed on stage *${FAILED_STAGE}* ", color: "danger", teamDomain: "vegvesen", channel: config.slackChannel, tokenCredentialId: "jenkins-slack-integration-3"
+            }
+        }
+    }
+}
