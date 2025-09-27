@@ -1,11 +1,15 @@
 package no.vegvesen.nvdb.tnits
 
 import io.minio.MinioClient
+import io.mockk.CapturingSlot
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
+import no.vegvesen.nvdb.tnits.handlers.PerformBackfillHandler
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig
 import no.vegvesen.nvdb.tnits.services.EgenskapService
@@ -19,7 +23,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
 
     val dbContext = TempRocksDbConfig()
 
-    val uberiketApi: UberiketApi = mockk()
+    val uberiketApi = mockk<UberiketApi>()
 
     val keyValueStore = KeyValueRocksDbStore(dbContext)
     val vegobjekterRepository = VegobjekterRocksDbStore(dbContext)
@@ -58,8 +62,25 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         rocksDbContext = dbContext,
     )
 
+    val performBackfillHandler = PerformBackfillHandler(veglenkesekvenserService, vegobjekterService)
+
     suspend fun setupBackfill(paths: List<String> = readJsonTestResources()) {
-        setupCachedVegnett(dbContext, *paths.toTypedArray())
+        val (veglenkesekvenser, vegobjekter) = readTestData(*paths.toTypedArray())
+        coEvery { uberiketApi.streamVeglenkesekvenser() } returns veglenkesekvenser.asFlow()
+        coEvery { uberiketApi.streamVeglenkesekvenser(isNull(true)) } returns emptyFlow()
+        for (typeId in mainVegobjektTyper + supportingVegobjektTyper) {
+            coEvery { uberiketApi.streamVegobjekter(typeId) } returns
+                vegobjekter.filter { it.typeId == typeId }.asFlow()
+            coEvery { uberiketApi.streamVegobjekter(any(), start = isNull(true)) } returns emptyFlow()
+            val typeIdSlot = CapturingSlot<Int>()
+            val idsSlot = CapturingSlot<Set<Long>>()
+            coEvery { uberiketApi.getVegobjekterPaginated(capture(typeIdSlot), capture(idsSlot), any()) } answers {
+                val typeId = typeIdSlot.captured
+                val ids = idsSlot.captured
+                vegobjekter.filter { it.typeId == typeId && it.id in ids }.asFlow()
+            }
+        }
+        performBackfillHandler.performBackfill()
         cachedVegnett.initialize()
     }
 

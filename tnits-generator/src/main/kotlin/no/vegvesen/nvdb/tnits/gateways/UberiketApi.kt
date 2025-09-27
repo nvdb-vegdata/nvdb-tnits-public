@@ -25,5 +25,9 @@ interface UberiketApi {
 
     suspend fun getVegobjektHendelser(typeId: Int, start: Long? = null, antall: Int = HENDELSER_PAGE_SIZE, startDato: Instant? = null): VegobjektHendelserSide
 
-    fun getVegobjekterPaginated(typeId: Int, vegobjektIds: Set<Long>, inkluderIVegobjekt: Set<InkluderIVegobjekt>): Flow<Vegobjekt>
+    fun getVegobjekterPaginated(
+        typeId: Int,
+        vegobjektIds: Set<Long>,
+        inkluderIVegobjekt: Set<InkluderIVegobjekt> = setOf(InkluderIVegobjekt.ALLE),
+    ): Flow<Vegobjekt>
 }
