@@ -14,10 +14,12 @@ import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
+import no.vegvesen.nvdb.tnits.gateways.UberiketApiGateway
 import no.vegvesen.nvdb.tnits.handlers.ExportUpdateHandler
 import no.vegvesen.nvdb.tnits.handlers.PerformBackfillHandler
 import no.vegvesen.nvdb.tnits.handlers.PerformUpdateHandler
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.services.EgenskapService
 import no.vegvesen.nvdb.tnits.services.S3TimestampService
 import no.vegvesen.nvdb.tnits.storage.*
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
@@ -74,7 +76,7 @@ class Services :
             }
         }
 
-    val uberiketApi = UberiketApi(uberiketHttpClient)
+    val uberiketApi: UberiketApi = UberiketApiGateway(uberiketHttpClient)
 
     val datakatalogHttpClient =
         HttpClient(CIO) {
@@ -122,10 +124,12 @@ class Services :
 
     val veglenkesekvenserService = VeglenkesekvenserService(keyValueStore, uberiketApi, veglenkerRepository, rocksDbContext)
 
+    val egenskapService = EgenskapService(datakatalogApi)
+
     val tnitsFeatureGenerator =
         TnitsFeatureGenerator(
             cachedVegnett = cachedVegnett,
-            datakatalogApi = datakatalogApi,
+            egenskapService = egenskapService,
             openLrService = openLrService,
             vegobjekterRepository = vegobjekterRepository,
         )

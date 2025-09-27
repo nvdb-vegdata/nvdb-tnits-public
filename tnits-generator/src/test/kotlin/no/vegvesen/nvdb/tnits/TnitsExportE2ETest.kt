@@ -4,33 +4,35 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.minio.*
+import io.mockk.coEvery
 import io.mockk.mockk
+import no.vegvesen.nvdb.tnits.TestServices.Companion.withTestServices
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
+import no.vegvesen.nvdb.tnits.gateways.UberiketApi
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig
-import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
-import no.vegvesen.nvdb.tnits.storage.VegobjekterHashStore
-import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore
+import no.vegvesen.nvdb.tnits.services.EgenskapService
+import no.vegvesen.nvdb.tnits.services.EgenskapService.Companion.hardcodedFartsgrenseTillatteVerdier
+import no.vegvesen.nvdb.tnits.storage.*
+import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
+import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService
+import no.vegvesen.nvdb.tnits.vegobjekter.VegobjekterService
 import org.testcontainers.containers.MinIOContainer
 import org.xml.sax.ErrorHandler
 import org.xml.sax.SAXParseException
 import java.io.InputStream
-import java.nio.file.Files
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
-import kotlin.io.path.Path
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.name
 import kotlin.time.Instant
 
 /**
  * End-to-end tests for TN-ITS export functionality.
  * Tests the complete workflow from data setup through XML generation and S3 export.
  */
-class TnitsExportEndToEndTest : StringSpec() {
+class TnitsExportE2ETest : StringSpec() {
 
     private val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
         .withUserName("testuser")
@@ -53,6 +55,7 @@ class TnitsExportEndToEndTest : StringSpec() {
         }
 
         afterSpec {
+            minioClient.close()
             minioContainer.stop()
         }
 
@@ -61,10 +64,10 @@ class TnitsExportEndToEndTest : StringSpec() {
         }
 
         "export snapshot" {
-            withTempDb { dbContext ->
-                val tnitsFeatureExporter = setupFeatureExporter(dbContext)
+            withTestServices(minioClient) {
                 val timestamp = Instant.parse("2025-09-26T10:30:00Z")
                 val expected = readFile("expected-snapshot.xml")
+                setupBackfill()
 
                 tnitsFeatureExporter.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
 
@@ -72,10 +75,10 @@ class TnitsExportEndToEndTest : StringSpec() {
                 streamS3Object(key).use { stream ->
                     val xml = stream.reader().readText()
 
+                    xml shouldBe expected
                     val (warnings, errors) = validateXmlWithSchemaHints(xml.byteInputStream())
                     warnings.shouldBeEmpty()
                     errors.shouldBeEmpty()
-                    xml shouldBe expected
                 }
             }
         }
@@ -89,17 +92,35 @@ class TnitsExportEndToEndTest : StringSpec() {
     )
 
     private suspend fun setupFeatureExporter(dbContext: TempRocksDbConfig, files: List<String> = readJsonTestResources()): TnitsFeatureExporter {
-        val cachedVegnett = setupCachedVegnett(
-            dbContext,
-            *files.toTypedArray(),
-        )
-        cachedVegnett.initialize()
+        val (veglenkesekvenser, vegobjekter) = readTestData(*files.toTypedArray())
+        val uberiketApi: UberiketApi = mockk()
+        val keyValueStore = KeyValueRocksDbStore(dbContext)
         val vegobjekterRepository = VegobjekterRocksDbStore(dbContext)
+        val vegobjekterService: VegobjekterService = VegobjekterService(
+            keyValueStore = keyValueStore,
+            uberiketApi = uberiketApi,
+            vegobjekterRepository = vegobjekterRepository,
+            rocksDbContext = dbContext,
+        )
+        val veglenkerRepository: VeglenkerRepository = VeglenkerRocksDbStore(dbContext)
+        val veglenkesekvenserService: VeglenkesekvenserService = VeglenkesekvenserService(
+            keyValueStore = keyValueStore,
+            uberiketApi = uberiketApi,
+            veglenkerRepository = veglenkerRepository,
+            rocksDbContext = dbContext,
+        )
+        val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository)
+//        val cachedVegnett = setupCachedVegnett(
+//            dbContext,
+//            *files.toTypedArray(),
+//        )
+        cachedVegnett.initialize()
         val hashStore = VegobjekterHashStore(dbContext)
+        val egenskapService = mockk<EgenskapService> { coEvery { getKmhByEgenskapVerdi() } returns hardcodedFartsgrenseTillatteVerdier }
         val tnitsFeatureExporter = TnitsFeatureExporter(
             tnitsFeatureGenerator = TnitsFeatureGenerator(
                 cachedVegnett = cachedVegnett,
-                datakatalogApi = mockk(),
+                egenskapService = egenskapService,
                 openLrService = OpenLrService(cachedVegnett),
                 vegobjekterRepository = vegobjekterRepository,
             ),
@@ -114,10 +135,6 @@ class TnitsExportEndToEndTest : StringSpec() {
         )
         return tnitsFeatureExporter
     }
-
-    private fun readJsonTestResources(): List<String> = Files.walk(Path("src/test/resources"), 1).filter {
-        it.isRegularFile() && it.name.endsWith(".json")
-    }.map { it.fileName.toString() }.toList()
 }
 
 data class XsdValidationResult(val warnings: List<SAXParseException>, val errors: List<SAXParseException>)

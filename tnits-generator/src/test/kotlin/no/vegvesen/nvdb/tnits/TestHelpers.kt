@@ -6,36 +6,59 @@ import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.RemoveObjectsArgs
 import io.minio.messages.DeleteObject
+import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
-import no.vegvesen.nvdb.tnits.openlr.readVegobjekt
+import no.vegvesen.nvdb.tnits.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.storage.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
 import java.io.InputStream
+import java.nio.file.Files
+import kotlin.io.path.Path
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.name
+import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
-fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedVegnett {
-    val veglenkerStore = VeglenkerRocksDbStore(dbContext)
+fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readApiVegobjekt(path).toDomain()
+
+fun ObjectMapper.readApiVegobjekt(path: String): ApiVegobjekt = readJson<ApiVegobjekt>(path)
+
+fun readJsonTestResources(): List<String> = Files.walk(Path("src/test/resources"), 1).filter {
+    it.isRegularFile() && it.name.endsWith(".json")
+}.map { it.fileName.toString() }.toList()
+
+fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVegobjekt>> {
     val veglenkesekvenser =
         paths.filter { it.startsWith("veglenkesekvens") }.flatMap { path ->
             objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
         }
 
+    val vegobjekter = paths.filter { it.startsWith("vegobjekt") }.map { path ->
+        objectMapper.readApiVegobjekt(path)
+    }
+
+    return veglenkesekvenser to vegobjekter
+}
+
+fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedVegnett {
+    val (veglenkesekvenser, vegobjekter) = readTestData(*paths)
+
+    val veglenkerStore = VeglenkerRocksDbStore(dbContext)
     for (veglenkesekvens in veglenkesekvenser) {
         val veglenker = veglenkesekvens.convertToDomainVeglenker()
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
     val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
-    for (path in paths.filter { it.startsWith("vegobjekt") }) {
-        val vegobjekt = objectMapper.readVegobjekt(path)
-        vegobjekterStore.insert(vegobjekt)
+    for (vegobjekt in vegobjekter) {
+        vegobjekterStore.insert(vegobjekt.toDomain())
     }
 
-    val cachedVegnett = CachedVegnett(veglenkerStore, vegobjekterStore)
-    return cachedVegnett
+    return CachedVegnett(veglenkerStore, vegobjekterStore)
 }
 
 fun MinioClient.clear(testBucket: String) {

@@ -4,7 +4,7 @@ import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import java.io.File
 import java.nio.file.Files
 
-class TempRocksDbConfig : RocksDbContext(Files.createTempDirectory("openlr-test").toString()) {
+class TempRocksDbConfig : RocksDbContext(Files.createTempDirectory("rocksdb-test").toString()) {
     private var preserveOnClose = false
 
     fun setPreserveOnClose(preserve: Boolean) {

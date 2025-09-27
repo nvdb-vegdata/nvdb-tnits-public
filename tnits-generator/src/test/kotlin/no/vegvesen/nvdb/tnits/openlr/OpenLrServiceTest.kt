@@ -1,6 +1,5 @@
 package no.vegvesen.nvdb.tnits.openlr
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
@@ -8,8 +7,6 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
-import no.vegvesen.nvdb.tnits.model.Vegobjekt
-import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.readJson
 import no.vegvesen.nvdb.tnits.setupCachedVegnett
@@ -20,8 +17,6 @@ import org.openlr.map.FunctionalRoadClass
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 private val marshaller = BinaryMarshallerFactory().create()
-
-fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readJson<ApiVegobjekt>(path).toDomain()
 
 class OpenLrServiceTest :
     StringSpec({

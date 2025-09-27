@@ -7,15 +7,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
-import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.extensions.today
-import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.services.EgenskapService
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
@@ -25,7 +24,7 @@ data class IdRange(val startId: Long, val endId: Long)
 
 class TnitsFeatureGenerator(
     private val cachedVegnett: CachedVegnett,
-    private val datakatalogApi: DatakatalogApi,
+    private val egenskapService: EgenskapService,
     private val openLrService: OpenLrService,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
     private val vegobjekterRepository: VegobjekterRepository,
@@ -35,20 +34,8 @@ class TnitsFeatureGenerator(
 
     private val kmhByEgenskapVerdi: Map<Int, Int> by lazy {
         runBlocking {
-            datakatalogApi.getKmhByEgenskapVerdi()
+            egenskapService.getKmhByEgenskapVerdi()
         }
-    }
-
-    private suspend fun DatakatalogApi.getKmhByEgenskapVerdi(): Map<Int, Int> = try {
-        getVegobjekttype(VegobjektTyper.FARTSGRENSE)
-            .egenskapstyper!!
-            .filterIsInstance<EgenskapstypeHeltallenum>()
-            .single { it.id == EgenskapsTyper.FARTSGRENSE }
-            .tillatteVerdier
-            .associate { it.id to it.verdi!! }
-    } catch (exception: Exception) {
-        log.warn("Feil ved henting av vegobjekttype ${VegobjektTyper.FARTSGRENSE} fra datakatalogen: $exception. Bruker hardkodede verdier.")
-        hardcodedFartsgrenseTillatteVerdier
     }
 
     fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>): Flow<TnitsFeature> = flow {
@@ -245,23 +232,6 @@ class TnitsFeatureGenerator(
             geometry = geometry,
             updateType = updateType,
             beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
-        )
-    }
-
-    companion object {
-        val hardcodedFartsgrenseTillatteVerdier = mapOf(
-            19885 to 5,
-            11576 to 20,
-            2726 to 30,
-            2728 to 40,
-            2730 to 50,
-            2732 to 60,
-            2735 to 70,
-            2738 to 80,
-            2741 to 90,
-            5087 to 100,
-            9721 to 110,
-            19642 to 120,
         )
     }
 }
