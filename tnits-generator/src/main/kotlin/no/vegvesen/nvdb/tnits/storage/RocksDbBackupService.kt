@@ -86,6 +86,24 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
         }
     }
 
+    fun restoreIfNeeded() {
+        try {
+            if (!rocksDbContext.existsAndHasData()) {
+                log.info("RocksDB database is empty or missing, checking for backup to restore...")
+                val restored = restoreFromBackup()
+                if (restored) {
+                    log.info("Successfully restored RocksDB from backup")
+                } else {
+                    log.info("No backup available or restore failed, will proceed with full backfill")
+                }
+            } else {
+                log.info("RocksDB database exists and has data, skipping restore")
+            }
+        } catch (e: Exception) {
+            log.error("Error during RocksDB restore check", e)
+        }
+    }
+
     /**
      * Attempts to restore RocksDB database from S3 backup.
      * Returns true if restore was successful, false if no backup exists or restore failed.

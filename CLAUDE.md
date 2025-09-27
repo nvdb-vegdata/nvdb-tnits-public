@@ -66,12 +66,10 @@ The application uses **Clikt 5.0.3** for command-line interface parsing with the
 
 - **`nvdb-tnits snapshot`**: Generate TN-ITS speed limit full snapshot
 - **`nvdb-tnits update`**: Generate TN-ITS speed limit delta update
-- **`nvdb-tnits backup`**: Create RocksDB backup to S3
 - **`nvdb-tnits auto`**: Automatic mode based on configuration (TODO: not yet implemented)
 
 #### Command Options
 
-- **`--no-backup`**: Available on `snapshot` and `update` commands to skip automatic backup after successful operation
 - **`--help`**: Available on all commands for usage information
 
 #### Application Flow

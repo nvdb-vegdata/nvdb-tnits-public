@@ -18,6 +18,8 @@ import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
 import no.vegvesen.nvdb.tnits.xml.writeXmlDocument
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.MultiLineString
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
@@ -54,7 +56,7 @@ class TnitsFeatureExporter(
         }
     }
 
-    private fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
+    fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
         generateS3Key(timestamp, exportType, exporterConfig.gzip, featureType)
 
     fun openStream(path: Path): OutputStream {
@@ -146,10 +148,8 @@ class TnitsFeatureExporter(
                     }
                 }
                 "type" { exportType }
-                "roadFeatures" {
-                    featureFlow.collectIndexed { i, feature ->
-                        writeFeature(feature, i)
-                    }
+                featureFlow.collectIndexed { i, feature ->
+                    writeFeature(feature, i)
                 }
             }
         }
@@ -162,92 +162,101 @@ class TnitsFeatureExporter(
     }
 
     private fun XmlStreamDsl.writeFeature(feature: TnitsFeature, index: Int) {
-        "RoadFeature" {
-            attribute("gml:id", "RF-$index")
-            "id" {
-                "RoadFeatureId" {
-                    "id" { feature.id }
-                    "providerId" { "nvdb.no" }
-                }
-            }
-            "source" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
-            }
-            "type" {
-                attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
-            }
-            if (feature.updateType != UpdateType.Snapshot) {
-                "updateInfo" {
-                    "UpdateInfo" {
-                        "type" { feature.updateType }
+        "roadFeatures" {
+            "RoadFeature" {
+                if (feature is TnitsFeatureUpsert) {
+                    "validFrom" { feature.validFrom }
+                    feature.validTo?.let {
+                        "validTo" { it }
                     }
-                }
-            }
-            if (feature is TnitsFeatureUpsert) {
-                "validFrom" { feature.validFrom }
-                feature.validTo?.let {
-                    "validTo" { it }
-                }
-                "beginLifespanVersion" {
-                    feature.beginLifespanVersion
-                }
-                feature.validTo?.let {
-                    "endLifespanVersion" {
-                        it.atStartOfDayIn(OsloZone)
+                    "beginLifespanVersion" {
+                        feature.beginLifespanVersion
                     }
-                }
-                if (feature.properties.any()) {
-                    "properties" {
-                        for ((type, property) in feature.properties) {
-                            "GenericRoadFeatureProperty" {
-                                "type" {
-                                    attribute(
-                                        "xlink:href",
-                                        "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
-                                    )
-                                }
-                                "value" { writeFeatureProperty(property) }
+                    feature.validTo?.let {
+                        "endLifespanVersion" {
+                            it.atStartOfDayIn(OsloZone)
+                        }
+                    }
+                    if (feature.updateType != UpdateType.Snapshot) {
+                        "updateInfo" {
+                            "UpdateInfo" {
+                                "type" { feature.updateType }
                             }
                         }
                     }
-                }
-                feature.geometry?.let { geometry ->
-                    "locationReference" {
-                        "GeometryLocationReference" {
-                            "encodedGeometry" {
-                                "gml:LineString" {
-                                    attribute("srsDimension", "2")
-                                    attribute("srsName", "EPSG::4326")
-                                    "gml:posList" {
-                                        geometry.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
+                    "source" {
+                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
+                    }
+                    "type" {
+                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
+                    }
+                    if (feature.properties.any()) {
+                        "properties" {
+                            for ((type, property) in feature.properties) {
+                                "GenericRoadFeatureProperty" {
+                                    "type" {
+                                        attribute(
+                                            "xlink:href",
+                                            "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
+                                        )
                                     }
+                                    "value" { writeFeatureProperty(property) }
                                 }
                             }
                         }
                     }
-                }
+                    "id" {
+                        "RoadFeatureId" {
+                            "providerId" { "nvdb.no" }
+                            "id" { feature.id }
+                        }
+                    }
+                    feature.geometry?.let { geometry ->
+                        val lineStrings = when (val geometry = geometry) {
+                            is LineString -> listOf(geometry)
+                            is MultiLineString -> (0 until geometry.numGeometries).map { geometry.getGeometryN(it) as LineString }
+                            else -> throw IllegalArgumentException("Ugyldig geometri for vegobjekt ${feature.id}: ${geometry.geometryType}")
+                        }
 
-                for (locationReference in feature.openLrLocationReferences) {
-                    "locationReference" {
-                        "OpenLRLocationReference" {
-                            "binaryLocationReference" {
-                                "BinaryLocationReference" {
-                                    "base64String" {
-                                        locationReference
-                                    }
-                                    "openLRBinaryVersion" {
-                                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                        for (lineString in lineStrings) {
+                            "locationReference" {
+                                "GeometryLocationReference" {
+                                    "encodedGeometry" {
+                                        "gml:LineString" {
+                                            attribute("srsDimension", "2")
+                                            attribute("srsName", "EPSG::4326")
+                                            "gml:posList" {
+                                                lineString.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                for (locationReference in feature.nvdbLocationReferences) {
-                    "locationReference" {
-                        "LocationByExternalReference" {
-                            "predefinedLocationReference" {
-                                attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+
+                    for (locationReference in feature.openLrLocationReferences) {
+                        "locationReference" {
+                            "OpenLRLocationReference" {
+                                "binaryLocationReference" {
+                                    "BinaryLocationReference" {
+                                        "base64String" {
+                                            locationReference
+                                        }
+                                        "openLRBinaryVersion" {
+                                            attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for (locationReference in feature.nvdbLocationReferences) {
+                        "locationReference" {
+                            "LocationByExternalReference" {
+                                "predefinedLocationReference" {
+                                    attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+                                }
                             }
                         }
                     }
@@ -276,12 +285,12 @@ class TnitsFeatureExporter(
 
         val namespaces =
             mapOf(
-                "" to "http://spec.tn-its.eu/schemas/",
                 "xlink" to "http://www.w3.org/1999/xlink",
-                "gml" to "http://www.opengis.net/gml/3.2.1",
+                "gml" to "http://www.opengis.net/gml/3.2",
                 "xsi" to "http://www.w3.org/2001/XMLSchema-instance",
+                "" to "http://spec.tn-its.eu/schemas/",
                 "xsi:schemaLocation" to
-                    "http://spec.tn-its.eu/schemas/ TNITS.xsd",
+                    "http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd",
             )
 
         fun generateS3Key(timestamp: Instant, exportType: ExportType, gzip: Boolean, featureType: ExportedFeatureType): String {

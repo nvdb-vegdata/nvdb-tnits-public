@@ -14,6 +14,9 @@ import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.config.loadConfig
 import no.vegvesen.nvdb.tnits.gateways.DatakatalogApi
 import no.vegvesen.nvdb.tnits.gateways.UberiketApi
+import no.vegvesen.nvdb.tnits.handlers.ExportUpdateHandler
+import no.vegvesen.nvdb.tnits.handlers.PerformBackfillHandler
+import no.vegvesen.nvdb.tnits.handlers.PerformUpdateHandler
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.S3TimestampService
 import no.vegvesen.nvdb.tnits.storage.*
@@ -133,6 +136,12 @@ class Services :
     val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 
     val rocksDbBackupService = RocksDbBackupService(rocksDbContext, minioClient, config.backup)
+
+    val performBackfillHandler = PerformBackfillHandler(veglenkesekvenserService, vegobjekterService)
+
+    val performUpdateHandler = PerformUpdateHandler(veglenkesekvenserService, vegobjekterService)
+
+    val exportUpdateHandler = ExportUpdateHandler(tnitsFeatureExporter, dirtyCheckingRepository, vegobjekterRepository)
 
     override fun close() {
         runCatching {

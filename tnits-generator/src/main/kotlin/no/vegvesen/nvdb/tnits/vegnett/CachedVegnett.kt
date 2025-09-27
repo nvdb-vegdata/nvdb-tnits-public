@@ -51,66 +51,68 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         initMutex.withLock {
             if (initialized) return
 
-            coroutineScope {
-                val veglenkerLoad = async {
-                    log.measure("Load veglenker") { veglenkerRepository.getAll() }
-                }
-
-                val felstrekningerLoad = async {
-                    log.measure("Load feltstrekninger") {
-                        vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
+            log.measure("Bygger vegnett-cache", logStart = true) {
+                coroutineScope {
+                    val veglenkerLoad = async {
+                        log.measure("Load veglenker") { veglenkerRepository.getAll() }
                     }
-                }
 
-                val frcLoad = async {
-                    log.measure("Load funksjonell vegklasse") {
-                        vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
-                    }
-                }
-
-                veglenkerLookup = veglenkerLoad.await()
-                val feltstrekningerLookup = felstrekningerLoad.await()
-                val frcLookup = frcLoad.await()
-
-                veglenkerLookup.forEach { (_, veglenker) ->
-                    launch {
-                        veglenker.filter {
-                            it.isRelevant()
-                        }.forEach { veglenke ->
-
-                            val feltoversikt = if (veglenke.konnektering) {
-                                findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: feltstrekningerLookup.findFeltoversikt(veglenke)
-                            } else {
-                                veglenke.feltoversikt
-                            }
-                            if (feltoversikt.isNotEmpty()) {
-                                val frc = frcLookup.findFrc(veglenke)
-                                frcByVeglenke[veglenke] = frc
-                                addVeglenke(veglenke, feltoversikt)
-                            } else {
-                                // Sannsynligvis gangveg uten fartsgrense
-                            }
+                    val felstrekningerLoad = async {
+                        log.measure("Load feltstrekninger") {
+                            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
                         }
                     }
-                }
-            }
 
-            veglenkerInitialized = true
+                    val frcLoad = async {
+                        log.measure("Load funksjonell vegklasse") {
+                            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
+                        }
+                    }
 
-            log.measure("Load OpenLR lines") {
-                coroutineScope {
+                    veglenkerLookup = veglenkerLoad.await()
+                    val feltstrekningerLookup = felstrekningerLoad.await()
+                    val frcLookup = frcLoad.await()
+
                     veglenkerLookup.forEach { (_, veglenker) ->
                         launch {
                             veglenker.filter {
                                 it.isRelevant()
                             }.forEach { veglenke ->
-                                val tillattRetning = tillattRetningByVeglenke[veglenke]
-                                if (tillattRetning != null) {
-                                    if (TillattRetning.Med in tillattRetning) {
-                                        linesByVeglenkerForward[veglenke] = createOpenLrLine(veglenke, TillattRetning.Med)
-                                    }
-                                    if (TillattRetning.Mot in tillattRetning) {
-                                        linesByVeglenkerReverse[veglenke] = createOpenLrLine(veglenke, TillattRetning.Mot)
+
+                                val feltoversikt = if (veglenke.konnektering) {
+                                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt ?: feltstrekningerLookup.findFeltoversikt(veglenke)
+                                } else {
+                                    veglenke.feltoversikt
+                                }
+                                if (feltoversikt.isNotEmpty()) {
+                                    val frc = frcLookup.findFrc(veglenke)
+                                    frcByVeglenke[veglenke] = frc
+                                    addVeglenke(veglenke, feltoversikt)
+                                } else {
+                                    // Sannsynligvis gangveg uten fartsgrense
+                                }
+                            }
+                        }
+                    }
+                }
+
+                veglenkerInitialized = true
+
+                log.measure("Load OpenLR lines") {
+                    coroutineScope {
+                        veglenkerLookup.forEach { (_, veglenker) ->
+                            launch {
+                                veglenker.filter {
+                                    it.isRelevant()
+                                }.forEach { veglenke ->
+                                    val tillattRetning = tillattRetningByVeglenke[veglenke]
+                                    if (tillattRetning != null) {
+                                        if (TillattRetning.Med in tillattRetning) {
+                                            linesByVeglenkerForward[veglenke] = createOpenLrLine(veglenke, TillattRetning.Med)
+                                        }
+                                        if (TillattRetning.Mot in tillattRetning) {
+                                            linesByVeglenkerReverse[veglenke] = createOpenLrLine(veglenke, TillattRetning.Mot)
+                                        }
                                     }
                                 }
                             }

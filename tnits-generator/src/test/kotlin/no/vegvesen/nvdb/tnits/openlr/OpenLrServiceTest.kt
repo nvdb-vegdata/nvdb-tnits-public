@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.openlr
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
@@ -12,12 +11,12 @@ import no.vegvesen.nvdb.tnits.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
+import no.vegvesen.nvdb.tnits.readJson
 import no.vegvesen.nvdb.tnits.setupCachedVegnett
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import org.openlr.binary.BinaryMarshallerFactory
 import org.openlr.map.FunctionalRoadClass
-import java.io.InputStream
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 private val marshaller = BinaryMarshallerFactory().create()
@@ -196,14 +195,4 @@ private fun loadStedfestinger(path: String): List<StedfestingUtstrekning> {
     val fartsgrense = objectMapper.readJson<ApiVegobjekt>(path)
     val stedfestinger = fartsgrense.getStedfestingLinjer()
     return stedfestinger
-}
-
-inline fun <reified T> ObjectMapper.readJson(name: String): T = streamFile(name).use { inputStream ->
-    readValue(inputStream)
-}
-
-fun streamFile(name: String): InputStream {
-    val function = { }
-    return function.javaClass.getResourceAsStream(name.let { if (it.startsWith("/")) it else "/$it" })
-        ?: error("Could not find resource $name")
 }

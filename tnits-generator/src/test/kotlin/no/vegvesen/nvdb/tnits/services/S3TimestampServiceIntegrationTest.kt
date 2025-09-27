@@ -4,7 +4,11 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.minio.*
+import io.minio.BucketExistsArgs
+import io.minio.MakeBucketArgs
+import io.minio.MinioClient
+import io.minio.PutObjectArgs
+import no.vegvesen.nvdb.tnits.clear
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import org.testcontainers.containers.MinIOContainer
 import java.io.ByteArrayInputStream
@@ -54,29 +58,7 @@ class S3TimestampServiceIntegrationTest :
 
         beforeEach {
             // First, delete all objects in the bucket using bulk deletion
-            val objects = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                    .recursive(true)
-                    .bucket(testBucket).build(),
-            )
-            val objectsToDelete = mutableListOf<io.minio.messages.DeleteObject>()
-
-            for (result in objects) {
-                objectsToDelete.add(io.minio.messages.DeleteObject(result.get().objectName()))
-            }
-
-            if (objectsToDelete.isNotEmpty()) {
-                val deleteResults = minioClient.removeObjects(
-                    RemoveObjectsArgs.builder()
-                        .bucket(testBucket)
-                        .objects(objectsToDelete)
-                        .build(),
-                )
-                // Process results to trigger actual deletion
-                for (result in deleteResults) {
-                    result.get() // This triggers the deletion
-                }
-            }
+            minioClient.clear(testBucket)
         }
 
         "should return null when no exports exist in S3" {

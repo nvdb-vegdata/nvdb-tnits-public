@@ -249,7 +249,7 @@ class TnitsFeatureGenerator(
     }
 
     companion object {
-        private val hardcodedFartsgrenseTillatteVerdier = mapOf(
+        val hardcodedFartsgrenseTillatteVerdier = mapOf(
             19885 to 5,
             11576 to 20,
             2726 to 30,

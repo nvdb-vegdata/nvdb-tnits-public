@@ -13,7 +13,7 @@ import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.model.toDomain
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
-import no.vegvesen.nvdb.tnits.openlr.readJson
+import no.vegvesen.nvdb.tnits.readJson
 import no.vegvesen.nvdb.tnits.vegnett.VeglenkesekvenserService.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt

@@ -14,3 +14,4 @@ ij_markdown_wrap_text_if_long = false
 
 [*.xml]
 max_line_length = off
+indent_style = tab
