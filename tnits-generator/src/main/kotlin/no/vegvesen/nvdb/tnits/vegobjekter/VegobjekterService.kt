@@ -73,30 +73,23 @@ class VegobjekterService(
     suspend fun getVegobjektChanges(typeId: Int, lastHendelseId: Long): VegobjektChanges {
         val changesById = mutableMapOf<Long, ChangeType>()
 
-        var start = lastHendelseId
+        var latestHendelseId = lastHendelseId
 
-        do {
-            val response = uberiketApi.getVegobjektHendelser(typeId = typeId, start = start)
+        uberiketApi.streamVegobjektHendelser(typeId = typeId, start = latestHendelseId).collect { hendelse ->
+            latestHendelseId = hendelse.hendelseId
+            when {
+                hendelse.hendelseType == "VegobjektImportert" -> changesById[hendelse.vegobjektId] = ChangeType.NEW
+                hendelse.hendelseType == "VegobjektVersjonOpprettet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
+                    ChangeType.NEW
 
-            val hendelser = response.hendelser
+                hendelse.hendelseType == "VegobjektVersjonFjernet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
+                    ChangeType.DELETED
 
-            start = hendelser.lastOrNull()?.hendelseId ?: start
-
-            for (hendelse in hendelser) {
-                when {
-                    hendelse.hendelseType == "VegobjektImportert" -> changesById[hendelse.vegobjektId] = ChangeType.NEW
-                    hendelse.hendelseType == "VegobjektVersjonOpprettet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
-                        ChangeType.NEW
-
-                    hendelse.hendelseType == "VegobjektVersjonFjernet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
-                        ChangeType.DELETED
-
-                    changesById[hendelse.vegobjektId] != ChangeType.NEW -> changesById[hendelse.vegobjektId] = ChangeType.MODIFIED
-                }
+                changesById[hendelse.vegobjektId] != ChangeType.NEW -> changesById[hendelse.vegobjektId] = ChangeType.MODIFIED
             }
-        } while (hendelser.isNotEmpty())
+        }
 
-        return VegobjektChanges(changesById, start)
+        return VegobjektChanges(changesById, latestHendelseId)
     }
 
     suspend fun updateVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {

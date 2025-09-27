@@ -36,11 +36,26 @@ class UberiketApiGateway(private val httpClient: HttpClient) : UberiketApi {
         }.body<VegnettNotifikasjon>()
         .hendelseId
 
-    override suspend fun getVeglenkesekvensHendelser(start: Long?, antall: Int): VegnettHendelserSide = httpClient
+    suspend fun getVeglenkesekvensHendelser(start: Long?, antall: Int): VegnettHendelserSide = httpClient
         .get("hendelser/veglenkesekvenser") {
             parameter("start", start)
             parameter("antall", antall)
         }.body()
+
+    override fun streamVeglenkesekvensHendelser(start: Long?): Flow<VegnettNotifikasjon> = flow {
+        var lastId = start
+        while (true) {
+            val side = getVeglenkesekvensHendelser(lastId, HENDELSER_PAGE_SIZE)
+
+            emitAll(side.hendelser.asFlow())
+
+            lastId = side.metadata.neste?.start?.toLong()
+
+            if (side.hendelser.isEmpty() || lastId == null) {
+                break
+            }
+        }
+    }
 
     override suspend fun streamVegobjekter(typeId: Int, ider: Collection<Long>?, start: Long?, antall: Int): Flow<Vegobjekt> = httpClient
         .prepareGet("vegobjekter/$typeId/stream") {
@@ -65,6 +80,21 @@ class UberiketApiGateway(private val httpClient: HttpClient) : UberiketApi {
             start = side.metadata.neste?.start?.toLong()
 
             if (side.hendelser.isEmpty() || start == null) {
+                break
+            }
+        }
+    }
+
+    override fun streamVegobjektHendelser(typeId: Int, start: Long?): Flow<VegobjektNotifikasjon> = flow {
+        var lastId = start
+        while (true) {
+            val side = getVegobjektHendelser(typeId, lastId, HENDELSER_PAGE_SIZE)
+
+            emitAll(side.hendelser.asFlow())
+
+            lastId = side.metadata.neste?.start?.toLong()
+
+            if (side.hendelser.isEmpty() || lastId == null) {
                 break
             }
         }

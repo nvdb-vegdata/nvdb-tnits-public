@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
+import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
@@ -80,56 +81,55 @@ class VeglenkesekvenserService(
 
         var hendelseCount = 0
 
-        do {
-            val response =
-                uberiketApi.getVeglenkesekvensHendelser(
-                    start = lastHendelseId,
-                )
+        uberiketApi.streamVeglenkesekvensHendelser(lastHendelseId).chunked(100)
+            .collect { hendelser ->
+                lastHendelseId = hendelser.last().hendelseId
 
-            if (response.hendelser.isNotEmpty()) {
-                lastHendelseId = response.hendelser.last().hendelseId
-                val changedIds = response.hendelser.map { it.nettelementId }.toSet()
-                val updates = mutableMapOf<Long, List<Veglenke>?>()
+                val changedIds = hendelser.map { it.nettelementId }.toSet()
+                val updates = fetchUpdates(changedIds)
 
-                // Process changed veglenkesekvenser in chunks
-                changedIds.forEachChunked(100) { chunk ->
-                    var start: Long? = null
-                    do {
-                        val batch =
-                            uberiketApi
-                                .streamVeglenkesekvenser(start = start, ider = chunk)
-                                .toList()
-
-                        if (batch.isNotEmpty()) {
-                            batch.forEach { veglenkesekvens ->
-                                val domainVeglenker = veglenkesekvens.convertToDomainVeglenker()
-                                updates[veglenkesekvens.id] = domainVeglenker
-                            }
-                            start = batch.maxOf { it.id }
-                        }
-                    } while (batch.isNotEmpty())
-                }
-
-                // Handle deleted veglenkesekvenser (those that didn't return data)
-                val foundIds = updates.keys
-                val deletedIds = changedIds - foundIds
-                deletedIds.forEach { deletedId ->
-                    updates[deletedId] = null // Mark for deletion
-                }
-
-                // Apply all updates to RocksDB and mark dirty records in SQL
                 rocksDbContext.writeBatch {
                     veglenkerRepository.batchUpdate(updates)
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
-
-                log.info("Behandlet ${response.hendelser.size} hendelser, siste ID: $lastHendelseId")
-                hendelseCount += response.hendelser.size
+                log.info("Behandlet ${hendelser.size} hendelser, siste ID: $lastHendelseId")
+                hendelseCount += hendelser.size
             }
-        } while (response.hendelser.isNotEmpty())
+
         log.info("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
 
         return hendelseCount
+    }
+
+    private suspend fun fetchUpdates(changedIds: Set<Long>): MutableMap<Long, List<Veglenke>?> {
+        val updates = mutableMapOf<Long, List<Veglenke>?>()
+
+        // Process changed veglenkesekvenser in chunks
+        changedIds.forEachChunked(100) { chunk ->
+            var start: Long? = null
+            do {
+                val batch =
+                    uberiketApi
+                        .streamVeglenkesekvenser(start = start, ider = chunk)
+                        .toList()
+
+                if (batch.isNotEmpty()) {
+                    batch.forEach { veglenkesekvens ->
+                        val domainVeglenker = veglenkesekvens.convertToDomainVeglenker()
+                        updates[veglenkesekvens.id] = domainVeglenker
+                    }
+                    start = batch.maxOf { it.id }
+                }
+            } while (batch.isNotEmpty())
+        }
+
+        // Handle deleted veglenkesekvenser (those that didn't return data)
+        val foundIds = updates.keys
+        val deletedIds = changedIds - foundIds
+        deletedIds.forEach { deletedId ->
+            updates[deletedId] = null // Mark for deletion
+        }
+        return updates
     }
 
     companion object {

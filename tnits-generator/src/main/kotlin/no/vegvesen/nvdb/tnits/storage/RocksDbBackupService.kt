@@ -301,7 +301,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
                         log.debug("  Backup ID: ${info.backupId()}, Size: ${info.size()} bytes, Timestamp: ${info.timestamp()}")
                     }
 
-                    log.debug("Starting restore from backup path: $backupPath to database path: ${rocksDbContext.dbPath}")
+                    log.debug("Starting restore from backup path: {} to database path: {}", backupPath, rocksDbContext.dbPath)
                     // Restore to current rocksDbContext.dbPath (both db_dir and wal_dir point to the same location)
                     backupEngine.restoreDbFromLatestBackup(rocksDbContext.dbPath, rocksDbContext.dbPath, restoreOptions)
                     log.debug("restoreDbFromLatestBackup completed")

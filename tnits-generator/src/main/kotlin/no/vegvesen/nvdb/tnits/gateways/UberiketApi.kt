@@ -15,8 +15,6 @@ interface UberiketApi {
 
     suspend fun getLatestVeglenkesekvensHendelseId(tidspunkt: Instant): Long
 
-    suspend fun getVeglenkesekvensHendelser(start: Long? = null, antall: Int = HENDELSER_PAGE_SIZE): VegnettHendelserSide
-
     suspend fun streamVegobjekter(typeId: Int, ider: Collection<Long>? = null, start: Long? = null, antall: Int = VEGOBJEKTER_PAGE_SIZE): Flow<Vegobjekt>
 
     suspend fun getLatestVegobjektHendelseId(typeId: Int, tidspunkt: Instant): Long
@@ -30,4 +28,7 @@ interface UberiketApi {
         vegobjektIds: Set<Long>,
         inkluderIVegobjekt: Set<InkluderIVegobjekt> = setOf(InkluderIVegobjekt.ALLE),
     ): Flow<Vegobjekt>
+
+    fun streamVeglenkesekvensHendelser(start: Long?): Flow<VegnettNotifikasjon>
+    fun streamVegobjektHendelser(typeId: Int, start: Long?): Flow<VegobjektNotifikasjon>
 }

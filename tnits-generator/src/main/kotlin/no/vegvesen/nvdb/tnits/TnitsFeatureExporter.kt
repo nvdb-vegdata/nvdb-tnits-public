@@ -143,7 +143,7 @@ class TnitsFeatureExporter(
             ) {
                 "metadata" {
                     "Metadata" {
-                        "datasetId" { "NVDB-TNITS-${featureType}_${timestamp.truncateToSeconds()}" }
+                        "datasetId" { "NVDB-TNITS-${featureType}_${exportType}_${timestamp.truncateToSeconds()}" }
                         "datasetCreationTime" { timestamp }
                     }
                 }
