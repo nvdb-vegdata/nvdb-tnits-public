@@ -5,7 +5,10 @@ plugins {
 
 publishing {
     publications {
-        (publications["maven"] as MavenPublication).artifact(tasks["bootJar"])
+        (publications["maven"] as MavenPublication).run {
+            artifacts.clear()
+            artifact(tasks["bootJar"])
+        }
     }
 }
 

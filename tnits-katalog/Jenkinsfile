@@ -63,7 +63,7 @@ pipeline {
                     rtGradleDeployer(id: 'jfrog-gradle-deployer', serverId: 'svv-artrepo', releaseRepo: 'libs-release-local', snapshotRepo: 'libs-snapshot-local')
                     sh('rm gradle_output.log -f')
                     tee('gradle_output.log') {
-                        rtGradleRun(useWrapper: true, deployerId: 'jfrog-gradle-deployer', tasks: "$projectRoot:clean $projectRoot:bootJar $projectRoot:artifactoryPublish -Pversion=$version")
+                        rtGradleRun(useWrapper: true, deployerId: 'jfrog-gradle-deployer', tasks: "$projectRoot:clean $projectRoot:artifactoryPublish -Pversion=$version")
                     }
                     def buildLog = readFile('gradle_output.log')
                     artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
