@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._734a7a566e0c761836055f103d9b4672.publishing
-
 plugins {
     id("tnits-conventions")
     kotlin("jvm")
