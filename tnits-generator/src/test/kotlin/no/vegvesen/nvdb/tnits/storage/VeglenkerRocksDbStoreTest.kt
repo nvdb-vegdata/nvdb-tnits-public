@@ -1,7 +1,7 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import io.kotest.core.spec.Spec
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -15,7 +15,7 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import java.nio.file.Files
 
-class VeglenkerRocksDbStoreTest : StringSpec() {
+class VeglenkerRocksDbStoreTest : ShouldSpec() {
     private lateinit var tempDir: String
     private lateinit var configuration: RocksDbContext
     private lateinit var store: VeglenkerRocksDbStore
@@ -38,7 +38,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
     }
 
     init {
-        "should store and retrieve veglenker" {
+        should("store and retrieve veglenker") {
             val geometryFactory = GeometryFactory()
             val testGeometry =
                 geometryFactory
@@ -84,7 +84,7 @@ class VeglenkerRocksDbStoreTest : StringSpec() {
             store.size() shouldBe 0L
         }
 
-        "should perform batch operations" {
+        should("perform batch operations") {
             val geometryFactory = geometryFactories[SRID.WGS84]!!
             val testGeometry =
                 geometryFactory

@@ -1,15 +1,15 @@
 package no.vegvesen.nvdb.tnits
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import kotlin.time.Instant
 
 class SpeedLimitExporterTest :
-    StringSpec({
+    ShouldSpec({
 
-        "generateS3Key should format with padded vegobjekttype for speed limits" {
+        should("format S3 key with padded vegobjekttype for speed limits") {
             // Arrange
             val timestamp = Instant.parse("2025-01-15T10:30:00Z")
 
@@ -21,7 +21,7 @@ class SpeedLimitExporterTest :
             updateKey shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/update.xml"
         }
 
-        "generateS3Key should include .gz extension when gzip is enabled" {
+        should("include .gz extension in S3 key when gzip is enabled") {
             // Arrange
             val timestamp = Instant.parse("2025-01-15T10:30:00Z")
 
@@ -32,7 +32,7 @@ class SpeedLimitExporterTest :
             key shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
         }
 
-        "generateS3Key should replace colons in timestamp with hyphens" {
+        should("replace colons in timestamp with hyphens in S3 key") {
             // Arrange
             val timestamp = Instant.parse("2025-01-15T10:30:45.123Z")
 

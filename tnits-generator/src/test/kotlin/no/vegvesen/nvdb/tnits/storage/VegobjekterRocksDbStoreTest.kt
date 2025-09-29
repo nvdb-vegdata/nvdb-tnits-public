@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -19,9 +19,9 @@ import no.vegvesen.nvdb.tnits.vegobjekter.getStedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 class VegobjekterRocksDbStoreTest :
-    StringSpec({
+    ShouldSpec({
 
-        "save and retrieve vegobjekt and stedfestinger" {
+        should("save and retrieve vegobjekt and stedfestinger") {
             withTempDb { dbContext ->
                 val vegobjekter = VegobjekterRocksDbStore(dbContext)
                 val apiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
@@ -36,7 +36,7 @@ class VegobjekterRocksDbStoreTest :
             }
         }
 
-        "find overlapping vegobjekter" {
+        should("find overlapping vegobjekter") {
             withTempDb { dbContext ->
                 val veglenkesekvenser = VeglenkerRocksDbStore(dbContext)
                 val vegobjekter = VegobjekterRocksDbStore(dbContext)
@@ -57,7 +57,7 @@ class VegobjekterRocksDbStoreTest :
             }
         }
 
-        "getVegobjektStedfestingLookup should group vegobjekter by veglenkesekvensId" {
+        should("group vegobjekter by veglenkesekvensId") {
             withTempDb { dbContext ->
                 // Arrange
                 val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
@@ -135,7 +135,7 @@ class VegobjekterRocksDbStoreTest :
             }
         }
 
-        "getVegobjektStedfestingLookup should filter by vegobjekt type" {
+        should("filter by vegobjekt type") {
             withTempDb { dbContext ->
                 // Arrange
                 val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
@@ -164,7 +164,7 @@ class VegobjekterRocksDbStoreTest :
             }
         }
 
-        "getVegobjektStedfestingLookup should handle empty results" {
+        should("handle empty results") {
             withTempDb { dbContext ->
                 // Arrange
                 val vegobjekterStore = VegobjekterRocksDbStore(dbContext)

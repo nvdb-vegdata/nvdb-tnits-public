@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.extensions
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.storage.RocksDbContext
@@ -8,7 +8,7 @@ import java.io.File
 import kotlin.io.path.createTempDirectory
 
 class KeyValueRocksDbExtensionsTest :
-    StringSpec({
+    ShouldSpec({
 
         lateinit var tempDir: File
         lateinit var rocksDbConfig: RocksDbContext
@@ -25,7 +25,7 @@ class KeyValueRocksDbExtensionsTest :
             tempDir.deleteRecursively()
         }
 
-        "should clear veglenkesekvens settings" {
+        should("clear veglenkesekvens settings") {
             // Arrange
             store.put("veglenkesekvenser_setting1", "value1")
             store.put("veglenkesekvenser_setting2", "value2")
@@ -42,7 +42,7 @@ class KeyValueRocksDbExtensionsTest :
             store.get<String>("other_setting") shouldBe "value3" // Should remain
         }
 
-        "should count worker last ID entries" {
+        should("count worker last ID entries") {
             // Arrange
             store.put("veglenkesekvenser_backfill_last_id_worker_0", 1000L)
             store.put("veglenkesekvenser_backfill_last_id_worker_1", 2000L)
@@ -57,7 +57,7 @@ class KeyValueRocksDbExtensionsTest :
             count shouldBe 3
         }
 
-        "should count range worker completions" {
+        should("count range worker completions") {
             // Arrange
             store.put("veglenkesekvenser_backfill_range_0_completed", true)
             store.put("veglenkesekvenser_backfill_range_1_completed", true)
@@ -73,7 +73,7 @@ class KeyValueRocksDbExtensionsTest :
             count shouldBe 3
         }
 
-        "should check if range is completed" {
+        should("check if range is completed") {
             // Arrange
             store.put("veglenkesekvenser_backfill_range_0_completed", true)
             store.put("veglenkesekvenser_backfill_range_1_completed", false)
@@ -84,7 +84,7 @@ class KeyValueRocksDbExtensionsTest :
             store.isRangeCompleted(2) shouldBe false // Non-existent should return false
         }
 
-        "should mark range as completed" {
+        should("mark range as completed") {
             // Arrange
             store.isRangeCompleted(0) shouldBe false
 
@@ -96,7 +96,7 @@ class KeyValueRocksDbExtensionsTest :
             store.get<Boolean>("veglenkesekvenser_backfill_range_0_completed") shouldBe true
         }
 
-        "should handle multiple worker ranges" {
+        should("handle multiple worker ranges") {
             // Arrange - Mark several ranges as completed
             store.markRangeCompleted(0)
             store.markRangeCompleted(1)
@@ -110,7 +110,7 @@ class KeyValueRocksDbExtensionsTest :
             store.getRangeWorkerCount() shouldBe 3
         }
 
-        "should work with complex scenarios" {
+        should("work with complex scenarios") {
             // Arrange - Set up a complex backfill scenario
             store.put("veglenkesekvenser_backfill_started", "2023-01-01T00:00:00Z")
             store.put("veglenkesekvenser_backfill_last_id_worker_0", 1000L)

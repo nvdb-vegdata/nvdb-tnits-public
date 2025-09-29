@@ -1,12 +1,12 @@
 package no.vegvesen.nvdb.tnits.geometry
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 
 class GeometryHelpersTest :
-    StringSpec({
+    ShouldSpec({
 
-        "projects UTM33 to WGS84 with 6 decimals" {
+        should("project UTM33 to WGS84 with 6 decimals") {
             val wkt = "LINESTRING (512345 6123456, 512445 6123556)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -16,7 +16,7 @@ class GeometryHelpersTest :
             projected.toText() shouldBe "LINESTRING (15.194231 55.257432, 15.195809 55.258328)"
         }
 
-        "simplifies geometry to specified tolerance" {
+        should("simplify geometry to specified tolerance") {
             val wkt = "LINESTRING (0 0, 1 0, 2 4, 3 0, 4 1, 5 1, 6 0, 7 0, 8 1, 9 0, 10 1)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 

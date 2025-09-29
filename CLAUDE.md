@@ -212,9 +212,9 @@ Tests are placed in the matching package as the source code under `src/test/kotl
 
 - **TempRocksDbConfig.withTempDb**: Utility for creating temporary RocksDB instances in tests
 - **TestContainers**: Used for MinIO S3 integration testing
-- **Kotest**: Test framework with StringSpec style for readable test names
+- **Kotest**: Test framework with ShouldSpec style for readable test names
 
-The project uses Kotest's StringSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
+The project uses Kotest's ShouldSpec style for readable test names and supports both JUnit Platform and Kotest-specific filtering.
 
 ### Code Style and Formatting
 

@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.openlr
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -19,9 +19,9 @@ import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 private val marshaller = BinaryMarshallerFactory().create()
 
 class OpenLrServiceTest :
-    StringSpec({
+    ShouldSpec({
 
-        "should convert speed limit stedfesting to OpenLR with real NVDB data" {
+        should("convert speed limit stedfesting to OpenLR with real NVDB data") {
             withTempDb { dbContext ->
                 // Arrange
                 val openLrService =
@@ -76,7 +76,7 @@ class OpenLrServiceTest :
             }
         }
 
-        "should convert speed limit stedfesting to OpenLR with multi-sequence NVDB data" {
+        should("convert speed limit stedfesting to OpenLR with multi-sequence NVDB data") {
             withTempDb { dbContext ->
                 // Arrange
                 val openLrService =
@@ -115,7 +115,7 @@ class OpenLrServiceTest :
             }
         }
 
-        "should handle speed limits with gaps in veglenkesekvens and varied tillatt kjøreretning" {
+        should("handle speed limits with gaps in veglenkesekvens and varied tillatt kjøreretning") {
             withTempDb { config ->
                 // Arrange
                 val openLrService =
@@ -146,7 +146,7 @@ class OpenLrServiceTest :
             }
         }
 
-        "should handle speed limit stedfestet MOT lenkeretning" {
+        should("handle speed limit stedfestet MOT lenkeretning") {
             withTempDb { config ->
                 // Arrange
                 val openLrService =

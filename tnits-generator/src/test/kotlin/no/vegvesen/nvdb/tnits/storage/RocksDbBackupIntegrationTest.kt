@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
@@ -9,7 +9,7 @@ import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.testcontainers.containers.MinIOContainer
 
 class RocksDbBackupIntegrationTest :
-    StringSpec({
+    ShouldSpec({
 
         val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
             .withUserName("testuser")
@@ -36,7 +36,7 @@ class RocksDbBackupIntegrationTest :
             minioContainer.stop()
         }
 
-        "should restore database from S3 backup" {
+        should("restore database from S3 backup") {
             withTempDb { dbContext ->
                 val backupConfig = BackupConfig(
                     enabled = true,

@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.*
@@ -23,7 +23,7 @@ import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
 class S3IntegrationTest :
-    StringSpec({
+    ShouldSpec({
 
         val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
             .withUserName("testuser")
@@ -63,7 +63,7 @@ class S3IntegrationTest :
                 )
             }
         }
-        "S3OutputStream should upload data to real MinIO instance" {
+        should("upload data to real MinIO instance") {
             // Arrange
             val testData = "Hello, MinIO Integration Test!"
             val objectKey = "test-uploads/integration-test.txt"
@@ -95,7 +95,7 @@ class S3IntegrationTest :
             retrievedContent shouldBe testData
         }
 
-        "S3OutputStream should handle GZIP compression correctly" {
+        should("handle GZIP compression correctly") {
             // Arrange
             val testData = "This is a test for GZIP compression in S3OutputStream!"
             val objectKey = "test-uploads/gzip-test.txt.gz"
@@ -133,7 +133,7 @@ class S3IntegrationTest :
             decompressedContent shouldBe testData
         }
 
-        "SpeedLimitExporter should export to S3 with correct folder structure" {
+        should("export to S3 with correct folder structure") {
             // Arrange
             val mockSpeedLimit = TnitsFeature(
                 id = 123L,
@@ -186,7 +186,7 @@ class S3IntegrationTest :
             xmlContent.contains("RoadFeatureDataset") shouldBe true
         }
 
-        "SpeedLimitExporter should export GZIP compressed files to S3" {
+        should("export GZIP compressed files to S3") {
             // Arrange
             val mockSpeedLimit = TnitsFeature(
                 id = 456L,

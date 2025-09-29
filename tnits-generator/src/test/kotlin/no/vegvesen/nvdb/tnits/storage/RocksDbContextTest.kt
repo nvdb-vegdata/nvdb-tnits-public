@@ -1,7 +1,7 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import io.kotest.core.spec.Spec
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
@@ -11,7 +11,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.nio.file.Files
 
-class RocksDbContextTest : StringSpec() {
+class RocksDbContextTest : ShouldSpec() {
     private lateinit var tempDir: String
     private lateinit var dbContext: RocksDbContext
 
@@ -30,7 +30,7 @@ class RocksDbContextTest : StringSpec() {
     }
 
     init {
-        "should initialize RocksDB with column families" {
+        should("initialize RocksDB with column families") {
             dbContext.getDatabase() shouldNotBe null
             dbContext.getColumnFamily(ColumnFamily.DEFAULT).shouldNotBeNull()
             dbContext.getColumnFamily(ColumnFamily.NODER).shouldNotBeNull()
@@ -39,7 +39,7 @@ class RocksDbContextTest : StringSpec() {
             dbContext.existsAndHasData() shouldBe false
         }
 
-        "should clear database" {
+        should("clear database") {
             val veglenkerStore = VeglenkerRocksDbStore(dbContext)
 
             veglenkerStore.upsert(1L, emptyList())
@@ -53,7 +53,7 @@ class RocksDbContextTest : StringSpec() {
             dbContext.existsAndHasData() shouldBe false
         }
 
-        "should find keys by prefix" {
+        should("find keys by prefix") {
             // Arrange
             val testData = mapOf(
                 "user:1:name".toByteArray() to "Alice".toByteArray(),
@@ -89,7 +89,7 @@ class RocksDbContextTest : StringSpec() {
             user1Keys.map { String(it) } shouldContain "user:1:email"
         }
 
-        "should find key-value pairs by prefix" {
+        should("find key-value pairs by prefix") {
             // Arrange
             val testData = mapOf(
                 "config:db:host".toByteArray() to "localhost".toByteArray(),
@@ -120,7 +120,7 @@ class RocksDbContextTest : StringSpec() {
             dbConfigMap["config:db:port"] shouldBe "5432"
         }
 
-        "should return empty results for non-matching prefix" {
+        should("return empty results for non-matching prefix") {
             // Arrange
             dbContext.put(ColumnFamily.DEFAULT, "existing:key".toByteArray(), "value".toByteArray())
 
@@ -129,7 +129,7 @@ class RocksDbContextTest : StringSpec() {
             dbContext.findByPrefix(ColumnFamily.DEFAULT, "missing:".toByteArray()).shouldBeEmpty()
         }
 
-        "should return empty results for empty prefix" {
+        should("return empty results for empty prefix") {
             // Arrange
             dbContext.put(ColumnFamily.DEFAULT, "some:key".toByteArray(), "value".toByteArray())
 

@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.model
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -11,12 +11,12 @@ import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 
 class JtsGeometrySerializerTest :
-    StringSpec({
+    ShouldSpec({
 
         val geometryFactory = GeometryFactory()
         val wktReader = WKTReader(geometryFactory)
 
-        "should serialize and deserialize Point geometry" {
+        should("serialize and deserialize Point geometry") {
             val originalPoint = geometryFactory.createPoint(Coordinate(10.5, 20.3))
             originalPoint.srid = SRID.WGS84
 
@@ -30,7 +30,7 @@ class JtsGeometrySerializerTest :
             deserialized.factory.srid shouldBe SRID.WGS84
         }
 
-        "should serialize and deserialize LineString geometry" {
+        should("serialize and deserialize LineString geometry") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0),
@@ -54,7 +54,7 @@ class JtsGeometrySerializerTest :
             deserialized.srid shouldBe SRID.WGS84
         }
 
-        "should serialize and deserialize Polygon geometry" {
+        should("serialize and deserialize Polygon geometry") {
             val shell =
                 geometryFactory.createLinearRing(
                     arrayOf(
@@ -90,7 +90,7 @@ class JtsGeometrySerializerTest :
             deserialized.srid shouldBe SRID.WGS84
         }
 
-        "should serialize and deserialize MultiLineString geometry" {
+        should("serialize and deserialize MultiLineString geometry") {
             val line1 =
                 geometryFactory.createLineString(
                     arrayOf(
@@ -122,7 +122,7 @@ class JtsGeometrySerializerTest :
             firstLine.getCoordinateN(1).x shouldBe 10.0
         }
 
-        "should preserve SRID during serialization round trip" {
+        should("preserve SRID during serialization round trip") {
             val originalGeometry = wktReader.read("LINESTRING(590000 6640000, 591000 6641000)")
             originalGeometry.srid = SRID.WGS84
 
@@ -132,7 +132,7 @@ class JtsGeometrySerializerTest :
             deserialized.srid shouldBe SRID.WGS84
         }
 
-        "should handle empty geometries" {
+        should("handle empty geometries") {
             val emptyLineString = geometryFactory.createLineString()
             emptyLineString.srid = SRID.WGS84
 
@@ -144,7 +144,7 @@ class JtsGeometrySerializerTest :
             deserialized.srid shouldBe SRID.WGS84
         }
 
-        "should handle geometries with Z coordinates" {
+        should("handle geometries with Z coordinates") {
             val coordinatesWithZ =
                 arrayOf(
                     Coordinate(0.0, 0.0, 100.0),
@@ -163,7 +163,7 @@ class JtsGeometrySerializerTest :
             deserialized.getCoordinateN(0).z.isNaN() shouldBe true
         }
 
-        "should create separate writer instances for thread safety" {
+        should("create separate writer instances for thread safety") {
             val writer1 = JtsGeometrySerializer.createWriter()
             val writer2 = JtsGeometrySerializer.createWriter()
 
@@ -171,7 +171,7 @@ class JtsGeometrySerializerTest :
             writer1::class shouldBe writer2::class
         }
 
-        "should create separate reader instances for thread safety" {
+        should("create separate reader instances for thread safety") {
             val reader1 = JtsGeometrySerializer.createReader()
             val reader2 = JtsGeometrySerializer.createReader()
 
@@ -179,7 +179,7 @@ class JtsGeometrySerializerTest :
             reader1::class shouldBe reader2::class
         }
 
-        "should work with JSON serialization (for debugging)" {
+        should("work with JSON serialization for debugging") {
             val originalPoint = geometryFactory.createPoint(Coordinate(10.5, 20.3))
             originalPoint.srid = SRID.WGS84
 
@@ -192,7 +192,7 @@ class JtsGeometrySerializerTest :
             deserialized.srid shouldBe SRID.WGS84
         }
 
-        "should handle complex road network geometries" {
+        should("handle complex road network geometries") {
             // Test with a realistic road segment geometry
             val roadGeometry =
                 wktReader

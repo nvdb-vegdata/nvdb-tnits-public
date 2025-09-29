@@ -1,15 +1,15 @@
 package no.vegvesen.nvdb.tnits.vegnett
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.setupCachedVegnett
 
 class CachedVegnettTest :
-    StringSpec({
+    ShouldSpec({
 
-        "should correctly build vegnett where veglenker have opposite start and end nodes" {
+        should("correctly build vegnett where veglenker have opposite start and end nodes") {
             withTempDb { dbContext ->
                 val cachedVegnett = setupCachedVegnett(dbContext, "veglenkesekvenser-1901376-1901377-1901381-1901382.json")
 

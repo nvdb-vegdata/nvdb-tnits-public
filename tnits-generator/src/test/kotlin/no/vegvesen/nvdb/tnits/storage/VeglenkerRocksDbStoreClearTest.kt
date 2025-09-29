@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
@@ -12,9 +12,9 @@ import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.locationtech.jts.geom.Coordinate
 
 class VeglenkerRocksDbStoreClearTest :
-    StringSpec({
+    ShouldSpec({
 
-        "should verify data is gone after clear and store can access empty database" {
+        should("verify data is gone after clear and store can access empty database") {
             withTempDb { config ->
                 // Arrange - Create store and add data
                 val store = VeglenkerRocksDbStore(config)

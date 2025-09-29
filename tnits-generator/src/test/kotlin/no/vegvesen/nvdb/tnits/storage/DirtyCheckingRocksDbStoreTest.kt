@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -14,9 +14,9 @@ import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import kotlin.time.Clock
 
 class DirtyCheckingRocksDbStoreTest :
-    StringSpec({
+    ShouldSpec({
 
-        "getDirtyVegobjektChanges should return empty set when no dirty changes exist" {
+        should("return empty set when no dirty changes exist") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -29,7 +29,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "getDirtyVegobjektChanges should return dirty vegobjekt changes for specific type" {
+        should("return dirty vegobjekt changes for specific type") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -59,7 +59,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "findStedfestingVegobjektIds should return empty set when no stedfesting exists" {
+        should("return empty set when no stedfesting exists") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -73,7 +73,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "findStedfestingVegobjektIds should find vegobjekter positioned on veglenkesekvenser" {
+        should("find vegobjekter positioned on veglenkesekvenser") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -135,7 +135,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "findStedfestingVegobjektIds should handle vegobjekter with multiple stedfestinger" {
+        should("handle vegobjekter with multiple stedfestinger") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -182,7 +182,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearDirtyVegobjektIds should remove specific dirty IDs" {
+        should("remove specific dirty IDs") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -216,7 +216,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearDirtyVegobjektIds should handle empty set gracefully" {
+        should("handle empty set gracefully when clearing dirty vegobjekt IDs") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -238,7 +238,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearAllDirtyVegobjektIds should remove all dirty IDs for specific type" {
+        should("remove all dirty IDs for specific type") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -271,7 +271,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearAllDirtyVegobjektIds should handle type with no dirty IDs gracefully" {
+        should("handle type with no dirty IDs gracefully when clearing all") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -285,7 +285,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearAllDirtyVeglenkesekvenser should remove all dirty veglenkesekvens IDs" {
+        should("remove all dirty veglenkesekvens IDs") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -321,7 +321,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearAllDirtyVeglenkesekvenser should handle empty state gracefully" {
+        should("handle empty state gracefully when clearing all dirty veglenkesekvenser") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
@@ -335,7 +335,7 @@ class DirtyCheckingRocksDbStoreTest :
             }
         }
 
-        "clearAllDirtyVeglenkesekvenser should only affect veglenkesekvenser and not vegobjekt changes" {
+        should("only affect veglenkesekvenser and not vegobjekt changes when clearing all dirty veglenkesekvenser") {
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)

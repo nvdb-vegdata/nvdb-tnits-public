@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
@@ -11,10 +11,10 @@ import io.mockk.verify
 import kotlinx.coroutines.delay
 
 class S3OutputStreamTest :
-    StringSpec({
+    ShouldSpec({
 
         val contentType = "application/text"
-        "S3OutputStream should write data to MinIO via piped stream" {
+        should("write data to MinIO via piped stream") {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             val putObjectArgsSlot = slot<PutObjectArgs>()
@@ -40,7 +40,7 @@ class S3OutputStreamTest :
             capturedArgs shouldNotBe null
         }
 
-        "S3OutputStream should handle single byte writes" {
+        should("handle single byte writes") {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             every { mockMinioClient.putObject(any<PutObjectArgs>()) } returns mockk()
@@ -62,7 +62,7 @@ class S3OutputStreamTest :
             verify { mockMinioClient.putObject(any<PutObjectArgs>()) }
         }
 
-        "S3OutputStream should handle byte array writes with offset and length" {
+        should("handle byte array writes with offset and length") {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             every { mockMinioClient.putObject(any<PutObjectArgs>()) } returns mockk()
@@ -83,7 +83,7 @@ class S3OutputStreamTest :
             verify { mockMinioClient.putObject(any<PutObjectArgs>()) }
         }
 
-        "S3OutputStream should use correct content type" {
+        should("use correct content type") {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             val putObjectArgsSlot = slot<PutObjectArgs>()
@@ -106,7 +106,7 @@ class S3OutputStreamTest :
             verify { mockMinioClient.putObject(any<PutObjectArgs>()) }
         }
 
-        "S3OutputStream should support flush operations" {
+        should("support flush operations") {
             // Arrange
             val mockMinioClient = mockk<MinioClient>()
             every { mockMinioClient.putObject(any<PutObjectArgs>()) } returns mockk()

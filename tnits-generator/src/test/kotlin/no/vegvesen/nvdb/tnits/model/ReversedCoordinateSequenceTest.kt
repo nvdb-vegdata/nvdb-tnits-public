@@ -1,7 +1,7 @@
 package no.vegvesen.nvdb.tnits.model
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -9,11 +9,11 @@ import org.locationtech.jts.geom.*
 import kotlin.time.measureTime
 
 class ReversedCoordinateSequenceTest :
-    StringSpec({
+    ShouldSpec({
 
         val geometryFactory = GeometryFactory()
 
-        "should reverse coordinate order correctly" {
+        should("reverse coordinate order correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0),
@@ -31,7 +31,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.getCoordinate(3) shouldBe Coordinate(0.0, 0.0)
         }
 
-        "should maintain original dimension" {
+        should("maintain original dimension") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0, 100.0),
@@ -43,7 +43,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.dimension shouldBe originalSeq.dimension
         }
 
-        "should reverse X and Y coordinates correctly" {
+        should("reverse X and Y coordinates correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -61,7 +61,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.getY(2) shouldBe 2.0
         }
 
-        "should reverse ordinate values correctly" {
+        should("reverse ordinate values correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0, 100.0),
@@ -80,7 +80,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.getOrdinate(2, 2) shouldBe 100.0 // Z
         }
 
-        "should throw exception when attempting to modify" {
+        should("throw exception when attempting to modify") {
             val coordinates = arrayOf(Coordinate(1.0, 2.0))
             val originalSeq = geometryFactory.coordinateSequenceFactory.create(coordinates)
             val reversedSeq = ReversedCoordinateSequence(originalSeq)
@@ -90,7 +90,7 @@ class ReversedCoordinateSequenceTest :
             }
         }
 
-        "should return correct coordinate copies" {
+        should("return correct coordinate copies") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -109,7 +109,7 @@ class ReversedCoordinateSequenceTest :
             (copy1 !== copy2) shouldBe true // Different instances
         }
 
-        "should fill coordinate object correctly" {
+        should("fill coordinate object correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -123,7 +123,7 @@ class ReversedCoordinateSequenceTest :
             coord shouldBe Coordinate(1.0, 2.0)
         }
 
-        "should convert to coordinate array correctly" {
+        should("convert to coordinate array correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -140,7 +140,7 @@ class ReversedCoordinateSequenceTest :
             array[2] shouldBe Coordinate(1.0, 2.0)
         }
 
-        "should expand envelope correctly" {
+        should("expand envelope correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -157,7 +157,7 @@ class ReversedCoordinateSequenceTest :
             envelope.maxY shouldBe 8.0
         }
 
-        "should expand existing envelope correctly" {
+        should("expand existing envelope correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(2.0, 3.0),
@@ -175,7 +175,7 @@ class ReversedCoordinateSequenceTest :
             expandedEnvelope.maxY shouldBe 5.0
         }
 
-        "should clone correctly" {
+        should("clone correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -192,7 +192,7 @@ class ReversedCoordinateSequenceTest :
             cloned.getCoordinate(0) shouldBe reversedSeq.getCoordinate(0)
         }
 
-        "should copy correctly" {
+        should("copy correctly") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -209,7 +209,7 @@ class ReversedCoordinateSequenceTest :
             copied.getCoordinate(0) shouldBe reversedSeq.getCoordinate(0)
         }
 
-        "should handle empty sequence" {
+        should("handle empty sequence") {
             val emptySeq = geometryFactory.coordinateSequenceFactory.create(arrayOf<Coordinate>())
             val reversedSeq = ReversedCoordinateSequence(emptySeq)
 
@@ -217,7 +217,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.toCoordinateArray().size shouldBe 0
         }
 
-        "should handle single coordinate" {
+        should("handle single coordinate") {
             val coordinates = arrayOf(Coordinate(5.0, 10.0))
             val originalSeq = geometryFactory.coordinateSequenceFactory.create(coordinates)
             val reversedSeq = ReversedCoordinateSequence(originalSeq)
@@ -228,7 +228,7 @@ class ReversedCoordinateSequenceTest :
             reversedSeq.getY(0) shouldBe 10.0
         }
 
-        "should maintain precision with double coordinates" {
+        should("maintain precision with double coordinates") {
             val coordinates =
                 arrayOf(
                     Coordinate(123.456789, 987.654321),
@@ -245,7 +245,7 @@ class ReversedCoordinateSequenceTest :
 
         // Tests for reversedView function
 
-        "reversedView should create LineString with reversed coordinate order" {
+        should("create LineString with reversed coordinate order") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0),
@@ -264,7 +264,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.getCoordinateN(3) shouldBe Coordinate(0.0, 0.0)
         }
 
-        "reversedView should preserve original LineString geometry factory" {
+        should("preserve original LineString geometry factory") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -276,7 +276,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.factory shouldBe originalLine.factory
         }
 
-        "reversedView should work with custom geometry factory" {
+        should("work with custom geometry factory") {
             val customFactory = GeometryFactory()
             val coordinates =
                 arrayOf(
@@ -290,7 +290,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.factory shouldNotBe originalLine.factory
         }
 
-        "reversedView should use same geometry factory and preserve factory SRID" {
+        should("use same geometry factory and preserve factory SRID") {
             val coordinates =
                 arrayOf(
                     Coordinate(590000.0, 6640000.0),
@@ -305,7 +305,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.srid shouldBe 25833
         }
 
-        "reversedView should handle simple two-point line" {
+        should("handle simple two-point line") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0),
@@ -319,7 +319,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.getCoordinateN(1) shouldBe Coordinate(0.0, 0.0)
         }
 
-        "reversedView should handle minimal valid LineString (two points)" {
+        should("handle minimal valid LineString (two points)") {
             val coordinates =
                 arrayOf(
                     Coordinate(5.0, 10.0),
@@ -333,7 +333,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.getCoordinateN(1) shouldBe Coordinate(5.0, 10.0)
         }
 
-        "reversedView should handle empty LineString" {
+        should("handle empty LineString") {
             val emptyLine = geometryFactory.createLineString()
             val reversedLine = emptyLine.reversedView()
 
@@ -341,7 +341,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.numPoints shouldBe 0
         }
 
-        "reversedView should work with 3D coordinates" {
+        should("work with 3D coordinates") {
             val coordinates =
                 arrayOf(
                     Coordinate(0.0, 0.0, 100.0),
@@ -357,7 +357,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.getCoordinateN(2) shouldBe Coordinate(0.0, 0.0, 100.0)
         }
 
-        "reversedView double reversal should equal original" {
+        should("have double reversal equal original") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -374,7 +374,7 @@ class ReversedCoordinateSequenceTest :
             }
         }
 
-        "reversedView should work with complex road geometry" {
+        should("work with complex road geometry") {
             val coordinates =
                 arrayOf(
                     Coordinate(590123.45, 6640567.89),
@@ -394,7 +394,7 @@ class ReversedCoordinateSequenceTest :
             reversedRoadLine.getCoordinateN(4) shouldBe Coordinate(590123.45, 6640567.89)
         }
 
-        "reversedView should maintain immutability - changes to original don't affect reversed" {
+        should("maintain immutability - changes to original don't affect reversed") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -411,7 +411,7 @@ class ReversedCoordinateSequenceTest :
             reversedLine.getCoordinateN(1) shouldBe Coordinate(1.0, 2.0)
         }
 
-        "reversedView coordinate sequence should be read-only" {
+        should("have coordinate sequence be read-only") {
             val coordinates =
                 arrayOf(
                     Coordinate(1.0, 2.0),
@@ -430,7 +430,7 @@ class ReversedCoordinateSequenceTest :
 
         // Performance benchmarks comparing reversedView vs built-in reverse()
 
-        "benchmark small geometry (10 coordinates) - reversedView vs reverse()" {
+        should("benchmark small geometry (10 coordinates) - reversedView vs reverse()") {
             val coordinates = Array(10) { i -> Coordinate(i.toDouble(), i * 2.0) }
             val originalLine = geometryFactory.createLineString(coordinates)
             val iterations = 10000
@@ -462,7 +462,7 @@ class ReversedCoordinateSequenceTest :
             }
         }
 
-        "benchmark medium geometry (100 coordinates) - reversedView vs reverse()" {
+        should("benchmark medium geometry (100 coordinates) - reversedView vs reverse()") {
             val coordinates = Array(100) { i -> Coordinate(i.toDouble(), i * 2.0) }
             val originalLine = geometryFactory.createLineString(coordinates)
             val iterations = 1000
@@ -494,7 +494,7 @@ class ReversedCoordinateSequenceTest :
             }
         }
 
-        "benchmark large geometry (1000 coordinates) - reversedView vs reverse()" {
+        should("benchmark large geometry (1000 coordinates) - reversedView vs reverse()") {
             val coordinates = Array(1000) { i -> Coordinate(i.toDouble(), i * 2.0) }
             val originalLine = geometryFactory.createLineString(coordinates)
             val iterations = 100
@@ -526,7 +526,7 @@ class ReversedCoordinateSequenceTest :
             }
         }
 
-        "benchmark coordinate access patterns - reversedView vs reverse()" {
+        should("benchmark coordinate access patterns - reversedView vs reverse()") {
             val coordinates = Array(100) { i -> Coordinate(i.toDouble(), i * 2.0) }
             val originalLine = geometryFactory.createLineString(coordinates)
 

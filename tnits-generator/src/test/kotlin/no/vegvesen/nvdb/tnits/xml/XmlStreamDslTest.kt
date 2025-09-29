@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.xml
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
@@ -8,7 +8,7 @@ import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 
 class XmlStreamDslTest :
-    StringSpec({
+    ShouldSpec({
 
         lateinit var tempFile: Path
 
@@ -20,7 +20,7 @@ class XmlStreamDslTest :
             tempFile.deleteIfExists()
         }
 
-        "writeXmlStream should generate basic XML with OutputStream" {
+        should("generate basic XML with OutputStream") {
             val output = ByteArrayOutputStream()
 
             writeXmlStream(output) {
@@ -38,7 +38,7 @@ class XmlStreamDslTest :
             xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child><other attr="value"></other></root>"""
         }
 
-        "writeXmlDocument should generate document with namespaces using OutputStream" {
+        should("generate document with namespaces using OutputStream") {
             val output = ByteArrayOutputStream()
             val namespaces =
                 mapOf(
@@ -64,7 +64,7 @@ class XmlStreamDslTest :
 """
         }
 
-        "namespace handling should work correctly" {
+        should("handle namespaces correctly") {
             val output = ByteArrayOutputStream()
             val namespaces =
                 mapOf(
@@ -87,7 +87,7 @@ class XmlStreamDslTest :
 """
         }
 
-        "complex nested structure should generate correct XML" {
+        should("generate correct XML for complex nested structure") {
             val output = ByteArrayOutputStream()
 
             writeXmlDocument(output, "root") {
@@ -149,7 +149,7 @@ class XmlStreamDslTest :
             xml shouldBe expected
         }
 
-        "writeXmlStream should support indentation with custom indent string" {
+        should("support indentation with custom indent string") {
             val output = ByteArrayOutputStream()
 
             writeXmlStream(output, indent = "  ") {
@@ -173,7 +173,7 @@ class XmlStreamDslTest :
             xml shouldBe expected
         }
 
-        "writeXmlStream should support indentation with tab character" {
+        should("support indentation with tab character") {
             val output = ByteArrayOutputStream()
 
             writeXmlStream(output, indent = "\t") {
@@ -197,7 +197,7 @@ class XmlStreamDslTest :
             xml shouldBe expected
         }
 
-        "writeXmlDocument should support indentation" {
+        should("support indentation in writeXmlDocument") {
             val output = ByteArrayOutputStream()
             val namespaces = mapOf("ns" to "http://example.com")
 
@@ -224,7 +224,7 @@ class XmlStreamDslTest :
             xml shouldBe expected
         }
 
-        "should write returned text" {
+        should("write returned text") {
             val output = ByteArrayOutputStream()
 
             writeXmlStream(output) {
@@ -239,7 +239,7 @@ class XmlStreamDslTest :
             xml shouldBe """<?xml version="1.0" encoding="UTF-8"?><root><child>text content</child></root>"""
         }
 
-        "can writeXmlStream from non-suspend function" {
+        should("allow writeXmlStream from non-suspend function") {
             fun blockingWriteXml(output: ByteArrayOutputStream) {
                 writeXmlStream(output) {
                     "root" {

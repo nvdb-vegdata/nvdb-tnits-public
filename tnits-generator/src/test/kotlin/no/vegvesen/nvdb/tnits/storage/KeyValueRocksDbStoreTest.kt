@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -10,7 +10,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.time.Instant
 
 class KeyValueRocksDbStoreTest :
-    StringSpec({
+    ShouldSpec({
 
         lateinit var tempDir: File
         lateinit var rocksDbConfig: RocksDbContext
@@ -27,14 +27,14 @@ class KeyValueRocksDbStoreTest :
             tempDir.deleteRecursively()
         }
 
-        "should store and retrieve string values" {
+        should("store and retrieve string values") {
             store.put("test-key", "test-value")
             val result = store.get<String>("test-key")
 
             result shouldBe "test-value"
         }
 
-        "should store and retrieve different data types" {
+        should("store and retrieve different data types") {
             store.put("string-key", "string-value")
             store.put("long-key", 123L)
             store.put("boolean-key", true)
@@ -46,12 +46,12 @@ class KeyValueRocksDbStoreTest :
             store.get<Instant>("instant-key") shouldBe Instant.parse("2023-01-01T12:00:00Z")
         }
 
-        "should return null for non-existent keys" {
+        should("return null for non-existent keys") {
             val result = store.get<String>("non-existent-key")
             result shouldBe null
         }
 
-        "should delete keys" {
+        should("delete keys") {
             store.put("key-to-delete", "value")
             store.get<String>("key-to-delete") shouldBe "value"
 
@@ -59,7 +59,7 @@ class KeyValueRocksDbStoreTest :
             store.get<String>("key-to-delete") shouldBe null
         }
 
-        "should find keys by prefix" {
+        should("find keys by prefix") {
             store.put("prefix_key1", "value1")
             store.put("prefix_key2", "value2")
             store.put("other_key", "value3")
@@ -71,7 +71,7 @@ class KeyValueRocksDbStoreTest :
             keys shouldContainExactlyInAnyOrder listOf("prefix_key1", "prefix_key2", "prefix_another")
         }
 
-        "should count keys by prefix" {
+        should("count keys by prefix") {
             store.put("count_key1", "value1")
             store.put("count_key2", "value2")
             store.put("other_key", "value3")
@@ -82,7 +82,7 @@ class KeyValueRocksDbStoreTest :
             count shouldBe 3
         }
 
-        "should count keys matching pattern with prefix and suffix" {
+        should("count keys matching pattern with prefix and suffix") {
             store.put("range_1_completed", true)
             store.put("range_2_completed", true)
             store.put("range_3_started", false)
@@ -94,7 +94,7 @@ class KeyValueRocksDbStoreTest :
             count shouldBe 3
         }
 
-        "should delete keys by prefix" {
+        should("delete keys by prefix") {
             store.put("delete_key1", "value1")
             store.put("delete_key2", "value2")
             store.put("keep_key", "value3")
@@ -108,7 +108,7 @@ class KeyValueRocksDbStoreTest :
             store.get<String>("keep_key") shouldBe "value3"
         }
 
-        "should handle empty prefix operations" {
+        should("handle empty prefix operations") {
             store.put("key1", "value1")
             store.put("key2", "value2")
 
@@ -117,7 +117,7 @@ class KeyValueRocksDbStoreTest :
             store.countKeysMatchingPattern("nonexistent_", "_suffix") shouldBe 0
         }
 
-        "should clear all data" {
+        should("clear all data") {
             store.put("key1", "value1")
             store.put("key2", "value2")
             store.put("key3", "value3")
@@ -132,7 +132,7 @@ class KeyValueRocksDbStoreTest :
             store.get<String>("key3") shouldBe null
         }
 
-        "should handle serializable data classes" {
+        should("handle serializable data classes") {
             @Serializable
             data class TestData(val id: Long, val name: String, val active: Boolean)
 
@@ -144,7 +144,7 @@ class KeyValueRocksDbStoreTest :
             result shouldBe testData
         }
 
-        "should update existing keys" {
+        should("update existing keys") {
             store.put("update-key", "original-value")
             store.get<String>("update-key") shouldBe "original-value"
 

@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.geometry
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -9,9 +9,9 @@ import no.vegvesen.nvdb.tnits.model.EnkelUtstrekning
 import org.locationtech.jts.geom.LineString
 
 class CalculateIntersectingGeometryTest :
-    StringSpec({
+    ShouldSpec({
 
-        "returns null when utstrekning objects do not overlap" {
+        should("return null when utstrekning objects do not overlap") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000, 500200 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -27,7 +27,7 @@ class CalculateIntersectingGeometryTest :
             result.shouldBeNull()
         }
 
-        "returns full geometry when utstrekning objects are identical" {
+        should("return full geometry when utstrekning objects are identical") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000, 500200 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -40,7 +40,7 @@ class CalculateIntersectingGeometryTest :
             result shouldBe utstrekningGeometri
         }
 
-        "extracts first half of geometry when intersection covers first 50%" {
+        should("extract first half of geometry when intersection covers first 50%") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000, 500200 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -58,7 +58,7 @@ class CalculateIntersectingGeometryTest :
             result.utstrekning shouldBe stedfestingUtstrekning
         }
 
-        "extracts middle section of geometry when intersection is in the middle" {
+        should("extract middle section of geometry when intersection is in the middle") {
             val wkt = "LINESTRING (500000 6600000, 500400 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -76,7 +76,7 @@ class CalculateIntersectingGeometryTest :
             result.utstrekning shouldBe stedfestingUtstrekning
         }
 
-        "handles subset intersection within partial veglenke" {
+        should("handle subset intersection within partial veglenke") {
             val wkt = "LINESTRING (500100 6600000, 500900 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 
@@ -94,7 +94,7 @@ class CalculateIntersectingGeometryTest :
             result.utstrekning shouldBe stedfestingUtstrekning
         }
 
-        "returns null when different veglenkesekvensId" {
+        should("return null when different veglenkesekvensId") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
             val veglenkeUtstrekning = EnkelUtstrekning(1L, 0.0, 1.0)
@@ -109,7 +109,7 @@ class CalculateIntersectingGeometryTest :
             result.shouldBeNull()
         }
 
-        "handles single point intersections" {
+        should("handle single point intersections") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000, 500200 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
             val veglenkeUtstrekning = EnkelUtstrekning(1L, 0.0, 1.0)
@@ -128,7 +128,7 @@ class CalculateIntersectingGeometryTest :
             result.utstrekning shouldBe stedfestingUtstrekning
         }
 
-        "handles partial overlap" {
+        should("handle partial overlap") {
             val wkt = "LINESTRING (500500 6600000, 500900 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
             val veglenkeUtstrekning = EnkelUtstrekning(1L, 0.5, 0.9)
@@ -145,7 +145,7 @@ class CalculateIntersectingGeometryTest :
             result.utstrekning shouldBe EnkelUtstrekning(1L, 0.6, 0.9)
         }
 
-        "handles stedfesting that extends beyond veglenke" {
+        should("handle stedfesting that extends beyond veglenke") {
             val wkt = "LINESTRING (500000 6600000, 500100 6600000, 500200 6600000)"
             val geometry = parseWkt(wkt, SRID.UTM33)
             val veglenkeUtstrekning = EnkelUtstrekning(1L, 0.3, 0.7)

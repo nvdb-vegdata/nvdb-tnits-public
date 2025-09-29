@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.services
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -15,7 +15,7 @@ import java.io.ByteArrayInputStream
 import kotlin.time.Instant
 
 class S3TimestampServiceIntegrationTest :
-    StringSpec({
+    ShouldSpec({
 
         val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
             .withUserName("testuser")
@@ -61,7 +61,7 @@ class S3TimestampServiceIntegrationTest :
             minioClient.clear(testBucket)
         }
 
-        "should return null when no exports exist in S3" {
+        should("return null when no exports exist in S3") {
             val lastSnapshot = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
             val lastUpdate = timestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
 
@@ -69,7 +69,7 @@ class S3TimestampServiceIntegrationTest :
             lastUpdate.shouldBeNull()
         }
 
-        "should return latest snapshot timestamp from multiple S3 objects" {
+        should("return latest snapshot timestamp from multiple S3 objects") {
             // Arrange - create multiple snapshot exports
             val timestamps = listOf(
                 "2025-01-15T10-30-00Z",
@@ -90,7 +90,7 @@ class S3TimestampServiceIntegrationTest :
             result shouldBe Instant.parse("2025-01-15T14:45:00Z")
         }
 
-        "should return latest update timestamp from multiple S3 objects" {
+        should("return latest update timestamp from multiple S3 objects") {
             // Arrange - create multiple update exports
             val timestamps = listOf(
                 "2025-01-15T08-00-00Z",
@@ -111,7 +111,7 @@ class S3TimestampServiceIntegrationTest :
             result shouldBe Instant.parse("2025-01-15T16:30:00Z")
         }
 
-        "should distinguish between snapshot and update exports" {
+        should("distinguish between snapshot and update exports") {
             // Arrange - create both types
             uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>snapshot</xml>")
             uploadTestFile("0105-speedLimit/2025-01-15T11-00-00Z/update.xml.gz", "<xml>update</xml>")
@@ -129,7 +129,7 @@ class S3TimestampServiceIntegrationTest :
             lastUpdate shouldBe Instant.parse("2025-01-15T11:00:00Z") // Only update
         }
 
-        "should handle mixed file extensions (compressed and uncompressed)" {
+        should("handle mixed file extensions (compressed and uncompressed)") {
             // Arrange
             uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>compressed</xml>")
             uploadTestFile("0105-speedLimit/2025-01-15T11-00-00Z/snapshot.xml", "<xml>uncompressed</xml>")
@@ -142,7 +142,7 @@ class S3TimestampServiceIntegrationTest :
             result shouldBe Instant.parse("2025-01-15T11:00:00Z")
         }
 
-        "should ignore files with malformed timestamps" {
+        should("ignore files with malformed timestamps") {
             // Arrange
             uploadTestFile("0105-speedLimit/not-a-timestamp/snapshot.xml", "<xml>bad timestamp</xml>")
             uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>good timestamp</xml>")
@@ -156,7 +156,7 @@ class S3TimestampServiceIntegrationTest :
             result shouldBe Instant.parse("2025-01-15T10:00:00Z")
         }
 
-        "should ignore non-export files in the folder structure" {
+        should("ignore non-export files in the folder structure") {
             // Arrange
             uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>real export</xml>")
             uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/readme.txt", "This is not an export")
@@ -171,7 +171,7 @@ class S3TimestampServiceIntegrationTest :
             result shouldBe Instant.parse("2025-01-15T10:00:00Z")
         }
 
-        "should handle empty bucket gracefully" {
+        should("handle empty bucket gracefully") {
             // Act - bucket is already cleared in beforeEach
             val lastSnapshot = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
             val lastUpdate = timestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
@@ -181,7 +181,7 @@ class S3TimestampServiceIntegrationTest :
             lastUpdate.shouldBeNull()
         }
 
-        "should handle S3 objects in chronological order" {
+        should("handle S3 objects in chronological order") {
             // Arrange - create exports spanning multiple days
             val chronologicalTimestamps = listOf(
                 "2025-01-01T00-00-00Z",

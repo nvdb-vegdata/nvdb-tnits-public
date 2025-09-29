@@ -1,15 +1,15 @@
 package no.vegvesen.nvdb.tnits.storage
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.maps.shouldContainExactly
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 
 class VegobjekterHashStoreTest :
-    StringSpec({
+    ShouldSpec({
 
-        "put and get single hash should work correctly" {
+        should("put and get single hash correctly") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -26,7 +26,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "get non-existent hash should return null" {
+        should("return null for non-existent hash") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -39,7 +39,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "delete hash should remove it from storage" {
+        should("remove hash from storage when deleted") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -58,7 +58,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "batchGet should retrieve multiple hashes correctly" {
+        should("retrieve multiple hashes correctly") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -87,7 +87,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "batchGet with empty list should return empty map" {
+        should("return empty map for empty list") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -100,7 +100,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "batchUpdate should update multiple hashes atomically" {
+        should("update multiple hashes atomically") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -122,7 +122,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "different vegobjektType values should not interfere with each other" {
+        should("not interfere between different vegobjektType values") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -140,7 +140,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "large hash values should be stored and retrieved correctly" {
+        should("store and retrieve large hash values correctly") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -157,7 +157,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "negative hash values should be stored and retrieved correctly" {
+        should("store and retrieve negative hash values correctly") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -174,7 +174,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "updating existing hash should overwrite previous value" {
+        should("overwrite previous value when updating existing hash") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -193,7 +193,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "batchUpdate should handle empty map gracefully" {
+        should("handle empty map gracefully in batchUpdate") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
@@ -205,7 +205,7 @@ class VegobjekterHashStoreTest :
             }
         }
 
-        "multiple batch operations in same transaction should be atomic" {
+        should("handle multiple batch operations atomically in same transaction") {
             withTempDb { dbContext ->
                 // Arrange
                 val hashStore = VegobjekterHashStore(dbContext)
