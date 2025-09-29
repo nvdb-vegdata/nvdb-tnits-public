@@ -5,7 +5,7 @@ plugins {
 
 publishing {
     publications {
-        create<MavenPublication>("bootMaven") {
+        create<MavenPublication>("maven") {
             artifact(tasks["bootJar"])
         }
     }

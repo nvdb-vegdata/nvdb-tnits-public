@@ -1,9 +1,19 @@
+import gradle.kotlin.dsl.accessors._734a7a566e0c761836055f103d9b4672.publishing
+
 plugins {
     id("tnits-conventions")
     kotlin("jvm")
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.15.0"
     application
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
 }
 
 // Repositories and group are inherited from root project
