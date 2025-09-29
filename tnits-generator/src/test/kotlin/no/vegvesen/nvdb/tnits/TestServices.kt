@@ -47,12 +47,16 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     val hashStore = VegobjekterHashStore(dbContext)
     val egenskapService =
         mockk<EgenskapService> { coEvery { getKmhByEgenskapVerdi() } returns EgenskapService.hardcodedFartsgrenseTillatteVerdier }
+
+    val exportedFeatureStore = ExportedFeatureStore(dbContext)
+
     val tnitsFeatureExporter = TnitsFeatureExporter(
         tnitsFeatureGenerator = TnitsFeatureGenerator(
             cachedVegnett = cachedVegnett,
             egenskapService = egenskapService,
             openLrService = OpenLrService(cachedVegnett),
             vegobjekterRepository = vegobjekterRepository,
+            exportedFeatureStore = exportedFeatureStore,
         ),
         exporterConfig = ExporterConfig(
             gzip = false,
@@ -62,6 +66,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         minioClient = minioClient,
         hashStore = hashStore,
         rocksDbContext = dbContext,
+        exportedFeatureStore = exportedFeatureStore,
     )
 
     val performBackfillHandler = PerformBackfillHandler(veglenkesekvenserService, vegobjekterService)

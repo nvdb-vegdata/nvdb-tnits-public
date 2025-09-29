@@ -15,7 +15,7 @@ import no.vegvesen.nvdb.tnits.geometry.parseWkt
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.model.IntProperty
 import no.vegvesen.nvdb.tnits.model.RoadFeaturePropertyType
-import no.vegvesen.nvdb.tnits.model.TnitsFeatureUpsert
+import no.vegvesen.nvdb.tnits.model.TnitsFeature
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import org.testcontainers.containers.MinIOContainer
 import java.util.zip.GZIPInputStream
@@ -135,7 +135,7 @@ class S3IntegrationTest :
 
         "SpeedLimitExporter should export to S3 with correct folder structure" {
             // Arrange
-            val mockSpeedLimit = TnitsFeatureUpsert(
+            val mockSpeedLimit = TnitsFeature(
                 id = 123L,
                 validFrom = LocalDate(2025, 1, 15),
                 validTo = null,
@@ -154,7 +154,7 @@ class S3IntegrationTest :
                 every { generateSnapshot(any()) } returns flowOf(mockSpeedLimit)
             }
 
-            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient, mockk(), mockk())
+            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient, mockk(), mockk(), mockk(relaxed = true))
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
@@ -188,7 +188,7 @@ class S3IntegrationTest :
 
         "SpeedLimitExporter should export GZIP compressed files to S3" {
             // Arrange
-            val mockSpeedLimit = TnitsFeatureUpsert(
+            val mockSpeedLimit = TnitsFeature(
                 id = 456L,
                 type = ExportedFeatureType.SpeedLimit,
                 properties = mapOf(
@@ -209,7 +209,7 @@ class S3IntegrationTest :
 
             val appConfig = exporterConfig.copy(gzip = true)
 
-            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient, mockk(), mockk())
+            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient, mockk(), mockk(), mockk(relaxed = true))
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")
 
             // Act

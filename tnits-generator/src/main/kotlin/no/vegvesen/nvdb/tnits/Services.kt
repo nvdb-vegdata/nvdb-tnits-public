@@ -126,16 +126,19 @@ class Services :
 
     val egenskapService = EgenskapService(datakatalogApi)
 
+    val exportedFeatureStore = ExportedFeatureStore(rocksDbContext)
+
     val tnitsFeatureGenerator =
         TnitsFeatureGenerator(
-            cachedVegnett = cachedVegnett,
-            egenskapService = egenskapService,
-            openLrService = openLrService,
-            vegobjekterRepository = vegobjekterRepository,
+            cachedVegnett,
+            egenskapService,
+            openLrService,
+            vegobjekterRepository,
+            exportedFeatureStore,
         )
 
     val tnitsFeatureExporter =
-        TnitsFeatureExporter(tnitsFeatureGenerator, config.exporter, minioClient, vegobjekterHashStore, rocksDbContext)
+        TnitsFeatureExporter(tnitsFeatureGenerator, config.exporter, minioClient, vegobjekterHashStore, rocksDbContext, exportedFeatureStore)
 
     val s3TimestampService = S3TimestampService(minioClient, config.exporter.bucket)
 

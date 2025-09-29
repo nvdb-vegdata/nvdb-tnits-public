@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 import no.vegvesen.nvdb.tnits.Services.Companion.marshaller
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.forEachChunked
@@ -15,10 +16,12 @@ import no.vegvesen.nvdb.tnits.geometry.*
 import no.vegvesen.nvdb.tnits.model.*
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.EgenskapService
+import no.vegvesen.nvdb.tnits.storage.ExportedFeatureStore
 import no.vegvesen.nvdb.tnits.storage.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.vegnett.CachedVegnett
+import kotlin.time.Instant
 
 data class IdRange(val startId: Long, val endId: Long)
 
@@ -26,8 +29,9 @@ class TnitsFeatureGenerator(
     private val cachedVegnett: CachedVegnett,
     private val egenskapService: EgenskapService,
     private val openLrService: OpenLrService,
-    private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
     private val vegobjekterRepository: VegobjekterRepository,
+    private val exportedFeatureStore: ExportedFeatureStore,
+    private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
 ) : WithLogger {
     private val fetchSize = 1000
     private val superBatchSize = workerCount * fetchSize
@@ -38,7 +42,7 @@ class TnitsFeatureGenerator(
         }
     }
 
-    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>): Flow<TnitsFeature> = flow {
+    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>, timestamp: Instant): Flow<TnitsFeature> = flow {
         changesById.keys.forEachChunked(fetchSize) { ids ->
             val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
 
@@ -46,14 +50,35 @@ class TnitsFeatureGenerator(
                 val changeType = changesById[id]!!
 
                 if (changeType == ChangeType.DELETED) {
-                    emit(
-                        TnitsFeatureRemoved(
-                            id = id,
-                            type = featureType,
-                        ),
-                    )
+                    val previous = exportedFeatureStore.get(id)
+                    if (previous != null) {
+                        emit(
+                            previous.copy(
+                                updateType = UpdateType.Remove,
+                                validTo = timestamp.toLocalDateTime(OsloZone).date,
+                            ),
+                        )
+                    } else {
+                        log.error(
+                            "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
+                        )
+                    }
                 } else if (vegobjekt == null) {
                     log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
+                } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
+                    val previous = exportedFeatureStore.get(id)
+                    if (previous != null) {
+                        emit(
+                            previous.copy(
+                                updateType = UpdateType.Modify,
+                                validTo = vegobjekt.sluttdato,
+                            ),
+                        )
+                    } else {
+                        log.error(
+                            "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
+                        )
+                    }
                 } else {
                     val propertyMapper = getPropertyMapper(featureType)
                     val updateType = when (changeType) {
@@ -86,7 +111,7 @@ class TnitsFeatureGenerator(
         )
     }
 
-    fun generateSnapshot(featureType: ExportedFeatureType): Flow<TnitsFeatureUpsert> = flow {
+    fun generateSnapshot(featureType: ExportedFeatureType): Flow<TnitsFeature> = flow {
         val totalCount = vegobjekterRepository.countVegobjekter(featureType.typeId)
 
         var count = 0
@@ -99,7 +124,7 @@ class TnitsFeatureGenerator(
 
                 // Process ranges in parallel - each worker fetches and processes its range
                 val getFeatureProperties = getPropertyMapper(featureType)
-                val features: List<TnitsFeatureUpsert> = processIdRangesInParallel(idRanges, getFeatureProperties)
+                val features: List<TnitsFeature> = processIdRangesInParallel(idRanges, getFeatureProperties)
 
                 count += features.size
                 features.sortedBy { it.id }.forEach { feature ->
@@ -133,18 +158,17 @@ class TnitsFeatureGenerator(
         }
     }
 
-    private suspend fun processIdRangesInParallel(idRanges: List<IdRange>, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> =
-        coroutineScope {
-            idRanges
-                .map { idRange ->
-                    async {
-                        processIdRangeForSnapshot(idRange, getFeatureProperties)
-                    }
-                }.awaitAll()
-                .flatten()
-        }
+    private suspend fun processIdRangesInParallel(idRanges: List<IdRange>, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeature> = coroutineScope {
+        idRanges
+            .map { idRange ->
+                async {
+                    processIdRangeForSnapshot(idRange, getFeatureProperties)
+                }
+            }.awaitAll()
+            .flatten()
+    }
 
-    private fun processIdRangeForSnapshot(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeatureUpsert> = try {
+    private fun processIdRangeForSnapshot(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeature> = try {
         // Each worker fetches and processes its own data range directly
         val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
             .filter { !it.fjernet && (it.sluttdato == null || it.sluttdato > today) }
@@ -166,7 +190,7 @@ class TnitsFeatureGenerator(
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
-    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper, updateType: UpdateType): TnitsFeatureUpsert? {
+    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper, updateType: UpdateType): TnitsFeature? {
         // Early validation - extract properties and validate before expensive operations
         val properties = propertyMapper.getFeatureProperties(vegobjekt)
         val type = ExportedFeatureType.from(vegobjekt.type)
@@ -179,7 +203,7 @@ class TnitsFeatureGenerator(
 
         if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
             log.warn("Vegobjekt for type ${type.typeCode} med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
-            return TnitsFeatureUpsert(
+            return TnitsFeature(
                 id = vegobjekt.id,
                 type = type,
                 geometry = null,
@@ -221,7 +245,7 @@ class TnitsFeatureGenerator(
 
         val openLrLocationReferences = openLrService.toOpenLr(vegobjekt.stedfestinger)
 
-        return TnitsFeatureUpsert(
+        return TnitsFeature(
             id = vegobjekt.id,
             type = type,
             properties = properties,

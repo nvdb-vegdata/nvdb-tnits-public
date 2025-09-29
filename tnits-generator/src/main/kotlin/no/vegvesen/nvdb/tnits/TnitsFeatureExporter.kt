@@ -1,7 +1,10 @@
 package no.vegvesen.nvdb.tnits
 
 import io.minio.MinioClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.config.ExportTarget
@@ -10,10 +13,7 @@ import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.model.*
-import no.vegvesen.nvdb.tnits.storage.RocksDbContext
-import no.vegvesen.nvdb.tnits.storage.S3OutputStream
-import no.vegvesen.nvdb.tnits.storage.VegobjektChange
-import no.vegvesen.nvdb.tnits.storage.VegobjekterHashStore
+import no.vegvesen.nvdb.tnits.storage.*
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
 import no.vegvesen.nvdb.tnits.utilities.measure
 import no.vegvesen.nvdb.tnits.xml.XmlStreamDsl
@@ -33,11 +33,12 @@ class TnitsFeatureExporter(
     private val minioClient: MinioClient,
     private val hashStore: VegobjekterHashStore,
     private val rocksDbContext: RocksDbContext,
+    private val exportedFeatureStore: ExportedFeatureStore,
 ) : WithLogger {
 
     suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, changes: Collection<VegobjektChange>) {
         val changesById = changes.associate { it.id to it.changeType }
-        val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, changesById)
+        val featureFlow = tnitsFeatureGenerator.generateFeaturesUpdate(featureType, changesById, timestamp)
             .chunked(1000).map { features ->
 
                 val hashes = hashStore.batchGet(featureType.typeId, features.map { it.id })
@@ -93,32 +94,44 @@ class TnitsFeatureExporter(
     }
 
     private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: ExportType) {
-        when (exporterConfig.target) {
-            ExportTarget.File -> try {
-                val path =
-                    Files.createTempFile(
-                        "TNITS_${featureType.name}_${timestamp.truncateToSeconds().toString().replace(":", "-")}_snapshot",
-                        if (exporterConfig.gzip) ".xml.gz" else ".xml",
-                    )
-                log.info("Lagrer $exportType eksport av $featureType til ${path.toAbsolutePath()}")
-
-                openStream(path).use { outputStream ->
-                    writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+        coroutineScope {
+            launch(Dispatchers.IO) {
+                var count = 0
+                featureFlow.chunked(10000).collect { chunk ->
+                    exportedFeatureStore.batchUpdate(chunk.associateBy { it.id })
+                    count += chunk.size
+                    log.debug("Lagret {} TnitsFeature med type {}", count, featureType)
                 }
-            } catch (e: Exception) {
-                log.error("Eksport til fil feilet", e)
             }
 
-            ExportTarget.S3 -> try {
-                val objectKey = generateS3Key(timestamp, exportType, featureType)
-                log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
+            launch(Dispatchers.IO) {
+                when (exporterConfig.target) {
+                    ExportTarget.File -> try {
+                        val path =
+                            Files.createTempFile(
+                                "TNITS_${featureType.name}_${timestamp.truncateToSeconds().toString().replace(":", "-")}_snapshot",
+                                if (exporterConfig.gzip) ".xml.gz" else ".xml",
+                            )
+                        log.info("Lagrer $exportType eksport av $featureType til ${path.toAbsolutePath()}")
 
-                openS3Stream(objectKey).use { outputStream ->
-                    writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+                        openStream(path).use { outputStream ->
+                            writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+                        }
+                    } catch (e: Exception) {
+                        log.error("Eksport til fil feilet", e)
+                    }
+
+                    ExportTarget.S3 -> try {
+                        val objectKey = generateS3Key(timestamp, exportType, featureType)
+                        log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
+
+                        openS3Stream(objectKey).use { outputStream ->
+                            writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+                        }
+                    } catch (e: Exception) {
+                        log.error("Eksport til S3 feilet", e)
+                    }
                 }
-                return
-            } catch (e: Exception) {
-                log.error("Eksport til S3 feilet", e)
             }
         }
     }
@@ -148,8 +161,8 @@ class TnitsFeatureExporter(
                     }
                 }
                 "type" { exportType }
-                featureFlow.collectIndexed { i, feature ->
-                    writeFeature(feature, i)
+                featureFlow.collect { feature ->
+                    writeFeature(feature)
                 }
             }
         }
@@ -161,102 +174,100 @@ class TnitsFeatureExporter(
         }
     }
 
-    private fun XmlStreamDsl.writeFeature(feature: TnitsFeature, index: Int) {
+    private fun XmlStreamDsl.writeFeature(feature: TnitsFeature) {
         "roadFeatures" {
             "RoadFeature" {
-                if (feature is TnitsFeatureUpsert) {
-                    "validFrom" { feature.validFrom }
-                    feature.validTo?.let {
-                        "validTo" { it }
+                "validFrom" { feature.validFrom }
+                feature.validTo?.let {
+                    "validTo" { it }
+                }
+                "beginLifespanVersion" {
+                    feature.beginLifespanVersion
+                }
+                feature.validTo?.let {
+                    "endLifespanVersion" {
+                        it.atStartOfDayIn(OsloZone)
                     }
-                    "beginLifespanVersion" {
-                        feature.beginLifespanVersion
-                    }
-                    feature.validTo?.let {
-                        "endLifespanVersion" {
-                            it.atStartOfDayIn(OsloZone)
+                }
+                if (feature.updateType != UpdateType.Snapshot) {
+                    "updateInfo" {
+                        "UpdateInfo" {
+                            "type" { feature.updateType }
                         }
                     }
-                    if (feature.updateType != UpdateType.Snapshot) {
-                        "updateInfo" {
-                            "UpdateInfo" {
-                                "type" { feature.updateType }
-                            }
-                        }
-                    }
-                    "source" {
-                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
-                    }
-                    "type" {
-                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
-                    }
-                    if (feature.properties.any()) {
-                        "properties" {
-                            for ((type, property) in feature.properties) {
-                                "GenericRoadFeatureProperty" {
-                                    "type" {
-                                        attribute(
-                                            "xlink:href",
-                                            "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
-                                        )
-                                    }
-                                    "value" { writeFeatureProperty(property) }
+                }
+                "source" {
+                    attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#${feature.type.sourceCode}")
+                }
+                "type" {
+                    attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
+                }
+                if (feature.properties.any()) {
+                    "properties" {
+                        for ((type, property) in feature.properties) {
+                            "GenericRoadFeatureProperty" {
+                                "type" {
+                                    attribute(
+                                        "xlink:href",
+                                        "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
+                                    )
                                 }
+                                "value" { writeFeatureProperty(property) }
                             }
                         }
                     }
-                    "id" {
-                        "RoadFeatureId" {
-                            "providerId" { "nvdb.no" }
-                            "id" { feature.id }
-                        }
+                }
+                "id" {
+                    "RoadFeatureId" {
+                        "providerId" { "nvdb.no" }
+                        "id" { feature.id }
                     }
-                    feature.geometry?.let { geometry ->
-                        val lineStrings = when (val geometry = geometry) {
-                            is LineString -> listOf(geometry)
-                            is MultiLineString -> (0 until geometry.numGeometries).map { geometry.getGeometryN(it) as LineString }
-                            else -> throw IllegalArgumentException("Ugyldig geometri for vegobjekt ${feature.id}: ${geometry.geometryType}")
-                        }
-
-                        for (lineString in lineStrings) {
-                            "locationReference" {
-                                "GeometryLocationReference" {
-                                    "encodedGeometry" {
-                                        "gml:LineString" {
-                                            attribute("srsDimension", "2")
-                                            attribute("srsName", "EPSG::4326")
-                                            "gml:posList" {
-                                                lineString.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                }
+                feature.geometry?.let { geometry ->
+                    val lineStrings = when (val geometry = geometry) {
+                        is LineString -> listOf(geometry)
+                        is MultiLineString -> (0 until geometry.numGeometries).map { geometry.getGeometryN(it) as LineString }
+                        else -> throw IllegalArgumentException("Ugyldig geometri for vegobjekt ${feature.id}: ${geometry.geometryType}")
                     }
 
-                    for (locationReference in feature.openLrLocationReferences) {
+                    for (lineString in lineStrings) {
                         "locationReference" {
-                            "OpenLRLocationReference" {
-                                "binaryLocationReference" {
-                                    "BinaryLocationReference" {
-                                        "base64String" {
-                                            locationReference
-                                        }
-                                        "openLRBinaryVersion" {
-                                            attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                            "GeometryLocationReference" {
+                                "encodedGeometry" {
+                                    "gml:LineString" {
+                                        attribute("srsDimension", "2")
+                                        attribute("srsName", "EPSG::4326")
+                                        "gml:posList" {
+                                            lineString.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    for (locationReference in feature.nvdbLocationReferences) {
-                        "locationReference" {
-                            "LocationByExternalReference" {
-                                "predefinedLocationReference" {
-                                    attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
+                }
+
+                for (locationReference in feature.openLrLocationReferences) {
+                    "locationReference" {
+                        "OpenLRLocationReference" {
+                            "binaryLocationReference" {
+                                "BinaryLocationReference" {
+                                    "base64String" {
+                                        locationReference
+                                    }
+                                    "openLRBinaryVersion" {
+                                        attribute("xlink:href", "http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4")
+                                    }
                                 }
+                            }
+                        }
+                    }
+                }
+                for (locationReference in feature.nvdbLocationReferences) {
+                    "locationReference" {
+                        "LocationByExternalReference" {
+                            "predefinedLocationReference" {
+                                attribute("xlink:href", "nvdb.no:${locationReference.toExternalReference()}")
                             }
                         }
                     }

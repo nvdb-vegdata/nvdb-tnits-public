@@ -2,7 +2,6 @@ package no.vegvesen.nvdb.tnits.model
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.UpdateType
 import no.vegvesen.nvdb.tnits.hash.getHash
@@ -10,28 +9,9 @@ import org.locationtech.jts.geom.Geometry
 import kotlin.time.Instant
 
 @Serializable
-sealed interface TnitsFeature {
-    val id: Long
-    val type: ExportedFeatureType
-    val updateType: UpdateType
-
-    @Transient
-    val hash: Long
-}
-
-@Serializable
-data class TnitsFeatureRemoved(override val id: Long, override val type: ExportedFeatureType) : TnitsFeature {
-    override val updateType: UpdateType = UpdateType.Remove
-
-    override val hash by lazy {
-        ProtoBuf.encodeToByteArray(serializer(), this).getHash()
-    }
-}
-
-@Serializable
-data class TnitsFeatureUpsert(
-    override val id: Long,
-    override val type: ExportedFeatureType,
+data class TnitsFeature(
+    val id: Long,
+    val type: ExportedFeatureType,
     @Serializable(with = JtsGeometrySerializer::class)
     val geometry: Geometry?,
     val properties: Map<RoadFeaturePropertyType, RoadFeatureProperty>,
@@ -39,10 +19,10 @@ data class TnitsFeatureUpsert(
     val nvdbLocationReferences: List<VegobjektStedfesting>,
     val validFrom: LocalDate,
     val validTo: LocalDate? = null,
-    override val updateType: UpdateType,
+    val updateType: UpdateType,
     val beginLifespanVersion: Instant,
-) : TnitsFeature {
-    override val hash by lazy {
+) {
+    val hash by lazy {
         ProtoBuf.encodeToByteArray(serializer(), this).getHash()
     }
 }

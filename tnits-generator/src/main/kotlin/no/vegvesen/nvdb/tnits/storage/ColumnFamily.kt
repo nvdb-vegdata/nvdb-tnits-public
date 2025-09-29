@@ -9,6 +9,7 @@ enum class ColumnFamily(val familyName: String) {
     DIRTY_VEGLENKESEKVENSER("dirty_veglenkesekvenser"),
     DIRTY_VEGOBJEKTER("dirty_vegobjekter"),
     VEGOBJEKTER_HASH("vegobjekter_hash"),
+    EXPORTED_FEATURES("exported_features"),
     ;
 
     companion object {
