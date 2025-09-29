@@ -45,51 +45,54 @@ class TnitsFeatureGenerator(
     fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>, timestamp: Instant): Flow<TnitsFeature> = flow {
         changesById.keys.forEachChunked(fetchSize) { ids ->
             val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
+            vegobjekterById.forEach { (id, vegobjekt) ->
+                try {
+                    val changeType = changesById[id]!!
 
-            vegobjekterById.map { (id, vegobjekt) ->
-                val changeType = changesById[id]!!
-
-                if (changeType == ChangeType.DELETED) {
-                    val previous = exportedFeatureStore.get(id)
-                    if (previous != null) {
-                        emit(
-                            previous.copy(
-                                updateType = UpdateType.Remove,
-                                validTo = timestamp.toLocalDateTime(OsloZone).date,
-                            ),
-                        )
+                    if (changeType == ChangeType.DELETED) {
+                        val previous = exportedFeatureStore.get(id)
+                        if (previous != null) {
+                            emit(
+                                previous.copy(
+                                    updateType = UpdateType.Remove,
+                                    validTo = timestamp.toLocalDateTime(OsloZone).date,
+                                ),
+                            )
+                        } else {
+                            log.error(
+                                "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
+                            )
+                        }
+                    } else if (vegobjekt == null) {
+                        log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
+                    } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
+                        val previous = exportedFeatureStore.get(id)
+                        if (previous != null) {
+                            emit(
+                                previous.copy(
+                                    updateType = UpdateType.Modify,
+                                    validTo = vegobjekt.sluttdato,
+                                ),
+                            )
+                        } else {
+                            log.error(
+                                "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
+                            )
+                        }
                     } else {
-                        log.error(
-                            "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
-                        )
+                        val propertyMapper = getPropertyMapper(featureType)
+                        val updateType = when (changeType) {
+                            ChangeType.NEW -> UpdateType.Add
+                            ChangeType.MODIFIED -> UpdateType.Modify
+                            else -> error("this should not happen")
+                        }
+                        val feature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
+                        if (feature != null) {
+                            emit(feature)
+                        }
                     }
-                } else if (vegobjekt == null) {
-                    log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
-                } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
-                    val previous = exportedFeatureStore.get(id)
-                    if (previous != null) {
-                        emit(
-                            previous.copy(
-                                updateType = UpdateType.Modify,
-                                validTo = vegobjekt.sluttdato,
-                            ),
-                        )
-                    } else {
-                        log.error(
-                            "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
-                        )
-                    }
-                } else {
-                    val propertyMapper = getPropertyMapper(featureType)
-                    val updateType = when (changeType) {
-                        ChangeType.NEW -> UpdateType.Add
-                        ChangeType.MODIFIED -> UpdateType.Modify
-                        else -> error("this should not happen")
-                    }
-                    val feature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
-                    if (feature != null) {
-                        emit(feature)
-                    }
+                } catch (exception: Exception) {
+                    log.error("Error processing vegobjekt with id $id", exception)
                 }
             }
         }

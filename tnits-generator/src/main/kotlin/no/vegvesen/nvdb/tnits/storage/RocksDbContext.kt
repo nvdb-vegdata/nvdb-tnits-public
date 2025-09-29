@@ -5,6 +5,7 @@ import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
 import org.slf4j.event.Level
 import java.io.File
+import kotlin.io.path.Path
 
 /**
  * RocksDB context managing database connection, column families, and providing utility methods.
@@ -12,9 +13,10 @@ import java.io.File
  *
  * Provides Unit-of-Work atomic batch operations via [writeBatch] method.
  */
-open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression: Boolean = true) :
+open class RocksDbContext(dbPath: String = "veglenker.db", enableCompression: Boolean = true) :
     AutoCloseable,
     WithLogger {
+    val dbPath = Path(dbPath).toAbsolutePath().toString()
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions
@@ -78,8 +80,8 @@ open class RocksDbContext(val dbPath: String = "veglenker.db", enableCompression
         val columnFamilyHandles = mutableListOf<ColumnFamilyHandle>()
         dbOptions = DBOptions(options)
         db = RocksDB.open(dbOptions, dbPath, columnFamilyDescriptors, columnFamilyHandles)
-
         columnFamilies = mapColumnFamilyHandles(db, columnFamilyHandles, columnFamilyOptions)
+        log.info("Opened RocksDB database at path: $dbPath")
     } catch (e: RocksDBException) {
         throw RuntimeException("Failed to open RocksDB database at path: $dbPath", e)
     }
