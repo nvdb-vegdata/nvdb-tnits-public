@@ -82,3 +82,5 @@ data/
 nvdb-api.json.bak
 
 *.kryo
+
+**/.kotlin/
