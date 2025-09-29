@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits
 
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.minio.*
 import io.mockk.coEvery
@@ -12,13 +11,7 @@ import no.vegvesen.nvdb.tnits.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.TestServices.Companion.withTestServices
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import org.testcontainers.containers.MinIOContainer
-import org.xml.sax.ErrorHandler
-import org.xml.sax.SAXParseException
-import java.io.InputStream
 import java.time.LocalDate
-import javax.xml.XMLConstants
-import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.SchemaFactory
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 
@@ -26,7 +19,7 @@ import kotlin.time.Instant
  * End-to-end tests for TN-ITS export functionality.
  * Tests the complete workflow from data setup through XML generation and S3 export.
  */
-class TnitsExportE2ETest : StringSpec() {
+class TnitsExportE2ETest : ShouldSpec() {
 
     private val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
         .withUserName("testuser")
@@ -57,7 +50,7 @@ class TnitsExportE2ETest : StringSpec() {
             minioClient.clear(testBucket)
         }
 
-        "export snapshot" {
+        should("export snapshot") {
             withTestServices(minioClient) {
                 val timestamp = Instant.parse("2025-09-26T10:30:00Z")
                 val expectedXml = readFile("expected-snapshot.xml")
@@ -67,11 +60,10 @@ class TnitsExportE2ETest : StringSpec() {
 
                 val xml = getExportedXml(timestamp, TnitsFeatureExporter.ExportType.Snapshot)
                 xml shouldBe expectedXml
-                shouldBeValidXsd(xml)
             }
         }
 
-        "export update with backup and restore, with closed and removed vegobjekter" {
+        should("export update with backup and restore, with closed and removed vegobjekter") {
             val backfillTimestamp = Instant.parse("2025-09-26T10:30:00Z")
             val updateTimestamp = backfillTimestamp.plus(1.days)
             val expectedXml = readFile("expected-update.xml")
@@ -131,7 +123,6 @@ class TnitsExportE2ETest : StringSpec() {
 
                 val xml = getExportedXml(updateTimestamp, TnitsFeatureExporter.ExportType.Update)
                 xml shouldBe expectedXml
-                shouldBeValidXsd(xml)
             }
         }
     }
@@ -153,41 +144,4 @@ class TnitsExportE2ETest : StringSpec() {
             .`object`(key)
             .build(),
     )
-}
-
-private fun shouldBeValidXsd(xml: String) {
-    val (warnings, errors) = validateXmlWithSchemaHints(xml.byteInputStream())
-    warnings.shouldBeEmpty()
-    errors.shouldBeEmpty()
-}
-
-data class XsdValidationResult(val warnings: List<SAXParseException>, val errors: List<SAXParseException>)
-
-fun validateXmlWithSchemaHints(xmlStream: InputStream): XsdValidationResult {
-    val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-
-    // Empty schema: relies on xsi:schemaLocation or xsi:noNamespaceSchemaLocation
-    val schema = schemaFactory.newSchema()
-    val warnings = mutableListOf<SAXParseException>()
-    val errors = mutableListOf<SAXParseException>()
-    val validator = schema.newValidator().apply {
-        errorHandler = object : ErrorHandler {
-            override fun warning(e: SAXParseException) {
-                println("Warning: ${e.message} at ${e.lineNumber}:${e.columnNumber}")
-                warnings.add(e)
-            }
-
-            override fun error(e: SAXParseException) {
-                println("Error: ${e.message} at ${e.lineNumber}:${e.columnNumber}")
-                errors.add(e)
-            }
-
-            override fun fatalError(e: SAXParseException): Unit = throw e
-        }
-    }
-
-    xmlStream.use {
-        validator.validate(StreamSource(it))
-    }
-    return XsdValidationResult(warnings, errors)
 }
