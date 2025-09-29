@@ -87,6 +87,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         tnitsFeatureExporter = tnitsFeatureExporter,
         dirtyCheckingRepository = dirtyCheckingRepository,
         vegobjekterRepository = vegobjekterRepository,
+        keyValueStore = keyValueStore,
     )
 
     suspend fun setupBackfill(paths: List<String> = readJsonTestResources()) {

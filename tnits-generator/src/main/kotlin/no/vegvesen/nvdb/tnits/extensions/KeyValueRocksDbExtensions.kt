@@ -1,6 +1,9 @@
 package no.vegvesen.nvdb.tnits.extensions
 
+import kotlinx.serialization.builtins.serializer
+import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.storage.KeyValueRocksDbStore
+import kotlin.time.Instant
 
 fun KeyValueRocksDbStore.clearVeglenkesekvensSettings() {
     deleteKeysByPrefix("veglenkesekvenser_")
@@ -19,3 +22,10 @@ fun KeyValueRocksDbStore.isRangeCompleted(workerIndex: Int): Boolean = get<Boole
 fun KeyValueRocksDbStore.markRangeCompleted(workerIndex: Int) {
     put("veglenkesekvenser_backfill_range_${workerIndex}_completed", true)
 }
+
+fun KeyValueRocksDbStore.putLastUpdateCheck(featureType: ExportedFeatureType, timestamp: Instant) {
+    this.put("vegobjekter_${featureType.typeCode}_last_update_check", timestamp, Instant.serializer())
+}
+
+fun KeyValueRocksDbStore.getLastUpdateCheck(featureType: ExportedFeatureType): Instant? =
+    this.get("vegobjekter_${featureType.typeCode}_last_update_check", Instant.serializer())

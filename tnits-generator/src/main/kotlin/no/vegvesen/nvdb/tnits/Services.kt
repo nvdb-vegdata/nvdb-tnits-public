@@ -148,7 +148,7 @@ class Services :
 
     val performUpdateHandler = PerformUpdateHandler(veglenkesekvenserService, vegobjekterService)
 
-    val exportUpdateHandler = ExportUpdateHandler(tnitsFeatureExporter, dirtyCheckingRepository, vegobjekterRepository)
+    val exportUpdateHandler = ExportUpdateHandler(tnitsFeatureExporter, dirtyCheckingRepository, vegobjekterRepository, keyValueStore)
 
     override fun close() {
         runCatching {

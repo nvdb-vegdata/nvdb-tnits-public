@@ -3,7 +3,10 @@ package no.vegvesen.nvdb.tnits
 import com.github.ajalt.clikt.command.SuspendingCliktCommand
 import com.github.ajalt.clikt.command.main
 import com.github.ajalt.clikt.core.subcommands
+import kotlinx.datetime.toLocalDateTime
 import no.vegvesen.nvdb.tnits.Services.Companion.withServices
+import no.vegvesen.nvdb.tnits.extensions.OsloZone
+import no.vegvesen.nvdb.tnits.extensions.getLastUpdateCheck
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.model.VegobjektTyper
 import org.slf4j.Logger
@@ -63,10 +66,52 @@ object UpdateCommand : BaseCommand() {
 
 object AutoCommand : BaseCommand() {
     override suspend fun run() {
-        echo("TODO: Implementer automatisk modus basert på konfigurasjon")
-        echo("Denne modusen vil sjekke konfigurasjon for å avgjøre om det skal:")
-        echo("- Kjøre fullt snapshot")
-        echo("- Kjøre delta oppdatering")
-        echo("- Begge deler")
+        withServices {
+            rocksDbBackupService.restoreIfNeeded()
+            val lastSnapshot = s3TimestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
+            val lastUpdate = s3TimestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
+
+            // TODO: Make configurable somehow
+            val hasSnapshotBeenTakenThisMonth = lastSnapshot?.let {
+                val now = Clock.System.now().toLocalDateTime(OsloZone).date
+                val snapshotDate = it.toLocalDateTime(OsloZone).date
+                now.year == snapshotDate.year && now.month == snapshotDate.month
+            } ?: false
+
+            val hasUpdateBeenTakenToday = lastUpdate?.let {
+                val now = Clock.System.now().toLocalDateTime(OsloZone).date
+                val updateDate = it.toLocalDateTime(OsloZone).date
+                now == updateDate
+            } ?: false
+
+            val hasUpdateBeenCheckedToday = keyValueStore.getLastUpdateCheck(ExportedFeatureType.SpeedLimit)?.let {
+                val now = Clock.System.now().toLocalDateTime(OsloZone).date
+                val updateCheckDate = it.toLocalDateTime(OsloZone).date
+                now == updateCheckDate
+            } ?: false
+
+            val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
+            val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
+
+            if (shouldPerformSnapshot || shouldPerformUpdate) {
+                log.info("Starting automatic TN-ITS process. shouldPerformSnapshot=$shouldPerformSnapshot, shouldPerformUpdate=$shouldPerformUpdate")
+                performBackfillHandler.performBackfill()
+                performUpdateHandler.performUpdate()
+                val timestamp = Clock.System.now()
+                cachedVegnett.initialize()
+                if (shouldPerformSnapshot) {
+                    tnitsFeatureExporter.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+                }
+                if (shouldPerformUpdate) {
+                    exportUpdateHandler.exportUpdate(timestamp, ExportedFeatureType.SpeedLimit)
+                }
+                rocksDbBackupService.createBackup()
+                log.info("Automatic TN-ITS process finished")
+            } else {
+                log.info(
+                    "Skipping automatic TN-ITS process, already performed today or this month. hasSnapshotBeenTakenThisMonth=${true}, hasUpdateBeenTakenToday=$hasUpdateBeenTakenToday, hasUpdateBeenCheckedToday=$hasUpdateBeenCheckedToday",
+                )
+            }
+        }
     }
 }
