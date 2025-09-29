@@ -32,6 +32,11 @@ tasks.withType<Test> {
 }
 
 publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
     repositories {
         maven {
             credentials {
