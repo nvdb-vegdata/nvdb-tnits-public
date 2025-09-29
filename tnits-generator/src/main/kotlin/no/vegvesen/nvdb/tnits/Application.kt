@@ -28,9 +28,14 @@ suspend fun main(args: Array<String>) {
 }
 
 object NvdbTnitsApp : SuspendingCliktCommand() {
+    override val invokeWithoutSubcommand = true
+
     override suspend fun run() {
-        // This method is called for subcommands, but we don't want to print anything here
-        // The help is handled automatically by Clikt when no subcommand is provided
+        val subcommand = currentContext.invokedSubcommand
+        if (subcommand == null) {
+            // No subcommand specified, run AutoCommand by default
+            AutoCommand.run()
+        }
     }
 }
 

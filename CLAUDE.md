@@ -64,9 +64,10 @@ The application uses **Clikt 5.0.3** for command-line interface parsing with the
 
 #### Main CLI Commands
 
+- **`nvdb-tnits`** (no command): Runs AutoCommand by default - automatic mode that decides whether to generate snapshots or updates based on timestamps
 - **`nvdb-tnits snapshot`**: Generate TN-ITS speed limit full snapshot
 - **`nvdb-tnits update`**: Generate TN-ITS speed limit delta update
-- **`nvdb-tnits auto`**: Automatic mode based on configuration (TODO: not yet implemented)
+- **`nvdb-tnits auto`**: Explicit automatic mode (same as running with no command)
 
 #### Command Options
 
@@ -122,14 +123,17 @@ class MyService : WithLogger {
 ```bash
 ./gradlew build          # Full build including tests
 ./gradlew test           # Run tests only
-./gradlew run            # Show CLI help (no arguments)
+./gradlew run            # Run AutoCommand by default (automatic mode)
 ```
 
 ### CLI Usage
 
 ```bash
-# Show main help
+# Run automatic mode (default behavior - decides between snapshot/update based on timestamps)
 ./gradlew run
+
+# Show main help
+./gradlew run --args="--help"
 
 # Generate full snapshot
 ./gradlew run --args="snapshot"
@@ -137,14 +141,8 @@ class MyService : WithLogger {
 # Generate delta update
 ./gradlew run --args="update"
 
-# Create backup only
-./gradlew run --args="backup"
-
-# Auto mode (TODO: not implemented)
+# Explicit auto mode (same as running with no arguments)
 ./gradlew run --args="auto"
-
-# Skip automatic backup after snapshot
-./gradlew run --args="snapshot --no-backup"
 
 # Show help for specific command
 ./gradlew run --args="snapshot --help"
