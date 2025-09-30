@@ -6,6 +6,14 @@ plugins {
     application
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+}
+
 // Repositories and group are inherited from root project
 
 dependencies {
