@@ -62,7 +62,7 @@ pipeline {
                     }
                     sh('rm gradle_output.log -f')
                     tee('gradle_output.log') {
-                        sh("./gradlew $projectRoot:clean $projectRoot:publish -Pversion=$version --info --stacktrace")
+                        sh("./gradlew $projectRoot:clean $projectRoot:publish -Pversion=$version")
                     }
                     def buildLog = readFile('gradle_output.log')
 //                     artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
