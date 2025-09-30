@@ -7,7 +7,6 @@ import no.vegvesen.nvdb.tnits.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.TnitsFeatureExporter.Companion.getTypePrefix
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
-import org.hsqldb.lib.tar.TarHeaderField
 import kotlin.time.Instant
 
 class S3TimestampService(private val minioClient: MinioClient, private val bucketName: String) : WithLogger {
@@ -19,7 +18,7 @@ class S3TimestampService(private val minioClient: MinioClient, private val bucke
     private fun getLastExportTimestamp(featureType: ExportedFeatureType, exportType: TnitsFeatureExporter.ExportType): Instant? = try {
         val typePrefix = getTypePrefix(featureType) + "/"
 
-        log.debug("Searching for last {} export in S3 bucket: {}, prefix: {}", exportType.name.lowercase(), bucketName, TarHeaderField.prefix)
+        log.debug("Searching for last {} export in S3 bucket: {}, prefix: {}", exportType.name.lowercase(), bucketName, typePrefix)
 
         val exports = listExportsByType(typePrefix, exportType)
         val latestTimestamp = exports
