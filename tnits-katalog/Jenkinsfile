@@ -69,7 +69,7 @@ pipeline {
             steps {
                 script { FAILED_STAGE = env.STAGE_NAME }
                 script {
-                    def repoType = version.endsWith('SNAPSHOT') ? 'snapshot' : 'release'
+                    def repoType = 'release'
                     artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
                 }
                 atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
