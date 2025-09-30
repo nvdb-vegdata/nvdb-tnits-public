@@ -61,6 +61,7 @@ pipeline {
                         version = "${env.GIT_COMMIT.substring(0, 7)}-SNAPSHOT"
                     }
                     sh("./gradlew $projectRoot:clean $projectRoot:publish -Pversion=$version")
+                    artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-release-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
                 }
             }
         }
@@ -68,10 +69,6 @@ pipeline {
             when { branch config.releaseBranch }
             steps {
                 script { FAILED_STAGE = env.STAGE_NAME }
-                script {
-                    def repoType = 'release'
-                    artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
-                }
                 atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
                 catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
                     tagCommit version: "$deployName-$version"
