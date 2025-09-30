@@ -65,8 +65,10 @@ pipeline {
                         sh("./gradlew $projectRoot:clean $projectRoot:publish -Pversion=$version --info --stacktrace")
                     }
                     def buildLog = readFile('gradle_output.log')
-                    artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
+//                     artifactUrl = (buildLog =~ /(?<=Deploying artifact: )http.*?\.jar/)[0]
+                    artifactUrl = 'https://artrepo.vegvesen.no' + (buildLog =~ /(?<=Uploading .*?\.jar to )\/.*?\.jar/)[0]
                     sh('rm gradle_output.log -f')
+                    sh("echo Captured artifact url: $artifactUrl")
                 }
             }
         }
