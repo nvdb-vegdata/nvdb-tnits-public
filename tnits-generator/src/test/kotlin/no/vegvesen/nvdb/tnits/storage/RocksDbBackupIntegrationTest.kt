@@ -4,32 +4,23 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
+import no.vegvesen.nvdb.tnits.MinioTestHelper
 import no.vegvesen.nvdb.tnits.config.BackupConfig
 import no.vegvesen.nvdb.tnits.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.testcontainers.containers.MinIOContainer
 
-class RocksDbBackupIntegrationTest :
-    ShouldSpec({
+class RocksDbBackupIntegrationTest : ShouldSpec() {
 
-        val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-            .withUserName("testuser")
-            .withPassword("testpassword")
-        lateinit var minioClient: MinioClient
-        val testBucket = "nvdb-rocksdb-backups"
+    private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer()
+    private lateinit var minioClient: MinioClient
+    private val testBucket = "nvdb-rocksdb-backups"
 
+    init {
         beforeSpec {
             minioContainer.start()
-            minioClient = MinioClient.builder()
-                .endpoint(minioContainer.s3URL)
-                .credentials(minioContainer.userName, minioContainer.password)
-                .build()
-
-            // Create test bucket
-            minioClient.makeBucket(
-                io.minio.MakeBucketArgs.builder()
-                    .bucket(testBucket)
-                    .build(),
-            )
+            minioClient = MinioTestHelper.createMinioClient(minioContainer)
+            MinioTestHelper.waitForMinioReady(minioClient)
+            MinioTestHelper.ensureBucketExists(minioClient, testBucket)
         }
 
         afterSpec {
@@ -81,4 +72,5 @@ class RocksDbBackupIntegrationTest :
                 String(restoredVeglenke!!) shouldBe "original-veglenke-data"
             }
         }
-    })
+    }
+}

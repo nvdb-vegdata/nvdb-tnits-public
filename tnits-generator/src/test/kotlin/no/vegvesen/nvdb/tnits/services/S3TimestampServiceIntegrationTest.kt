@@ -4,40 +4,30 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.minio.BucketExistsArgs
-import io.minio.MakeBucketArgs
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
+import no.vegvesen.nvdb.tnits.MinioTestHelper
 import no.vegvesen.nvdb.tnits.clear
 import no.vegvesen.nvdb.tnits.model.ExportedFeatureType
 import org.testcontainers.containers.MinIOContainer
 import java.io.ByteArrayInputStream
 import kotlin.time.Instant
 
-class S3TimestampServiceIntegrationTest :
-    ShouldSpec({
+class S3TimestampServiceIntegrationTest : ShouldSpec() {
 
-        val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-            .withUserName("testuser")
-            .withPassword("testpassword")
-        minioContainer.portBindings = listOf("60900:9000", "60901:9001")
-        lateinit var minioClient: MinioClient
-        lateinit var timestampService: S3TimestampService
-        val testBucket = "nvdb-tnits-timestamp-test"
+    private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer(
+        portBindings = listOf("60900:9000", "60901:9001"),
+    )
+    private lateinit var minioClient: MinioClient
+    private lateinit var timestampService: S3TimestampService
+    private val testBucket = "nvdb-tnits-timestamp-test"
 
+    init {
         beforeSpec {
             minioContainer.start()
-
-            minioClient = MinioClient.builder()
-                .endpoint(minioContainer.s3URL)
-                .credentials(minioContainer.userName, minioContainer.password)
-                .build()
-
-            // Create test bucket
-            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(testBucket).build())) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(testBucket).build())
-            }
-
+            minioClient = MinioTestHelper.createMinioClient(minioContainer)
+            MinioTestHelper.waitForMinioReady(minioClient)
+            MinioTestHelper.ensureBucketExists(minioClient, testBucket)
             timestampService = S3TimestampService(minioClient, testBucket)
         }
 
@@ -202,4 +192,5 @@ class S3TimestampServiceIntegrationTest :
             result.shouldNotBeNull()
             result shouldBe Instant.parse("2025-02-01T09:15:00Z")
         }
-    })
+    }
+}

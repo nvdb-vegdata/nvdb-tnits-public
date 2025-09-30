@@ -18,56 +18,23 @@ import no.vegvesen.nvdb.tnits.model.RoadFeaturePropertyType
 import no.vegvesen.nvdb.tnits.model.TnitsFeature
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import org.testcontainers.containers.MinIOContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import java.time.Duration
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
 
-class S3IntegrationTest :
-    ShouldSpec({
+class S3IntegrationTest : ShouldSpec() {
 
-        val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-            .withUserName("testuser")
-            .withPassword("testpassword")
-            .waitingFor(
-                Wait.forHttp("/minio/health/live")
-                    .forPort(9000)
-                    .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofSeconds(120)),
-            )
-        lateinit var minioClient: MinioClient
-        val testBucket = "nvdb-tnits-test"
+    private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer()
+    private lateinit var minioClient: MinioClient
+    private val testBucket = "nvdb-tnits-test"
+    private val exporterConfig = ExporterConfig(false, ExportTarget.S3, testBucket)
 
-        val exporterConfig = ExporterConfig(false, ExportTarget.S3, testBucket)
-
-        fun waitForMinioReady(client: MinioClient, timeoutSeconds: Long = 60) {
-            val deadline = System.nanoTime() + timeoutSeconds * 1_000_000_000L
-            while (System.nanoTime() < deadline) {
-                try {
-                    client.listBuckets()
-                    return
-                } catch (_: Exception) {
-                    Thread.sleep(250)
-                }
-            }
-            error("MinIO not ready within ${timeoutSeconds}s")
-        }
-
+    init {
         beforeSpec {
             minioContainer.start()
-
-            minioClient = MinioClient.builder()
-                .endpoint(minioContainer.s3URL)
-                .credentials(minioContainer.userName, minioContainer.password)
-                .build()
-
-            waitForMinioReady(minioClient)
-
-            // Create test bucket
-            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(testBucket).build())) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(testBucket).build())
-            }
+            minioClient = MinioTestHelper.createMinioClient(minioContainer)
+            MinioTestHelper.waitForMinioReady(minioClient)
+            MinioTestHelper.ensureBucketExists(minioClient, testBucket)
         }
 
         afterSpec {
@@ -86,6 +53,7 @@ class S3IntegrationTest :
                 )
             }
         }
+
         should("upload data to real MinIO instance") {
             // Arrange
             val testData = "Hello, MinIO Integration Test!"
@@ -267,4 +235,5 @@ class S3IntegrationTest :
             xmlContent.contains("60") shouldBe true
             xmlContent.contains("RoadFeatureDataset") shouldBe true
         }
-    })
+    }
+}

@@ -2,7 +2,9 @@ package no.vegvesen.nvdb.tnits
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import io.minio.*
+import io.minio.GetObjectArgs
+import io.minio.GetObjectResponse
+import io.minio.MinioClient
 import io.mockk.coEvery
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -21,24 +23,16 @@ import kotlin.time.Instant
  */
 class TnitsExportE2ETest : ShouldSpec() {
 
-    private val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-        .withUserName("testuser")
-        .withPassword("testpassword")
-
+    private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer()
     private lateinit var minioClient: MinioClient
     private val testBucket = "nvdb-tnits-e2e-test"
 
     init {
         beforeSpec {
             minioContainer.start()
-            minioClient = MinioClient.builder()
-                .endpoint(minioContainer.s3URL)
-                .credentials(minioContainer.userName, minioContainer.password)
-                .build()
-
-            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(testBucket).build())) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(testBucket).build())
-            }
+            minioClient = MinioTestHelper.createMinioClient(minioContainer)
+            MinioTestHelper.waitForMinioReady(minioClient)
+            MinioTestHelper.ensureBucketExists(minioClient, testBucket)
         }
 
         afterSpec {
