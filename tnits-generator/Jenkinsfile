@@ -56,7 +56,7 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME ==~ /${config.releaseBranch}/) {
                         def date = sh(script: 'echo $(date +%Y-%m-%d)', returnStdout: true).trim()
-                        version = "$date.${env.GIT_COMMIT.substring(0, 7)}"
+                        version = "$date-${env.BUILD_NUMBER}"
                     } else {
                         version = "${env.GIT_COMMIT.substring(0, 7)}-SNAPSHOT"
                     }
