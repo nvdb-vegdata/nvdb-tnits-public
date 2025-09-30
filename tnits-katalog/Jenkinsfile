@@ -10,6 +10,7 @@ def projectRoot = 'tnits-katalog'
 def deployName = 'nvdbapiles-tnits-katalog'
 
 def version
+def artifactUrl
 
 def FAILED_STAGE
 
@@ -69,11 +70,11 @@ pipeline {
                 script { FAILED_STAGE = env.STAGE_NAME }
                 script {
                     def repoType = version.endsWith('SNAPSHOT') ? 'snapshot' : 'release'
-                    def artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
-                    atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
-                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
-                        tagCommit version: "$deployName-$version"
-                    }
+                    artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
+                }
+                atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
+                    tagCommit version: "$deployName-$version"
                 }
             }
         }
