@@ -67,11 +67,13 @@ pipeline {
             when { branch config.releaseBranch }
             steps {
                 script { FAILED_STAGE = env.STAGE_NAME }
-                def repoType = version.endsWith('SNAPSHOT') ? 'snapshot' : 'release'
-                def artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
-                atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
-                    tagCommit version: "$deployName-$version"
+                script {
+                    def repoType = version.endsWith('SNAPSHOT') ? 'snapshot' : 'release'
+                    def artifactUrl = "https://artrepo.vegvesen.no/artifactory/libs-$repoType-local/no/vegvesen/nvdb/tnits/tnits-katalog/$version/tnits-katalog-$version.jar"
+                    atlasBuild name: deployName, version: version, ikt: config.iktlosning, type: config.baseImage, url: artifactUrl
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: '⚠️ Failed to tag commit') {
+                        tagCommit version: "$deployName-$version"
+                    }
                 }
             }
         }
