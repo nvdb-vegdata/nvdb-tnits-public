@@ -1,9 +1,7 @@
 package no.vegvesen.nvdb.tnits.storage
 
 import no.vegvesen.nvdb.tnits.utilities.WithLogger
-import no.vegvesen.nvdb.tnits.utilities.measure
 import org.rocksdb.*
-import org.slf4j.event.Level
 import java.io.File
 import kotlin.io.path.Path
 
@@ -459,28 +457,26 @@ open class RocksDbContext(dbPath: String = "veglenker.db", enableCompression: Bo
     }
 
     override fun close() {
-        log.measure("RocksDB shutdown and cleanup", logStart = true, level = Level.INFO) {
-            if (::columnFamilies.isInitialized) {
-                columnFamilies.values.forEach { columnFamily ->
-                    columnFamily.close()
-                }
+        if (::columnFamilies.isInitialized) {
+            columnFamilies.values.forEach { columnFamily ->
+                columnFamily.close()
             }
+        }
 
-            if (::db.isInitialized) {
-                db.close()
-            }
+        if (::db.isInitialized) {
+            db.close()
+        }
 
-            if (::dbOptions.isInitialized) {
-                dbOptions.close()
-            }
+        if (::dbOptions.isInitialized) {
+            dbOptions.close()
+        }
 
-            if (::columnFamilyOptions.isInitialized) {
-                columnFamilyOptions.close()
-            }
+        if (::columnFamilyOptions.isInitialized) {
+            columnFamilyOptions.close()
+        }
 
-            if (::options.isInitialized) {
-                options.close()
-            }
+        if (::options.isInitialized) {
+            options.close()
         }
     }
 
