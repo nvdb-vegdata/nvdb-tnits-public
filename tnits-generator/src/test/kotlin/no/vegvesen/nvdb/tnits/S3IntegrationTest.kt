@@ -18,6 +18,8 @@ import no.vegvesen.nvdb.tnits.model.RoadFeaturePropertyType
 import no.vegvesen.nvdb.tnits.model.TnitsFeature
 import no.vegvesen.nvdb.tnits.storage.S3OutputStream
 import org.testcontainers.containers.MinIOContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import java.time.Duration
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.time.Instant
@@ -28,10 +30,29 @@ class S3IntegrationTest :
         val minioContainer: MinIOContainer = MinIOContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z")
             .withUserName("testuser")
             .withPassword("testpassword")
+            .waitingFor(
+                Wait.forHttp("/minio/health/live")
+                    .forPort(9000)
+                    .forStatusCode(200)
+                    .withStartupTimeout(Duration.ofSeconds(120)),
+            )
         lateinit var minioClient: MinioClient
         val testBucket = "nvdb-tnits-test"
 
         val exporterConfig = ExporterConfig(false, ExportTarget.S3, testBucket)
+
+        fun waitForMinioReady(client: MinioClient, timeoutSeconds: Long = 60) {
+            val deadline = System.nanoTime() + timeoutSeconds * 1_000_000_000L
+            while (System.nanoTime() < deadline) {
+                try {
+                    client.listBuckets()
+                    return
+                } catch (_: Exception) {
+                    Thread.sleep(250)
+                }
+            }
+            error("MinIO not ready within ${timeoutSeconds}s")
+        }
 
         beforeSpec {
             minioContainer.start()
@@ -40,6 +61,8 @@ class S3IntegrationTest :
                 .endpoint(minioContainer.s3URL)
                 .credentials(minioContainer.userName, minioContainer.password)
                 .build()
+
+            waitForMinioReady(minioClient)
 
             // Create test bucket
             if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(testBucket).build())) {
