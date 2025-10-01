@@ -83,8 +83,10 @@ pipeline {
                     git credentialsId: config.credentials.git, url: 'https://git.vegvesen.no/scm/nvdbdata/nvdb-tnits-atlas.git', branch: 'main'
                     atlasSetImageTag file: "utv-1/${deployName}.json", version: version
                     atlasRunWithCredentials({
-                        def responsibleUserFlag = env.ATLAS_RESPONSIBLE_USER ? "--responsible-user ${env.ATLAS_RESPONSIBLE_USER}" : ''
-                        sh("ac create cronjob $deployName -i ${config.iktlosning} -e utv-1 $responsibleUserFlag")
+                        script {
+                            def responsibleUserFlag = env.ATLAS_RESPONSIBLE_USER ? "--responsible-user ${env.ATLAS_RESPONSIBLE_USER}" : ''
+                            sh("ac create cronjob $deployName -i ${config.iktlosning} -e utv-1 $responsibleUserFlag")
+                        }
                     })
                 }
             }
