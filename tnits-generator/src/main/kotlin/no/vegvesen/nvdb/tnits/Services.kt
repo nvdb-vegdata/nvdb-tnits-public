@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -30,6 +31,7 @@ import org.openlr.binary.BinaryMarshaller
 import org.openlr.binary.BinaryMarshallerFactory
 
 fun ObjectMapper.initialize(): ObjectMapper = apply {
+    registerModule(JavaTimeModule())
     findAndRegisterModules()
     configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)

@@ -19,11 +19,17 @@ ktlint {
     version = "1.7.1"
 }
 
+dependencies {
+    // Minio S3
+    implementation("io.minio:minio:8.5.17")
+}
+
 tasks.withType<KotlinCompile> {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
         freeCompilerArgs.add("-Xcontext-parameters")
+        freeCompilerArgs.add("-Xjsr305=strict")
     }
 }
 

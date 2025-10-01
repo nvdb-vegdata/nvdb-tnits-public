@@ -59,9 +59,6 @@ dependencies {
     implementation("org.geotools:gt-epsg-hsql:33.2")
     implementation("org.redundent:kotlin-xml-builder:1.9.3")
 
-    // Minio S3
-    implementation("io.minio:minio:8.5.17")
-
     // CLI parsing
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
 
