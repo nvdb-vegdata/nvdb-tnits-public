@@ -56,7 +56,7 @@ class VegobjekterService(
                     keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!)
                 }
                 totalCount += vegobjekter.size
-                log.info("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
+                log.debug("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
             }
         } while (vegobjekter.isNotEmpty())
     }

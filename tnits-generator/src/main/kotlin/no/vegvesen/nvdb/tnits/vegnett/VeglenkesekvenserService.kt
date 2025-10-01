@@ -67,7 +67,7 @@ class VeglenkesekvenserService(
                 }
 
                 totalCount += veglenkesekvenser.size
-                log.info("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
+                log.debug("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
             }
         } while (veglenkesekvenser.isNotEmpty())
     }
@@ -92,11 +92,11 @@ class VeglenkesekvenserService(
                     veglenkerRepository.batchUpdate(updates)
                     keyValueStore.put("veglenkesekvenser_last_hendelse_id", lastHendelseId)
                 }
-                log.info("Behandlet ${hendelser.size} hendelser, siste ID: $lastHendelseId")
+                log.debug("Behandlet ${hendelser.size} hendelser, siste ID: $lastHendelseId")
                 hendelseCount += hendelser.size
             }
 
-        log.info("Oppdatering av veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
+        log.info("Oppdatering fra $hendelseCount hendelser for veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
 
         return hendelseCount
     }
