@@ -29,6 +29,7 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     companion object {
         private const val BACKUP_OBJECT_NAME = "rocksdb-backup.zip"
+        private const val BACKUP_TEMP_SUFFIX = ".tmp"
         private const val BUFFER_SIZE = 2 * 1024 * 1024 // 2MB buffer for better I/O performance
     }
 
@@ -170,17 +171,25 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
 
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
         log.measure("Creating and uploading backup archive: $backupPath", logStart = true) {
-            val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
-            log.debug("Starting backup upload to S3 - bucket: {}, key: {}", backupConfig.bucket, objectKey)
+            val finalKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+            val tempKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME$BACKUP_TEMP_SUFFIX"
+            log.debug("Starting backup upload to S3 - bucket: {}, temp key: {}", backupConfig.bucket, tempKey)
 
-            S3OutputStream(minioClient, backupConfig.bucket, objectKey, "application/zip").use { s3Stream ->
+            // Upload to temporary location
+            S3OutputStream(minioClient, backupConfig.bucket, tempKey, "application/zip").use { s3Stream ->
                 ZipOutputStream(s3Stream).use { zipOut ->
                     zipOut.setLevel(Deflater.NO_COMPRESSION)
                     addDirectoryToZip(backupPath.toFile(), zipOut)
                 }
             }
-            log.debug("Backup upload completed successfully")
-            true
+            log.debug("Backup upload to temporary location completed successfully")
+
+            // Atomically rename to final location
+            val renamed = atomicRename(tempKey, finalKey)
+            if (renamed) {
+                log.debug("Backup atomically renamed to final location: {}", finalKey)
+            }
+            renamed
         }
     } catch (e: Exception) {
         log.error("Failed to create and upload backup", e)
@@ -319,5 +328,53 @@ class RocksDbBackupService(private val rocksDbContext: RocksDbContext, private v
         rocksDbContext.reinitialize()
 
         log.debug("Database restored to: ${rocksDbContext.dbPath}")
+    }
+
+    /**
+     * Atomically renames an S3 object by copying to the destination and deleting the source.
+     * This ensures readers never see partial backup data.
+     */
+    private fun atomicRename(sourceKey: String, destKey: String): Boolean = try {
+        log.debug("Atomically renaming S3 object: {} -> {}", sourceKey, destKey)
+
+        // Copy to final destination (atomic operation)
+        minioClient.copyObject(
+            io.minio.CopyObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(destKey)
+                .source(
+                    io.minio.CopySource.builder()
+                        .bucket(backupConfig.bucket)
+                        .`object`(sourceKey)
+                        .build(),
+                )
+                .build(),
+        )
+
+        // Delete temporary file
+        minioClient.removeObject(
+            io.minio.RemoveObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(sourceKey)
+                .build(),
+        )
+
+        log.debug("Successfully renamed S3 object: {} -> {}", sourceKey, destKey)
+        true
+    } catch (e: Exception) {
+        log.error("Failed to atomically rename S3 object: {} -> {}", sourceKey, destKey, e)
+        // Attempt cleanup of temporary file
+        try {
+            minioClient.removeObject(
+                io.minio.RemoveObjectArgs.builder()
+                    .bucket(backupConfig.bucket)
+                    .`object`(sourceKey)
+                    .build(),
+            )
+            log.debug("Cleaned up temporary file after failed rename: {}", sourceKey)
+        } catch (cleanupException: Exception) {
+            log.warn("Failed to clean up temporary file: {}", sourceKey, cleanupException)
+        }
+        false
     }
 }
