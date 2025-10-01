@@ -75,6 +75,17 @@ pipeline {
                 }
             }
         }
+        stage ('Deploy Atlas image to UTV') {
+            when { branch config.releaseBranch }
+            steps {
+                script { FAILED_STAGE = env.STAGE_NAME }
+                git credentialsId: config.credentials.git, url: 'https://git.vegvesen.no/scm/nvdbdata/nvdb-tnits-atlas.git'
+                atlasSetImageTag file: "atlas/utv-1/${deployName}.json", version: version
+                dir('atlas') {
+                    atlasDeploy deploy: deployName, version: version, ikt: config.iktlosning, environment: 'utv-1', waitUntilFinished: true;
+                }
+            }
+        }
     }
     post {
         always {
