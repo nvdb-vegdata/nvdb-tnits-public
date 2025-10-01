@@ -48,8 +48,11 @@ object SnapshotCommand : BaseCommand() {
             performBackfillHandler.performBackfill()
             performUpdateHandler.performUpdate()
             val timestamp = Clock.System.now()
+            // First backup before cache, in case of OOM
+            rocksDbBackupService.createBackup()
             cachedVegnett.initialize()
             tnitsFeatureExporter.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+            // Second backup after cache and export (updated hashes etc.)
             rocksDbBackupService.createBackup()
         }
     }
@@ -62,8 +65,11 @@ object UpdateCommand : BaseCommand() {
             performBackfillHandler.performBackfill()
             performUpdateHandler.performUpdate()
             val timestamp = Clock.System.now()
+            // First backup before cache, in case of OOM
+            rocksDbBackupService.createBackup()
             cachedVegnett.initialize()
             exportUpdateHandler.exportUpdate(timestamp, ExportedFeatureType.SpeedLimit)
+            // Second backup after cache and export (updated hashes etc.)
             rocksDbBackupService.createBackup()
         }
     }
@@ -103,6 +109,8 @@ object AutoCommand : BaseCommand() {
                 performBackfillHandler.performBackfill()
                 performUpdateHandler.performUpdate()
                 val timestamp = Clock.System.now()
+                // First backup before cache, in case of OOM
+                rocksDbBackupService.createBackup()
                 cachedVegnett.initialize()
                 if (shouldPerformSnapshot) {
                     tnitsFeatureExporter.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
@@ -110,6 +118,7 @@ object AutoCommand : BaseCommand() {
                 if (shouldPerformUpdate) {
                     exportUpdateHandler.exportUpdate(timestamp, ExportedFeatureType.SpeedLimit)
                 }
+                // Second backup after cache and export (updated hashes etc.)
                 rocksDbBackupService.createBackup()
                 log.info("Automatic TN-ITS process finished")
             } else {
