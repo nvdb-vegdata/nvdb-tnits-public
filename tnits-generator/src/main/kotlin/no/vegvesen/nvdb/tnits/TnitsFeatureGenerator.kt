@@ -243,7 +243,7 @@ class TnitsFeatureGenerator(
             "Finner ingen veglenker for $type ${vegobjekt.id} med stedfesting ${vegobjekt.stedfestinger}"
         }
 
-        val geometry = mergeGeometries(lineStrings)?.projectTo(SRID.UTM33)?.simplify(10.001)?.projectTo(SRID.WGS84)
+        val geometry = mergeGeometries(lineStrings)?.projectTo(SRID.UTM33)?.simplify(1.0)?.projectTo(SRID.WGS84)
             ?: error("Klarte ikke lage geometri for $type ${vegobjekt.id}")
 
         val openLrLocationReferences = openLrService.toOpenLr(vegobjekt.stedfestinger)

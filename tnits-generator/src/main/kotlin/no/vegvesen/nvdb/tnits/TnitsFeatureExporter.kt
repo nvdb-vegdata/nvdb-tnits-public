@@ -10,6 +10,7 @@ import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
+import no.vegvesen.nvdb.tnits.extensions.splitBuffered
 import no.vegvesen.nvdb.tnits.extensions.toRounded
 import no.vegvesen.nvdb.tnits.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.model.*
@@ -95,9 +96,11 @@ class TnitsFeatureExporter(
 
     private suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: ExportType) {
         coroutineScope {
+            val (first, second) = featureFlow.splitBuffered(bufferSize = 10000)
+
             launch(Dispatchers.IO) {
                 var count = 0
-                featureFlow.chunked(10000).collect { chunk ->
+                first.chunked(10000).collect { chunk ->
                     exportedFeatureStore.batchUpdate(chunk.associateBy { it.id })
                     count += chunk.size
                     log.debug("Lagret {} TnitsFeature med type {}", count, featureType)
@@ -115,7 +118,7 @@ class TnitsFeatureExporter(
                         log.info("Lagrer $exportType eksport av $featureType til ${path.toAbsolutePath()}")
 
                         openStream(path).use { outputStream ->
-                            writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+                            writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType)
                         }
                     } catch (e: Exception) {
                         log.error("Eksport til fil feilet", e)
@@ -126,7 +129,7 @@ class TnitsFeatureExporter(
                         log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
 
                         openS3Stream(objectKey).use { outputStream ->
-                            writeFeaturesToXml(timestamp, outputStream, featureType, featureFlow, exportType)
+                            writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType)
                         }
                     } catch (e: Exception) {
                         log.error("Eksport til S3 feilet", e)
@@ -236,7 +239,7 @@ class TnitsFeatureExporter(
                                 "encodedGeometry" {
                                     "gml:LineString" {
                                         attribute("srsDimension", "2")
-                                        attribute("srsName", "EPSG::4326")
+                                        attribute("srsName", "EPSG:4326")
                                         "gml:posList" {
                                             lineString.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
                                         }

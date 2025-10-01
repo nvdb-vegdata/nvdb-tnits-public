@@ -110,8 +110,9 @@
     })
     const parser = new DOMParser()
     const xmlDoc = parser.parseFromString(xmlText, 'application/xml')
-    const gmlNS = 'http://www.opengis.net/gml/3.2.1'
+    const gmlNS = 'http://www.opengis.net/gml/3.2'
     const tnitsNS = 'http://spec.tn-its.eu/schemas/'
+    const xlinkNS = 'http://www.w3.org/1999/xlink'
     // Get all RoadFeature elements within the dataset
     const roadFeatures = xmlDoc.getElementsByTagNameNS(
       tnitsNS,
@@ -156,40 +157,130 @@
           speedValue = valueElem.textContent.trim()
         }
       }
-      // Get the first gml:posList under encodedGeometry
+
+      // Get validity dates
+      let validFrom = null
+      let validTo = null
+      const validFromElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'validFrom')
+      if (validFromElems.length > 0) {
+        validFrom = validFromElems[0].textContent.trim()
+      }
+      const validToElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'validTo')
+      if (validToElems.length > 0) {
+        validTo = validToElems[0].textContent.trim()
+      }
+
+      // Get update type
+      let updateType = null
+      const updateInfoElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'updateInfo')
+      if (updateInfoElems.length > 0) {
+        const updateInfoTypeElems = updateInfoElems[0].getElementsByTagNameNS(tnitsNS, 'UpdateInfo')
+        if (updateInfoTypeElems.length > 0) {
+          const typeElems = updateInfoTypeElems[0].getElementsByTagNameNS(tnitsNS, 'type')
+          if (typeElems.length > 0) {
+            updateType = typeElems[0].textContent.trim()
+          }
+        }
+      }
+
+      // Extract all location references
+      const openLRReferences = []
+      const nvdbReferences = []
+
+      const locationRefs = roadFeature.getElementsByTagNameNS(tnitsNS, 'locationReference')
+      for (let j = 0; j < locationRefs.length; j++) {
+        const locRef = locationRefs[j]
+
+        // Check for OpenLR binary references
+        const openLRElems = locRef.getElementsByTagNameNS(tnitsNS, 'OpenLRLocationReference')
+        if (openLRElems.length > 0) {
+          const base64Elems = openLRElems[0].getElementsByTagNameNS(tnitsNS, 'base64String')
+          if (base64Elems.length > 0) {
+            openLRReferences.push(base64Elems[0].textContent.trim())
+          }
+        }
+
+        // Check for NVDB external references
+        const externalRefElems = locRef.getElementsByTagNameNS(tnitsNS, 'LocationByExternalReference')
+        if (externalRefElems.length > 0) {
+          const predefinedElems = externalRefElems[0].getElementsByTagNameNS(tnitsNS, 'predefinedLocationReference')
+          if (predefinedElems.length > 0) {
+            const href = predefinedElems[0].getAttributeNS(xlinkNS, 'href')
+            if (href) {
+              nvdbReferences.push(href)
+            }
+          }
+        }
+      }
+
+      // Build popup content once for this road feature
+      let popupContent = ''
+      if (vegobjektId !== null) {
+        popupContent += '<b>Vegobjekt ID:</b> ' + vegobjektId
+      }
+      if (speedValue !== null) {
+        if (popupContent !== '') popupContent += '<br>'
+        popupContent += '<b>Speed limit:</b> ' + speedValue + ' km/h'
+      }
+      if (validFrom !== null || validTo !== null) {
+        if (popupContent !== '') popupContent += '<br>'
+        popupContent += '<b>Valid:</b> '
+        if (validFrom !== null) {
+          popupContent += validFrom
+        }
+        if (validTo !== null) {
+          popupContent += ' → ' + validTo
+        }
+      }
+      if (updateType !== null) {
+        if (popupContent !== '') popupContent += '<br>'
+        popupContent += '<b>Update type:</b> ' + updateType
+      }
+      if (openLRReferences.length > 0) {
+        if (popupContent !== '') popupContent += '<br>'
+        popupContent += '<b>OpenLR references:</b><br>'
+        openLRReferences.forEach((ref, idx) => {
+          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. ' + ref + '<br>'
+        })
+      }
+      if (nvdbReferences.length > 0) {
+        if (popupContent !== '') popupContent += '<br>'
+        popupContent += '<b>NVDB references:</b><br>'
+        nvdbReferences.forEach((ref, idx) => {
+          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. ' + ref + '<br>'
+        })
+      }
+
+      // Get all gml:posList elements (may be multiple per RoadFeature)
       const posListElems = roadFeature.getElementsByTagNameNS(
         gmlNS,
         'posList'
       )
       if (posListElems.length === 0) continue
-      const coordsString = posListElems[0].textContent.trim()
-      const coordsArray = coordsString.split(/\s+/).map(parseFloat)
-      const latLngs = []
-      for (let j = 0; j < coordsArray.length; j += 2) {
-        const lat = coordsArray[j]
-        const lon = coordsArray[j + 1]
-        if (!isNaN(lat) && !isNaN(lon)) {
-          latLngs.push([lat, lon])
-        }
-      }
-      if (latLngs.length > 0) {
-        const polyline = L.polyline(latLngs, {
-          color: getColor(speedValue),
-          weight: 4,
-          opacity: 0.8,
-        })
-        if (speedValue !== null || vegobjektId !== null) {
-          let popupContent = ''
-          if (vegobjektId !== null) {
-            popupContent += 'Vegobjekt ID: ' + vegobjektId
+
+      // Create a polyline for each LineString geometry
+      for (let j = 0; j < posListElems.length; j++) {
+        const coordsString = posListElems[j].textContent.trim()
+        const coordsArray = coordsString.split(/\s+/).map(parseFloat)
+        const latLngs = []
+        for (let k = 0; k < coordsArray.length; k += 2) {
+          const lat = coordsArray[k]
+          const lon = coordsArray[k + 1]
+          if (!isNaN(lat) && !isNaN(lon)) {
+            latLngs.push([lat, lon])
           }
-          if (speedValue !== null) {
-            if (popupContent !== '') popupContent += '<br>'
-            popupContent += 'Speed limit: ' + speedValue + ' km/h'
-          }
-          polyline.bindPopup(popupContent)
         }
-        polylines.push(polyline)
+        if (latLngs.length > 0) {
+          const polyline = L.polyline(latLngs, {
+            color: getColor(speedValue),
+            weight: 4,
+            opacity: 0.8,
+          })
+          if (popupContent !== '') {
+            polyline.bindPopup(popupContent)
+          }
+          polylines.push(polyline)
+        }
       }
     }
     // Add all polylines to map and fit bounds

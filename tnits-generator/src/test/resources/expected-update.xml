@@ -35,7 +35,7 @@
 			<locationReference>
 				<GeometryLocationReference>
 					<encodedGeometry>
-						<gml:LineString srsDimension="2" srsName="EPSG::4326">
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
 							<gml:posList>61.34709 5.06405 61.34791 5.06337 61.34808 5.0635 61.34845 5.06608 61.34953 5.06869 61.34954 5.06907</gml:posList>
 						</gml:LineString>
 					</encodedGeometry>
@@ -106,7 +106,7 @@
 			<locationReference>
 				<GeometryLocationReference>
 					<encodedGeometry>
-						<gml:LineString srsDimension="2" srsName="EPSG::4326">
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
 							<gml:posList>60.19788 11.30634 60.19728 11.3063</gml:posList>
 						</gml:LineString>
 					</encodedGeometry>
