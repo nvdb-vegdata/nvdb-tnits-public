@@ -5,10 +5,15 @@ management:
         include: health,info,prometheus
   health:
     readinessState:
-      enabled: 'true'
+      enabled: true
     livenessState:
-      enabled: 'true'
+      enabled: true
   endpoint:
     health:
       probes:
-        enabled: 'true'
+        enabled: true
+minio:
+  endpoint: http://localhost:9000
+  accessKey: user
+  secretKey: password
+  bucket: nvdb-tnits-local-data-01
