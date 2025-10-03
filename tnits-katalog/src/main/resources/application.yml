@@ -12,8 +12,3 @@ management:
     health:
       probes:
         enabled: true
-minio:
-  endpoint: http://localhost:9000
-  accessKey: user
-  secretKey: password
-  bucket: nvdb-tnits-local-data-01
