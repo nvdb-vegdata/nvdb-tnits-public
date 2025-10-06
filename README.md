@@ -1,5 +1,12 @@
 # TN-ITS-eksport fra NVDB
 
+## Utvikleroppsett
+
+- Kjør `./gradlew installGitHooks` for å installere pre-commit hook som kjører formattering før commit.
+- Kjør `docker compose up -d` for å starte MinIO.
+- Kjør `./gradlew tnits-generator:run` for å starte generatoren. Den vil automatisk utføre backfill og generere snapshot.
+- Kjør `./gradlew tnits-katalog:bootRun` for å starte en enkel katalogtjeneste som serverer filer fra MinIO.
+
 ## Fartsgrenser
 
 ### Valg og antagelser

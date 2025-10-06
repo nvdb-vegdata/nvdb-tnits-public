@@ -12,3 +12,6 @@ management:
     health:
       probes:
         enabled: true
+spring:
+  profiles:
+    active: ${ATLAS_APP_ENVIRONMENT:local}

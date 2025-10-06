@@ -33,7 +33,6 @@ class RocksDbContextTest : ShouldSpec() {
         should("initialize RocksDB with column families") {
             dbContext.getDatabase() shouldNotBe null
             dbContext.getColumnFamily(ColumnFamily.DEFAULT).shouldNotBeNull()
-            dbContext.getColumnFamily(ColumnFamily.NODER).shouldNotBeNull()
 
             dbContext.getTotalSize() shouldBe 0L
             dbContext.existsAndHasData() shouldBe false

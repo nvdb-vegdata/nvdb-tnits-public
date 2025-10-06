@@ -42,20 +42,19 @@ class KatalogController(private val minioClient: MinioClient, private val minioP
         val timestamp: String,
     )
 
-    private fun getSpeedLimitObjects(suffix: String): List<SpeedLimitObject> =
-        minioClient.listObjects(
-            ListObjectsArgs.builder()
-                .bucket(minioProperties.bucket)
-                .prefix(speedLimitPrefix)
-                .recursive(true)
-                .build()
-        )
-            .map { it.get().objectName() }
-            .filter { it.endsWith(suffix) }
-            .map {
-                SpeedLimitObject(
-                    objectName = it,
-                    timestamp = it.removePrefix(speedLimitPrefix).removeSuffix(suffix),
-                )
-            }
+    private fun getSpeedLimitObjects(suffix: String): List<SpeedLimitObject> = minioClient.listObjects(
+        ListObjectsArgs.builder()
+            .bucket(minioProperties.bucket)
+            .prefix(speedLimitPrefix)
+            .recursive(true)
+            .build(),
+    )
+        .map { it.get().objectName() }
+        .filter { it.endsWith(suffix) }
+        .map {
+            SpeedLimitObject(
+                objectName = it,
+                timestamp = it.removePrefix(speedLimitPrefix).removeSuffix(suffix),
+            )
+        }
 }
