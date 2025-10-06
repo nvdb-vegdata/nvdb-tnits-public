@@ -1,5 +1,17 @@
 # TN-ITS-eksport fra NVDB
 
+## Dokumentasjon
+
+Dokumentasjon på engelsk finnes i [docs/](docs/):
+
+- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Komme i gang
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Arkitektur
+- [CONCEPTS.md](docs/CONCEPTS.md) - Viktige konsepter
+- [DATA_FLOW.md](docs/DATA_FLOW.md) - Dataflyt
+- [STORAGE.md](docs/STORAGE.md) - Lagring
+- [TESTING.md](docs/TESTING.md) - Testing
+- [TNITS_EXPORT.md](docs/TNITS_EXPORT.md) - Om TN-ITS eksport
+
 ## Utvikleroppsett
 
 - Kjør `./gradlew installGitHooks` for å installere pre-commit hook som kjører formattering før commit.
@@ -14,6 +26,7 @@
 Vi setter følgende TN-ITS-felt der det kan være tvetydighet:
 
 - `validFrom`: Settes til startdato for vegobjektets første versjon
+- `validTo`, `endLivespanVersion`: Settes til sluttdato for vegobjektets siste versjon ved lukking. For slettede vegobjekter settes den til dato for selve eksporten.
 - `beginLifespanVersion`: Settes til startdato for vegobjektets gjeldende versjon
 
 For OpenLR gjør vi følgende valg:
