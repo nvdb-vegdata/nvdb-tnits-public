@@ -9,6 +9,8 @@ import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.config.ExportTarget
 import no.vegvesen.nvdb.tnits.config.ExporterConfig
+import no.vegvesen.nvdb.tnits.export.openFileStream
+import no.vegvesen.nvdb.tnits.export.openS3Stream
 import no.vegvesen.nvdb.tnits.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.extensions.splitBuffered
 import no.vegvesen.nvdb.tnits.extensions.toRounded
@@ -61,32 +63,6 @@ class TnitsFeatureExporter(
     fun generateS3Key(timestamp: Instant, exportType: ExportType, featureType: ExportedFeatureType): String =
         generateS3Key(timestamp, exportType, exporterConfig.gzip, featureType)
 
-    fun openStream(path: Path): OutputStream {
-        val bufferSize = 256 * 1024
-        val fileOut = BufferedOutputStream(Files.newOutputStream(path), bufferSize)
-        return if (exporterConfig.gzip) {
-            BufferedOutputStream(GZIPOutputStream(fileOut), bufferSize)
-        } else {
-            fileOut
-        }
-    }
-
-    fun openS3Stream(objectKey: String): OutputStream {
-        val bucket = exporterConfig.bucket
-        val client = minioClient
-
-        val contentType = if (exporterConfig.gzip) "application/gzip" else "application/xml"
-
-        val s3Stream = S3OutputStream(client, bucket, objectKey, contentType)
-
-        return if (exporterConfig.gzip) {
-            val bufferSize = 256 * 1024
-            BufferedOutputStream(GZIPOutputStream(s3Stream), bufferSize)
-        } else {
-            s3Stream
-        }
-    }
-
     suspend fun exportSnapshot(timestamp: Instant, featureType: ExportedFeatureType) {
         log.info("Eksporterer fullt snapshot av ${featureType.typeCode}...")
         val speedLimitsFlow = tnitsFeatureGenerator.generateSnapshot(featureType)
@@ -117,7 +93,7 @@ class TnitsFeatureExporter(
                             )
                         log.info("Lagrer $exportType eksport av $featureType til ${path.toAbsolutePath()}")
 
-                        openStream(path).use { outputStream ->
+                        exporterConfig.openFileStream(path).use { outputStream ->
                             writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType)
                         }
                     } catch (e: Exception) {
@@ -128,7 +104,7 @@ class TnitsFeatureExporter(
                         val objectKey = generateS3Key(timestamp, exportType, featureType)
                         log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
 
-                        openS3Stream(objectKey).use { outputStream ->
+                        exporterConfig.openS3Stream(minioClient, objectKey).use { outputStream ->
                             writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType)
                         }
                     } catch (e: Exception) {

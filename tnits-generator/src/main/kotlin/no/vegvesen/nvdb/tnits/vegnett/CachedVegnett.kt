@@ -45,6 +45,11 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         return retning in (tillattRetningByVeglenke[veglenke] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
     }
 
+    fun getFrc(veglenke: Veglenke): FunctionalRoadClass? {
+        require(veglenkerInitialized)
+        return frcByVeglenke[veglenke]
+    }
+
     private val initMutex = Mutex()
 
     suspend fun initialize() {
@@ -160,6 +165,11 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         return veglenkerLookup[veglenkesekvensId]?.filter {
             it.isRelevant()
         } ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
+    }
+
+    fun getAllVeglenker(): Map<Long, List<Veglenke>> {
+        check(veglenkerInitialized) { "CachedVegnett is not initialized" }
+        return veglenkerLookup
     }
 
     fun Veglenke.isRelevant(): Boolean = isTopLevel &&

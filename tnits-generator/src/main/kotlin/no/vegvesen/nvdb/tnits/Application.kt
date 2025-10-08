@@ -22,7 +22,7 @@ val log: Logger = LoggerFactory.getLogger("tnits")
 suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
     NvdbTnitsApp
-        .subcommands(SnapshotCommand, UpdateCommand, AutoCommand)
+        .subcommands(SnapshotCommand, UpdateCommand, AutoCommand, InspireRoadNetCommand)
         .main(args)
     log.info("NVDB TN-ITS application finished")
 }
@@ -35,6 +35,21 @@ object NvdbTnitsApp : SuspendingCliktCommand() {
         if (subcommand == null) {
             // No subcommand specified, run AutoCommand by default
             AutoCommand.run()
+        }
+    }
+}
+
+object InspireRoadNetCommand : BaseCommand() {
+    override suspend fun run() {
+        withServices {
+            rocksDbBackupService.restoreIfNeeded()
+            performBackfillHandler.performBackfill()
+            performUpdateHandler.performUpdate()
+            val timestamp = Clock.System.now()
+            rocksDbBackupService.createBackup()
+            cachedVegnett.initialize()
+            inspireRoadNetExporter.exportRoadNet(timestamp)
+            rocksDbBackupService.createBackup()
         }
     }
 }

@@ -19,6 +19,7 @@ import no.vegvesen.nvdb.tnits.gateways.UberiketApiGateway
 import no.vegvesen.nvdb.tnits.handlers.ExportUpdateHandler
 import no.vegvesen.nvdb.tnits.handlers.PerformBackfillHandler
 import no.vegvesen.nvdb.tnits.handlers.PerformUpdateHandler
+import no.vegvesen.nvdb.tnits.inspire.InspireRoadNetExporter
 import no.vegvesen.nvdb.tnits.openlr.OpenLrService
 import no.vegvesen.nvdb.tnits.services.EgenskapService
 import no.vegvesen.nvdb.tnits.services.S3TimestampService
@@ -151,6 +152,8 @@ class Services :
     val performUpdateHandler = PerformUpdateHandler(veglenkesekvenserService, vegobjekterService)
 
     val exportUpdateHandler = ExportUpdateHandler(tnitsFeatureExporter, dirtyCheckingRepository, vegobjekterRepository, keyValueStore)
+
+    val inspireRoadNetExporter = InspireRoadNetExporter(cachedVegnett, config.exporter, minioClient)
 
     override fun close() {
         runCatching {
