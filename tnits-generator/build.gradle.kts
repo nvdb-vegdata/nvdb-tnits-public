@@ -17,6 +17,8 @@ publishing {
 // Repositories and group are inherited from root project
 
 dependencies {
+    implementation(project(":tnits-common"))
+
     // Ktor Client (for NVDB API calls)
     implementation("io.ktor:ktor-client-core")
     implementation("io.ktor:ktor-client-cio")

@@ -1,4 +1,6 @@
-# TN-ITS-eksport fra NVDB
+# XML-eksport fra NVDB
+
+Dette prosjektet muliggjør generering og publisering rundt XML-eksport av vegdata fra NVDB, i henhold til [TN-ITS](https://tn-its.eu/standardisation/) og [INSPIRE](https://inspire.ec.europa.eu/).
 
 ## Dokumentasjon
 
@@ -11,6 +13,7 @@ Dokumentasjon på engelsk finnes i [docs/](docs/):
 - [STORAGE.md](docs/STORAGE.md) - Lagring
 - [TESTING.md](docs/TESTING.md) - Testing
 - [TNITS_EXPORT.md](docs/TNITS_EXPORT.md) - Om TN-ITS eksport
+- [INSPIRE_ROADNET_EXPORT.md](docs/INSPIRE_ROADNET_EXPORT.md) - Om INSPIRE eksport
 
 ## Utvikleroppsett
 
@@ -19,7 +22,7 @@ Dokumentasjon på engelsk finnes i [docs/](docs/):
 - Kjør `./gradlew tnits-generator:run` for å starte generatoren. Den vil automatisk utføre backfill og generere snapshot.
 - Kjør `./gradlew tnits-katalog:bootRun` for å starte en enkel katalogtjeneste som serverer filer fra MinIO.
 
-## Fartsgrenser
+## TN-ITS eksport
 
 ### Valg og antagelser
 
