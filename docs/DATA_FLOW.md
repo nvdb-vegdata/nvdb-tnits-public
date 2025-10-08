@@ -2,6 +2,8 @@
 
 This document describes how data flows through the nvdb-tnits system, from NVDB APIs to TN-ITS exports.
 
+Diagrams are written in [Mermaid](https://mermaid.js.org) syntax; use [IntelliJ Mermaid Plugin](https://plugins.jetbrains.com/plugin/20146-mermaid) to view them in the IDE.
+
 ## Overview
 
 The system operates in three main phases:
