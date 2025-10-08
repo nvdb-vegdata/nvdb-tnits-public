@@ -2,6 +2,8 @@
 
 This guide will help you set up the nvdb-tnits project and run it for the first time.
 
+You might also want to check out the documentation for [Concepts](CONCEPTS.md) related to NVDB and TN-ITS, as well as the [Architecture Overview](ARCHITECTURE.md) for a high-level understanding of the system.
+
 ## Prerequisites
 
 Ensure you have the following installed on your development machine:

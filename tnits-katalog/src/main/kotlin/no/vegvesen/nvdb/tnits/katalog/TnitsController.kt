@@ -1,7 +1,8 @@
-package no.vegvesen.nvdb.tnits.generator.generator.katalog
+package no.vegvesen.nvdb.tnits.katalog
 
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -13,8 +14,9 @@ private const val snapshotSuffix = "/snapshot.xml.gz"
 private const val updateSuffix = "/update.xml.gz"
 
 @RestController
-@RequestMapping("/api/v1")
-class KatalogController(private val minioClient: MinioClient, private val minioProperties: MinioProperties) {
+@RequestMapping("/api/v1/tnits")
+@Tag(name = "TN-ITS")
+class TnitsController(private val minioClient: MinioClient, private val minioProperties: MinioProperties) {
 
     @GetMapping("/snapshots/latest")
     fun getLatestSnapshot(): SnapshotResponse = getSpeedLimitObjects(snapshotSuffix)

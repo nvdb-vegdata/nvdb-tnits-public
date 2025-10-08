@@ -18,42 +18,33 @@ The backfill phase downloads all road network data from NVDB when starting from 
 
 ### Backfill Flow Diagram
 
+All backfill operations run in parallel:
+
+```mermaid
+flowchart TD
+  subgraph parallel["Parallel Backfill (all types run concurrently)"]
+    API1["NVDB Uberiket API<br/>GET /vegnett/veglenkesekvenser"]
+    API2["NVDB Uberiket API<br/>GET /vegobjekter/105"]
+    API3["NVDB Uberiket API<br/>GET /vegobjekter/616"]
+    API4["NVDB Uberiket API<br/>GET /vegobjekter/821"]
+    SVC1["VeglenkesekvenserService<br/>backfillVeglenkesekvenser()"]
+    SVC2["VegobjekterService<br/>backfillVegobjekter(105)"]
+    SVC3["VegobjekterService<br/>backfillVegobjekter(616)"]
+    SVC4["VegobjekterService<br/>backfillVegobjekter(821)"]
+    DB1[("VEGLENKER<br/>column family")]
+    DB2[("VEGOBJEKTER<br/>column family")]
+    API1 -->|" Paginated<br/>~1.2M records "| SVC1
+    API2 -->|" Paginated<br/>~1M records "| SVC2
+    API3 -->|Paginated| SVC3
+    API4 -->|Paginated| SVC4
+    SVC1 --> DB1
+    SVC2 --> DB2
+    SVC3 --> DB2
+    SVC4 --> DB2
+  end
 ```
-┌──────────────────┐
-│  NVDB Uberiket   │
-│      API         │
-└──────────────────┘
-         │
-         │ 1. Fetch all veglenkesekvenser
-         │    (paginated, ~1.2M records)
-         ▼
-┌─────────────────────────────┐
-│ VeglenkesekvensService      │
-│ processVeglenkesekvenser()  │
-└─────────────────────────────┘
-         │
-         │ 2. Store in RocksDB
-         ▼
-┌──────────────────┐
-│ VEGLENKER        │
-│ column family    │
-└──────────────────┘
-         │
-         │ 3. Fetch all vegobjekter
-         │    (paginated by type)
-         ▼
-┌───────────────────────┐
-│ VegobjekterService    │
-│ processVegobjekter()  │
-└───────────────────────┘
-         │
-         │ 4. Store in RocksDB
-         ▼
-┌──────────────────┐
-│ VEGOBJEKTER      │
-│ column family    │
-└──────────────────┘
-```
+
+All operations launch concurrently in a `coroutineScope` and run in parallel. Only Speed Limits (type 105) and supporting types are shown here; additional types might also be backfilled following the same pattern.
 
 ### Backfill Process Details
 
@@ -61,28 +52,12 @@ The backfill phase downloads all road network data from NVDB when starting from 
 
 #### Step 1: Veglenkesekvenser Backfill
 
-```kotlin
-// Pseudocode
-fun performVeglenkesekvensBackfill() {
-  if (isBackfillComplete()) return
-
-  var lastId = getLastProcessedVeglenkesekvensId() ?: 0
-
-  while (true) {
-    val batch = uberiketApi.fetchVeglenkesekvenser(
-      start = lastId,
-      limit = 1000
-    )
-
-    if (batch.isEmpty()) break
-
-    veglenkerStore.batchInsert(batch)
-    lastId = batch.last().id
-    keyValueStore.setLastProcessedVeglenkesekvensId(lastId)
-  }
-
-  keyValueStore.setBackfillComplete(true)
-}
+```
+Loop until all data fetched:
+  1. Fetch batch of 1000 veglenkesekvenser (starting from last ID)
+  2. Store batch in RocksDB
+  3. Save progress (last ID)
+  4. Continue from next ID
 ```
 
 **API Endpoint:** `GET /vegnett/veglenkesekvenser`
@@ -97,30 +72,13 @@ fun performVeglenkesekvensBackfill() {
 
 #### Step 2: Vegobjekter Backfill
 
-```kotlin
-// Pseudocode
-fun performVegobjekterBackfill(typeId: Int) {
-  if (isBackfillComplete(typeId)) return
-
-  var lastId = getLastProcessedVegobjektId(typeId) ?: 0
-
-  while (true) {
-    val batch = uberiketApi.fetchVegobjekter(
-      typeId = typeId,
-      start = lastId,
-      limit = 1000,
-      includeAll = true  // Geometry, properties, positioning
-    )
-
-    if (batch.isEmpty()) break
-
-    vegobjekterStore.batchInsert(typeId, batch)
-    lastId = batch.last().id
-    keyValueStore.setLastProcessedVegobjektId(typeId, lastId)
-  }
-
-  keyValueStore.setBackfillComplete(typeId, true)
-}
+```
+For each vegobjekt type (e.g., speed limits):
+  Loop until all data fetched:
+    1. Fetch batch of 1000 vegobjekter (starting from last ID)
+    2. Store batch in RocksDB
+    3. Save progress (last ID per type)
+    4. Continue from next ID
 ```
 
 **API Endpoint:** `GET /vegobjekter/{typeId}`
@@ -137,14 +95,14 @@ fun performVegobjekterBackfill(typeId: Int) {
 **Typical timings:**
 
 - Veglenkesekvenser: ~20-30 minutes (~1.2M records)
-- Speed limits (type 105): ~10-15 minutes (~250K records)
+- Speed limits (type 105): ~10-15 minutes (~1M records)
 - Supporting types: ~5-10 minutes
 
 **Optimization:**
 
 - Batch inserts (1000 records per batch)
 - Progress tracking (resumable on failure)
-- Parallel processing (not currently implemented)
+- Parallel processing
 
 ## Phase 2: Incremental Updates
 
@@ -152,50 +110,32 @@ After backfill completes, the system processes change events from NVDB to keep d
 
 ### Update Flow Diagram
 
+The system processes two independent update streams in parallel:
+
+```mermaid
+flowchart TD
+  subgraph veg["Veglenkesekvens Updates"]
+    API_V["NVDB Uberiket Events API<br/>GET /hendelser/veglenkesekvenser"]
+    SVC_V["VeglenkesekvensService<br/>updateVeglenkesekvenser()"]
+    EVT_V["Process Events:<br/>VeglenkesekvensOpprettet<br/>VeglenkesekvensEndret<br/>VeglenkesekvensFjernet"]
+    DB_V[("VEGLENKER +<br/>DIRTY_VEGLENKESEKVENSER")]
+    API_V -->|" 1. Fetch hendelser "| SVC_V
+    SVC_V -->|" 2. Process events "| EVT_V
+    EVT_V -->|" 3. Update & mark dirty "| DB_V
+  end
+
+  subgraph obj["Vegobjekt Updates"]
+    API_O["NVDB Uberiket Events API<br/>GET /hendelser/vegobjekter/{typeId}"]
+    SVC_O["VegobjekterService<br/>updateVegobjekter()"]
+    EVT_O["Process Events:<br/>VegobjektImportert<br/>VegobjektVersjonOpprettet<br/>VegobjektVersjonEndret<br/>VegobjektVersjonFjernet"]
+    DB_O[("VEGOBJEKTER +<br/>DIRTY_VEGOBJEKTER")]
+    API_O -->|" 1. Fetch hendelser "| SVC_O
+    SVC_O -->|" 2. Process events "| EVT_O
+    EVT_O -->|" 3. Update & mark dirty "| DB_O
+  end
 ```
-┌──────────────────┐
-│  NVDB Uberiket   │
-│  Events API      │
-└──────────────────┘
-         │
-         │ 1. Fetch change events since last update
-         │    (veglenkesekvens hendelser)
-         ▼
-┌──────────────────┐
-│ VeglenkesekvensService
-│ processHendelser()
-└──────────────────┘
-         │
-         │ 2. Process each event
-         ├─────────┬──────────┬──────────┐
-         │         │          │          │
-         ▼         ▼          ▼          ▼
-    ┌────────┐ ┌──────┐  ┌──────┐  ┌────────┐
-    │ CREATED│ │UPDATE│  │CLOSED│  │DELETED │
-    └────────┘ └──────┘  └──────┘  └────────┘
-         │         │          │          │
-         └─────────┴──────────┴──────────┘
-                     │
-                     │ 3. Update RocksDB & mark dirty
-                     ▼
-         ┌───────────────────────────┐
-         │ VEGLENKER + DIRTY_*       │
-         └───────────────────────────┘
-                     │
-                     │ 4. Fetch vegobjekt events
-                     ▼
-┌──────────────────┐
-│ VegobjekterService
-│ processHendelser()
-└──────────────────┘
-         │
-         │ 5. Update RocksDB & mark dirty
-         ▼
-┌──────────────────┐
-│ VEGOBJEKTER +    │
-│ DIRTY_*          │
-└──────────────────┘
-```
+
+Both update processes run independently and can execute in parallel.
 
 ### Update Process Details
 
@@ -203,83 +143,67 @@ After backfill completes, the system processes change events from NVDB to keep d
 
 #### Event Types
 
-| Event Type  | Action                  | RocksDB Operation   |
-|-------------|-------------------------|---------------------|
-| **CREATED** | New road segment/object | Insert + Mark dirty |
-| **UPDATED** | Modified data           | Update + Mark dirty |
-| **CLOSED**  | End-dated but kept      | Update + Mark dirty |
-| **DELETED** | Removed completely      | Delete + Mark dirty |
+**Veglenkesekvens Events:**
+
+| Event Type                 | Description                    | RocksDB Operation   |
+|----------------------------|--------------------------------|---------------------|
+| `VeglenkesekvensOpprettet` | New or fully replaced sequence | Upsert + Mark dirty |
+| `VeglenkesekvensEndret`    | Modified sequence              | Upsert + Mark dirty |
+| `VeglenkesekvensFjernet`   | Removed sequence               | Delete + Mark dirty |
+
+**Vegobjekt Events:**
+
+| Event Type                  | Description                           | RocksDB Operation   |
+|-----------------------------|---------------------------------------|---------------------|
+| `VegobjektImportert`        | Imported object (initial creation)    | Insert + Mark dirty |
+| `VegobjektVersjonOpprettet` | New version created (version 1 = new) | Insert + Mark dirty |
+| `VegobjektVersjonEndret`    | Version modified                      | Update + Mark dirty |
+| `VegobjektVersjonFjernet`   | Version removed (version 1 = deleted) | Delete + Mark dirty |
 
 #### Veglenkesekvens Events
 
-```kotlin
-// Pseudocode
-fun processVeglenkesekvensEvents() {
-  val lastEventId = keyValueStore.getLastProcessedEventId() ?: 0
+**API Endpoint:** `GET /hendelser/veglenkesekvenser`
 
-  val events = uberiketApi.fetchVeglenkesekvensHendelser(
-    since = lastEventId
-  )
+**Event Types:** `VeglenkesekvensOpprettet`, `VeglenkesekvensEndret`, `VeglenkesekvensFjernet`
 
-  rocksDbContext.writeBatch {
-    events.forEach { event ->
-      when (event.type) {
-        CREATED, UPDATED -> {
-          val data = uberiketApi.fetchVeglenkesekvens(event.id)
-          veglenkerStore.upsert(event.id, data)
-        }
-        DELETED -> {
-          veglenkerStore.delete(event.id)
-        }
-      }
+**Process:**
 
-      dirtyCheckingStore.markVeglenkesekvensAsDirty(event.id)
-    }
-
-    keyValueStore.setLastProcessedEventId(events.last().id)
-  }
-}
+```
+1. Fetch events since last processed event ID
+2. For each batch of events:
+   - Extract veglenkesekvens IDs from all event types
+   - Fetch full current data for these IDs
+   - Upsert or delete in RocksDB (null value = deleted)
+   - Mark veglenkesekvenser as dirty
+   - Save last processed event ID
 ```
 
-**API Endpoint:** `GET /vegnett/veglenkesekvenser/hendelser`
+**Note:** All event types are handled the same way - fetch full current data and upsert. Deleted sequences return null and are removed from storage.
 
 #### Vegobjekt Events
 
-```kotlin
-// Pseudocode
-fun processVegobjektEvents(typeId: Int) {
-  val lastEventId = keyValueStore.getLastProcessedEventId(typeId) ?: 0
+**API Endpoint:** `GET /hendelser/vegobjekter/{typeId}`
 
-  val events = uberiketApi.fetchVegobjektHendelser(
-    typeId = typeId,
-    since = lastEventId
-  )
+**Event Types:** `VegobjektImportert`, `VegobjektVersjonOpprettet`, `VegobjektVersjonEndret`, `VegobjektVersjonFjernet`
 
-  rocksDbContext.writeBatch {
-    events.forEach { event ->
-      when (event.type) {
-        CREATED, UPDATED, CLOSED -> {
-          val data = uberiketApi.fetchVegobjekt(typeId, event.id)
-          vegobjekterStore.upsert(typeId, event.id, data)
-        }
-        DELETED -> {
-          // Keep for export with removed status
-          val data = vegobjekterStore.get(typeId, event.id)
-          if (data != null) {
-            vegobjekterStore.upsert(typeId, event.id, data.markAsDeleted())
-          }
-        }
-      }
+**Process:**
 
-      dirtyCheckingStore.markVegobjektAsDirty(typeId, event.id)
-    }
-
-    keyValueStore.setLastProcessedEventId(typeId, events.last().id)
-  }
-}
+```
+1. Fetch events since last processed event ID
+2. Classify events as NEW, MODIFIED, or DELETED:
+   - VegobjektImportert → NEW
+   - VegobjektVersjonOpprettet (version 1) → NEW
+   - VegobjektVersjonFjernet (version 1) → DELETED
+   - Other events → MODIFIED
+3. Fetch full data for NEW/MODIFIED vegobjekt IDs
+4. Update RocksDB atomically:
+   - Insert/update vegobjekter and stedfestinger
+   - Main types: mark vegobjekter as dirty
+   - Supporting types: mark stedfestede veglenkesekvenser as dirty
+   - Save last processed event ID
 ```
 
-**API Endpoint:** `GET /vegobjekter/{typeId}/hendelser`
+**Note:** Classification is based on version number. Version 1 events indicate true create/delete, while other versions are modifications.
 
 ### Update Performance
 
@@ -295,68 +219,28 @@ The export phase generates TN-ITS XML files from RocksDB data.
 
 ### Export Flow Diagram
 
-```
-┌──────────────────┐
-│  Export Command  │
-│  (snapshot/update)
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ CachedVegnett    │
-│ initialize()     │
-│ Load all road    │
-│ network into RAM │
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ Determine scope  │
-│ • Snapshot: ALL  │
-│ • Update: DIRTY  │
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ TnitsFeatureGenerator
-│ generateFeature()│
-│ • Fetch vegobjekt│
-│ • Calculate      │
-│   geometry       │
-│ • Encode OpenLR  │
-│ • Transform WGS84│
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ TnitsFeatureExporter
-│ exportSnapshot() │
-│ or exportUpdate()│
-│ • Parallel       │
-│   processing     │
-│ • Stream XML     │
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ XmlStreamDsl     │
-│ Generate XML     │
-│ (StAX streaming) │
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ S3OutputStream   │
-│ or FileOutput    │
-└──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ S3/MinIO Storage │
-│ 0105-speedLimit/ │
-│ timestamp/       │
-│ snapshot.xml.gz  │
-└──────────────────┘
+```mermaid
+flowchart TD
+  CMD["Export Command<br/>(snapshot/update)"]
+  CACHE["CachedVegnett<br/>Load road network into RAM"]
+  SCOPE{"Determine scope"}
+  SNAP["Snapshot: ALL"]
+  UPDATE["Update: DIRTY"]
+  GEN["TnitsFeatureGenerator<br/>• Fetch vegobjekt<br/>• Calculate geometry<br/>• Encode OpenLR<br/>• Transform WGS84"]
+  EXPORT["TnitsFeatureExporter<br/>• Parallel processing<br/>• Stream XML"]
+  XML["XmlStreamDsl<br/>Generate XML (StAX)"]
+  OUT["S3OutputStream or FileOutput"]
+  STORAGE[("S3/MinIO Storage<br/>0105-speedLimit/timestamp/<br/>snapshot.xml.gz")]
+  CMD --> CACHE
+  CACHE --> SCOPE
+  SCOPE -->|Snapshot| SNAP
+  SCOPE -->|Update| UPDATE
+  SNAP --> GEN
+  UPDATE --> GEN
+  GEN --> EXPORT
+  EXPORT --> XML
+  XML --> OUT
+  OUT --> STORAGE
 ```
 
 ### Export Types
@@ -369,7 +253,7 @@ The export phase generates TN-ITS XML files from RocksDB data.
 
 1. Load all vegobjekter of type
 2. Generate TN-ITS features for each
-3. Set `updateType = Baseline`
+3. Set `updateType = Snapshot` (not included in XML)
 4. Include all active objects
 
 **Output example:**
@@ -387,7 +271,7 @@ s3://bucket/0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 1. Query dirty vegobjekter
 2. Query vegobjekter on dirty veglenkesekvenser
 3. Generate TN-ITS features for dirty items
-4. Set `updateType = Modify` or `Remove`
+4. Set `updateType` to `Add`, `Modify`, or `Remove`
 5. Include only changed objects
 
 **Output example:**
@@ -400,34 +284,24 @@ s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
 
 The export uses parallel processing for performance:
 
-```
-┌─────────────────────────────────────────────┐
-│  Orchestrator Thread                        │
-│  • Fetch batches of IDs (steplock)          │
-│  • Distribute to workers                    │
-└─────────────────────────────────────────────┘
-         │
-         ├───────────┬───────────┬───────────┐
-         ▼           ▼           ▼           ▼
-    ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐
-    │Worker 1│  │Worker 2│  │Worker 3│  │Worker N│
-    │Process │  │Process │  │Process │  │Process │
-    │IDs     │  │IDs     │  │IDs     │  │IDs     │
-    │1-1000  │  │1001-   │  │2001-   │  │N*1000- │
-    │        │  │2000    │  │3000    │  │...     │
-    └────────┘  └────────┘  └────────┘  └────────┘
-         │           │           │           │
-         └───────────┴───────────┴───────────┘
-                     │
-                     ▼
-         ┌───────────────────────┐
-         │ Sort by ID (ordered)  │
-         └───────────────────────┘
-                     │
-                     ▼
-         ┌───────────────────────┐
-         │ Stream to XML output  │
-         └───────────────────────┘
+```mermaid
+flowchart TD
+  ORCH["Orchestrator Thread<br/>• Fetch batches of IDs (steplock)<br/>• Distribute to workers"]
+  W1["Worker 1<br/>Process IDs<br/>1-1000"]
+  W2["Worker 2<br/>Process IDs<br/>1001-2000"]
+  W3["Worker 3<br/>Process IDs<br/>2001-3000"]
+  WN["Worker N<br/>Process IDs<br/>N*1000-..."]
+  SORT["Sort by ID (ordered)"]
+  STREAM["Stream to XML output"]
+  ORCH --> W1
+  ORCH --> W2
+  ORCH --> W3
+  ORCH --> WN
+  W1 --> SORT
+  W2 --> SORT
+  W3 --> SORT
+  WN --> SORT
+  SORT --> STREAM
 ```
 
 **Worker count:** `Runtime.getRuntime().availableProcessors()`
@@ -438,18 +312,8 @@ The export uses parallel processing for performance:
 
 **Input:** Stedfesting (positioning on road network)
 
-```json
-{
-  "linjer": [
-    {
-      "id": 41251,
-      "startposisjon": 0.0,
-      "sluttposisjon": 0.5,
-      "retning": "MED"
-    }
-  ]
-}
-```
+- Veglenkesekvens ID + start/stop position (0.0 to 1.0)
+- Direction (MED/MOT)
 
 **Process:**
 
@@ -489,11 +353,7 @@ See: `openlr/OpenLrService.kt:46`
 2. Use GeoTools CRS transformation
 3. Longitude/latitude order for OpenLR
 
-**Output:** WGS84 coordinates
-
-```kotlin
-geometry.projectTo(SRID.WGS84)
-```
+**Output:** WGS84 coordinates (EPSG:4326)
 
 See: `geometry/GeometryHelpers.kt:46`
 
@@ -507,11 +367,7 @@ See: `geometry/GeometryHelpers.kt:46`
 2. Tolerance: configurable (e.g., 1.0 meter)
 3. Preserve topology
 
-**Output:** Simplified linestring
-
-```kotlin
-geometry.simplify(distanceTolerance = 1.0)
-```
+**Output:** Simplified linestring (tolerance: ~1 meter)
 
 See: `geometry/GeometryHelpers.kt:66`
 
@@ -529,14 +385,9 @@ Defined in: `model/VegobjektTyper.kt:5`
 
 ### Type Configuration
 
-```kotlin
-val mainVegobjektTyper = listOf(VegobjektTyper.FARTSGRENSE)
+**Main types:** Speed limits (105)
 
-val supportingVegobjektTyper = setOf(
-  VegobjektTyper.FELTSTREKNING,
-  VegobjektTyper.FUNKSJONELL_VEGKLASSE
-)
-```
+**Supporting types:** Feltstrekning (616), Funksjonell vegklasse (821)
 
 See: `Application.kt:16`
 
@@ -546,33 +397,29 @@ See: `Application.kt:16`
 
 Stored in `KEY_VALUE` column family:
 
-```kotlin
-// Backfill progress
-"backfill_complete_veglenkesekvenser" -> Boolean
-"backfill_complete_105" -> Boolean  // Speed limits
+**Backfill progress:**
 
-// Event processing
-"last_processed_event_id_veglenkesekvenser" -> Long
-"last_processed_event_id_105" -> Long
+- `backfill_complete_veglenkesekvenser` → Boolean
+- `backfill_complete_105` → Boolean (speed limits)
 
-// Export timestamps
-"last_snapshot_105" -> Instant
-"last_update_105" -> Instant
-"last_update_check_105" -> Instant
-```
+**Event processing:**
+
+- `last_processed_event_id_veglenkesekvenser` → Long
+- `last_processed_event_id_105` → Long
+
+**Export timestamps:**
+
+- `last_snapshot_105` → Instant
+- `last_update_105` → Instant
 
 ### Dirty State Tracking
 
-```
-DIRTY_VEGLENKESEKVENSER: Set<Long>
-DIRTY_VEGOBJEKTER_105: Set<(typeId, objektId)>
-```
+**Column families:**
 
-After successful export:
+- `DIRTY_VEGLENKESEKVENSER` → Set of veglenkesekvens IDs
+- `DIRTY_VEGOBJEKTER` → Set of (typeId, objektId) pairs
 
-```kotlin
-dirtyCheckingStore.clearDirtyVegobjekter(typeId = 105)
-```
+**After successful export:** Dirty state is cleared for processed type
 
 ## Error Handling
 
@@ -580,38 +427,19 @@ dirtyCheckingStore.clearDirtyVegobjekter(typeId = 105)
 
 NVDB API calls use exponential backoff retry:
 
-```kotlin
-HttpRequestRetry {
-  retryOnServerErrors(maxRetries = 5)
-  retryOnException(maxRetries = 5, retryOnTimeout = true)
-  exponentialDelay(base = 2.0, maxDelayMs = 30_000)
-}
-```
+- Max retries: 5
+- Retry on server errors and timeouts
+- Exponential delay up to 30 seconds
 
 See: `Services.kt:60`
 
 ### Transaction Rollback
 
-RocksDB batch operations are atomic:
-
-```kotlin
-rocksDbContext.writeBatch {
-  // All succeed or all fail
-  veglenkerStore.batchUpdate(updates)
-  dirtyCheckingStore.markDirty(ids)
-}
-```
-
-If any operation fails, entire batch is rolled back.
+RocksDB batch operations are atomic - all operations succeed or all fail together.
 
 ### Progress Persistence
 
-Progress is persisted after each batch, enabling resumable operations:
-
-```kotlin
-keyValueStore.setLastProcessedEventId(lastId)
-// On restart, continues from lastId
-```
+Progress is persisted after each batch, enabling resumable operations on restart.
 
 ## Performance Optimization
 

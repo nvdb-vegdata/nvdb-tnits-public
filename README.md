@@ -22,6 +22,10 @@ Dokumentasjon på engelsk finnes i [docs/](docs/):
 - Kjør `./gradlew tnits-generator:run` for å starte generatoren. Den vil automatisk utføre backfill og generere snapshot.
 - Kjør `./gradlew tnits-katalog:bootRun` for å starte en enkel katalogtjeneste som serverer filer fra MinIO.
 
+### IntelliJ IDEA Plugins
+
+- [Mermaid Support](https://plugins.jetbrains.com/plugin/20146-mermaid) - For å vise mermaid-diagrammer i markdown-filer.
+
 ## TN-ITS eksport
 
 ### Valg og antagelser

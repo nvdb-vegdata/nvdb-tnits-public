@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.generator.katalog
+package no.vegvesen.nvdb.tnits.katalog
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
