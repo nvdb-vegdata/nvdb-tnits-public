@@ -5,20 +5,27 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
+import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
+import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
-import no.vegvesen.nvdb.tnits.generator.config.ExportTarget
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
-import no.vegvesen.nvdb.tnits.generator.gateways.UberiketApi
-import no.vegvesen.nvdb.tnits.generator.handlers.ExportUpdateHandler
-import no.vegvesen.nvdb.tnits.generator.handlers.PerformBackfillHandler
-import no.vegvesen.nvdb.tnits.generator.handlers.PerformUpdateHandler
-import no.vegvesen.nvdb.tnits.generator.openlr.OpenLrService
+import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
+import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
+import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
+import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFartsgrenseTillatteVerdier
+import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbBackfillOrchestrator
+import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbUpdateOrchestrator
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureExportWriter
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
+import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
+import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
+import no.vegvesen.nvdb.tnits.generator.infrastructure.RocksDbS3BackupService
+import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader
+import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.*
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig
-import no.vegvesen.nvdb.tnits.generator.services.EgenskapService
-import no.vegvesen.nvdb.tnits.generator.storage.*
-import no.vegvesen.nvdb.tnits.generator.vegnett.CachedVegnett
-import no.vegvesen.nvdb.tnits.generator.vegnett.VeglenkesekvenserService
-import no.vegvesen.nvdb.tnits.generator.vegobjekter.VegobjekterService
 
 class TestServices(minioClient: MinioClient) : AutoCloseable {
     val testBucket = "nvdb-tnits-e2e-test"
@@ -29,14 +36,14 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
 
     val keyValueStore = KeyValueRocksDbStore(dbContext)
     val vegobjekterRepository = VegobjekterRocksDbStore(dbContext)
-    val vegobjekterService: VegobjekterService = VegobjekterService(
+    val vegobjektLoader: VegobjektLoader = VegobjektLoader(
         keyValueStore = keyValueStore,
         uberiketApi = uberiketApi,
         vegobjekterRepository = vegobjekterRepository,
         rocksDbContext = dbContext,
     )
     val veglenkerRepository: VeglenkerRepository = VeglenkerRocksDbStore(dbContext)
-    val veglenkesekvenserService: VeglenkesekvenserService = VeglenkesekvenserService(
+    val vegnettLoader: VegnettLoader = VegnettLoader(
         keyValueStore = keyValueStore,
         uberiketApi = uberiketApi,
         veglenkerRepository = veglenkerRepository,
@@ -44,37 +51,40 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     )
     val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository)
 
-    val hashStore = VegobjekterHashStore(dbContext)
-    val egenskapService =
-        mockk<EgenskapService> { coEvery { getKmhByEgenskapVerdi() } returns EgenskapService.hardcodedFartsgrenseTillatteVerdier }
+    val datakatalogApi = mockk<DatakatalogApi> { coEvery { getKmhByEgenskapVerdi() } returns hardcodedFartsgrenseTillatteVerdier }
 
-    val exportedFeatureStore = ExportedFeatureStore(dbContext)
+    val exportedFeatureStore = ExportedFeatureRocksDbStore(dbContext)
 
-    val tnitsFeatureExporter = TnitsFeatureExporter(
-        tnitsFeatureGenerator = TnitsFeatureGenerator(
+    val tnitsFeatureExporter = TnitsFeatureS3Exporter(
+        exporterConfig = ExporterConfig(gzip = false, bucket = testBucket),
+        minioClient = minioClient,
+    )
+
+    val exportWriter = FeatureExportWriter(
+        featureExporter = tnitsFeatureExporter,
+        exportedFeatureRepository = exportedFeatureStore,
+    )
+
+    val dirtyCheckingRepository = DirtyCheckingRocksDbStore(dbContext)
+
+    val featureExportCoordinator = TnitsExportService(
+        featureTransformer = FeatureTransformer(
             cachedVegnett = cachedVegnett,
-            egenskapService = egenskapService,
+            datakatalogApi = datakatalogApi,
             openLrService = OpenLrService(cachedVegnett),
             vegobjekterRepository = vegobjekterRepository,
             exportedFeatureStore = exportedFeatureStore,
         ),
-        exporterConfig = ExporterConfig(
-            gzip = false,
-            target = ExportTarget.S3,
-            bucket = testBucket,
-        ),
-        minioClient = minioClient,
-        hashStore = hashStore,
-        rocksDbContext = dbContext,
-        exportedFeatureStore = exportedFeatureStore,
+        exportWriter,
+        dirtyCheckingRepository = dirtyCheckingRepository,
+        vegobjekterRepository = vegobjekterRepository,
+        keyValueStore = keyValueStore,
     )
 
-    val performBackfillHandler = PerformBackfillHandler(veglenkesekvenserService, vegobjekterService)
-    val performUpdateHandler = PerformUpdateHandler(veglenkesekvenserService, vegobjekterService)
+    val backfillOrchestrator = NvdbBackfillOrchestrator(vegnettLoader, vegobjektLoader)
+    val performUpdateHandler = NvdbUpdateOrchestrator(vegnettLoader, vegobjektLoader)
 
-    val dirtyCheckingRepository = DirtyCheckingRocksDbStore(dbContext)
-
-    val rocksDbBackupService = RocksDbBackupService(
+    val rocksDbBackupService = RocksDbS3BackupService(
         dbContext,
         minioClient,
         BackupConfig(
@@ -83,8 +93,17 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         ),
     )
 
-    val exportUpdateHandler = ExportUpdateHandler(
-        tnitsFeatureExporter = tnitsFeatureExporter,
+    val featureTransformer = FeatureTransformer(
+        cachedVegnett = cachedVegnett,
+        datakatalogApi = datakatalogApi,
+        openLrService = OpenLrService(cachedVegnett),
+        vegobjekterRepository = vegobjekterRepository,
+        exportedFeatureStore = exportedFeatureStore,
+    )
+
+    val tnitsExportService = TnitsExportService(
+        featureTransformer = featureTransformer,
+        exportWriter = exportWriter,
         dirtyCheckingRepository = dirtyCheckingRepository,
         vegobjekterRepository = vegobjekterRepository,
         keyValueStore = keyValueStore,
@@ -104,7 +123,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
                 vegobjekter.filter { it.typeId == typeId && it.id in ids }.asFlow()
             }
         }
-        performBackfillHandler.performBackfill()
+        backfillOrchestrator.performBackfill()
         cachedVegnett.initialize()
     }
 

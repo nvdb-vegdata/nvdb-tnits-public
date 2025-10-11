@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.openlr
 
-import no.vegvesen.nvdb.tnits.generator.storage.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import java.io.File
 import java.nio.file.Files
 

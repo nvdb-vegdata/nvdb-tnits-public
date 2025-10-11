@@ -9,6 +9,9 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import java.nio.file.Files
 
 class RocksDbContextTest : ShouldSpec() {

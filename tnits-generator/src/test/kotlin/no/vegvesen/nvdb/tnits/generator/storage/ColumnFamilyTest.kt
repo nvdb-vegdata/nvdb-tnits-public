@@ -2,6 +2,7 @@ package no.vegvesen.nvdb.tnits.generator.storage
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 
 class ColumnFamilyTest :
     ShouldSpec({

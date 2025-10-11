@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
-import no.vegvesen.nvdb.tnits.generator.Services.Companion.objectMapper
 import no.vegvesen.nvdb.tnits.generator.TestServices.Companion.withTestServices
+import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter.Companion.generateS3Key
 import org.testcontainers.containers.MinIOContainer
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.days
@@ -50,9 +51,9 @@ class TnitsExportE2ETest : ShouldSpec() {
                 val expectedXml = readFile("expected-snapshot.xml")
                 setupBackfill()
 
-                tnitsFeatureExporter.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+                featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
 
-                val xml = getExportedXml(timestamp, TnitsFeatureExporter.ExportType.Snapshot)
+                val xml = getExportedXml(timestamp, TnitsExportType.Snapshot)
                 xml shouldBe expectedXml
             }
         }
@@ -64,7 +65,7 @@ class TnitsExportE2ETest : ShouldSpec() {
 
             withTestServices(minioClient) {
                 setupBackfill()
-                tnitsFeatureExporter.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
+                featureExportCoordinator.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
                 rocksDbBackupService.createBackup()
             }
 
@@ -113,20 +114,16 @@ class TnitsExportE2ETest : ShouldSpec() {
                 )
                 performUpdateHandler.performUpdate()
 
-                exportUpdateHandler.exportUpdate(updateTimestamp, ExportedFeatureType.SpeedLimit)
+                tnitsExportService.exportUpdate(updateTimestamp, ExportedFeatureType.SpeedLimit)
 
-                val xml = getExportedXml(updateTimestamp, TnitsFeatureExporter.ExportType.Update)
+                val xml = getExportedXml(updateTimestamp, TnitsExportType.Update)
                 xml shouldBe expectedXml
             }
         }
     }
 
-    private fun TestServices.getExportedXml(
-        timestamp: Instant,
-        exportType: TnitsFeatureExporter.ExportType,
-        featureType: ExportedFeatureType = ExportedFeatureType.SpeedLimit,
-    ): String {
-        val key = tnitsFeatureExporter.generateS3Key(timestamp, exportType, featureType)
+    private fun getExportedXml(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType = ExportedFeatureType.SpeedLimit): String {
+        val key = generateS3Key(timestamp, exportType, false, featureType)
         return streamS3Object(key).use { stream ->
             stream.reader().readText()
         }

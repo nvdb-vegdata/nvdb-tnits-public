@@ -3,6 +3,7 @@ plugins {
     kotlin("jvm")
     id("io.ktor.plugin") version "3.2.3"
     id("org.openapi.generator") version "7.15.0"
+    id("com.google.devtools.ksp") version "2.2.20-2.0.4"
     application
 }
 
@@ -14,7 +15,9 @@ publishing {
     }
 }
 
-// Repositories and group are inherited from root project
+ksp {
+    arg("KOIN_CONFIG_CHECK", "true")
+}
 
 dependencies {
     implementation(project(":tnits-common"))
@@ -61,8 +64,10 @@ dependencies {
     implementation("org.geotools:gt-epsg-hsql:33.2")
     implementation("org.redundent:kotlin-xml-builder:1.9.3")
 
-    // CLI parsing
-    implementation("com.github.ajalt.clikt:clikt:5.0.3")
+    // Koin - Dependency Injection
+    implementation("io.insert-koin:koin-core-jvm:4.1.1")
+    implementation("io.insert-koin:koin-annotations:2.2.0")
+    ksp("io.insert-koin:koin-ksp-compiler:2.2.0")
 
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")

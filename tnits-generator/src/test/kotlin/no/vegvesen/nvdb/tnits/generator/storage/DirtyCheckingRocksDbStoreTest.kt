@@ -7,9 +7,14 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
-import no.vegvesen.nvdb.tnits.generator.model.ChangeType
-import no.vegvesen.nvdb.tnits.generator.model.Vegobjekt
-import no.vegvesen.nvdb.tnits.generator.model.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
+import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVeglenkesekvenser
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVegobjekter
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.DirtyCheckingRocksDbStore
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import kotlin.time.Clock
 

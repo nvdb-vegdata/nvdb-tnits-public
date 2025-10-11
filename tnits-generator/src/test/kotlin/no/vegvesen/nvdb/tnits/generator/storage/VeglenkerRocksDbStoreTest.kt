@@ -8,9 +8,11 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.generator.geometry.SRID
-import no.vegvesen.nvdb.tnits.generator.geometry.geometryFactories
-import no.vegvesen.nvdb.tnits.generator.model.Veglenke
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
+import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import java.nio.file.Files

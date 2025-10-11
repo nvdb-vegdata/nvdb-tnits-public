@@ -2,6 +2,8 @@ package no.vegvesen.nvdb.tnits.generator.xml
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import no.vegvesen.nvdb.tnits.generator.core.presentation.writeXmlDocument
+import no.vegvesen.nvdb.tnits.generator.core.presentation.writeXmlStream
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path

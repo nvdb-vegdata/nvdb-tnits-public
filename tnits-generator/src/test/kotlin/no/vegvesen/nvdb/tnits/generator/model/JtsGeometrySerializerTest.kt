@@ -5,8 +5,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.protobuf.ProtoBuf
-import no.vegvesen.nvdb.tnits.generator.geometry.SRID
-import no.vegvesen.nvdb.tnits.generator.geometry.projectTo
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.projectTo
+import no.vegvesen.nvdb.tnits.generator.core.model.JtsGeometrySerializer
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 

@@ -22,6 +22,10 @@
     - Ideally, never.
     - If a systemic bug has been discovered, and we need to re-publish a complete snapshot (and reset updates)
         - In that case, manually delete backup of DB (maybe needs implementation as endpoint in tnits-katalog webapp)
+        - To produce a consistent update since last update saved to S3, consider implementing functionality for this:
+            1. Read latest update timestamp from S3 (use existing `S3TimestampService`)
+            2. Fetch all hendelser since then, extract IDs
+            3. Export updates for affected IDs
 4. What makes a veglenkesekvens or vegobjekt get marked "dirty," what chain reactions does that cause, and when do we clear those marks?
     - Vegobjekter: Marked dirty if it is an exported feature and receives an update
     - Veglenkesekvenser:

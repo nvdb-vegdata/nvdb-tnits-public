@@ -1,0 +1,383 @@
+package no.vegvesen.nvdb.tnits.generator.infrastructure
+
+import io.minio.*
+import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
+import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
+import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.generator.core.extensions.measure
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
+import org.rocksdb.*
+import org.slf4j.event.Level
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.zip.Deflater
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+import kotlin.io.path.exists
+
+/**
+ * Service for backing up and restoring RocksDB database to/from S3.
+ * Provides manual backup functionality and startup restore capability.
+ */
+@Singleton
+class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private val minioClient: MinioClient, private val backupConfig: BackupConfig) :
+    WithLogger, LocalBackupService {
+
+    companion object {
+        private const val BACKUP_OBJECT_NAME = "rocksdb-backup.zip"
+        private const val BACKUP_TEMP_SUFFIX = ".tmp"
+        private const val BUFFER_SIZE = 2 * 1024 * 1024 // 2MB buffer for better I/O performance
+    }
+
+    /**
+     * Creates a backup of the current RocksDB database and uploads it to S3.
+     * Uses RocksDB's native BackupEngine for consistent snapshots.
+     */
+    override fun createBackup(): Boolean {
+        if (!backupConfig.enabled) {
+            log.info("RocksDB backup is disabled")
+            return true
+        }
+
+        return try {
+            log.measure("Performing RocksDB backup", logStart = true) {
+                log.debug("Backup config - bucket: ${backupConfig.bucket}, path: ${backupConfig.path}")
+
+                // Create a proper temporary directory
+                val tempBackupPath = Files.createTempDirectory("rocksdb-backup")
+                log.debug("Using temp backup directory: {}", tempBackupPath)
+
+                // Create backup using RocksDB's BackupEngine
+                log.measure("Creating local backup using RocksDB BackupEngine", logStart = true, level = Level.DEBUG) {
+                    createLocalBackup(tempBackupPath)
+                }
+
+                // Verify backup was created
+                val backupFiles = tempBackupPath.toFile().listFiles()
+                if (!tempBackupPath.exists() || backupFiles == null || backupFiles.isEmpty()) {
+                    log.error("Local backup directory is empty or missing after backup creation")
+                    return false
+                }
+                log.debug("Verified local backup exists with {} items", backupFiles.size)
+
+                // Compress and upload to S3
+                log.debug("Starting backup archive creation and S3 upload...")
+                val success = compressAndUploadBackup(tempBackupPath)
+                log.debug("Archive creation and upload result: {}", success)
+
+                // Clean up temp backup directory
+                log.debug("Cleaning up temp backup directory")
+                tempBackupPath.toFile().deleteRecursively()
+
+                if (success) {
+                    log.info("RocksDB backup completed successfully")
+                } else {
+                    log.error("RocksDB backup failed during upload")
+                }
+
+                success
+            }
+        } catch (e: Exception) {
+            log.error("Failed to create RocksDB backup", e)
+            false
+        }
+    }
+
+    override fun restoreIfNeeded() {
+        try {
+            if (!rocksDbContext.existsAndHasData()) {
+                log.info("RocksDB database is empty or missing, checking for backup to restore...")
+                val restored = restoreFromBackup()
+                if (restored) {
+                    log.info("Successfully restored RocksDB from backup")
+                } else {
+                    log.info("No backup available or restore failed, will proceed with full backfill")
+                }
+            } else {
+                log.info("RocksDB database exists and has data, skipping restore")
+            }
+        } catch (e: Exception) {
+            log.error("Error during RocksDB restore check", e)
+        }
+    }
+
+    /**
+     * Attempts to restore RocksDB database from S3 backup.
+     * Returns true if restore was successful, false if no backup exists or restore failed.
+     */
+    override fun restoreFromBackup(): Boolean {
+        if (!backupConfig.enabled) {
+            log.info("RocksDB backup is disabled, skipping restore")
+            return false
+        }
+
+        return try {
+            log.info("Checking for RocksDB backup to restore...")
+
+            // Check if backup exists in S3
+            if (!backupExistsInS3()) {
+                log.info("No RocksDB backup found in S3")
+                return false
+            }
+
+            log.info("Found RocksDB backup in S3, starting restore...")
+
+            // Create a proper temporary directory for restore
+            val tempRestorePath = Files.createTempDirectory("rocksdb-restore")
+            log.debug("Using temp restore directory: {}", tempRestorePath)
+
+            // Download and extract backup
+            downloadAndExtractBackup(tempRestorePath)
+
+            // Restore database using RocksDB's RestoreEngine
+            restoreLocalDatabase(tempRestorePath)
+
+            // Clean up temp restore directory
+            tempRestorePath.toFile().deleteRecursively()
+
+            log.info("RocksDB restore completed successfully")
+            true
+        } catch (e: Exception) {
+            log.error("Failed to restore RocksDB backup", e)
+            false
+        }
+    }
+
+    private fun createLocalBackup(backupPath: Path) {
+        try {
+            log.debug("Initializing BackupEngine with path: {}", backupPath)
+
+            BackupEngineOptions(backupPath.toString()).use { backupEngineOptions ->
+
+                BackupEngine.open(Env.getDefault(), backupEngineOptions).use { backupEngine ->
+                    val database = rocksDbContext.getDatabase()
+
+                    log.measure("Creating new backup", level = Level.DEBUG) {
+                        backupEngine.createNewBackup(database)
+                    }
+                }
+            }
+
+            log.debug("Local backup created successfully at: {}", backupPath)
+        } catch (e: Exception) {
+            log.error("Failed to create local backup at $backupPath", e)
+            throw e
+        }
+    }
+
+    private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
+        log.measure("Creating and uploading backup archive: $backupPath", logStart = true) {
+            val finalKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+            val tempKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME$BACKUP_TEMP_SUFFIX"
+            log.debug("Starting backup upload to S3 - bucket: {}, temp key: {}", backupConfig.bucket, tempKey)
+
+            // Upload to temporary location
+            S3OutputStream(minioClient, backupConfig.bucket, tempKey, "application/zip").use { s3Stream ->
+                ZipOutputStream(s3Stream).use { zipOut ->
+                    zipOut.setLevel(Deflater.NO_COMPRESSION)
+                    addDirectoryToZip(backupPath.toFile(), zipOut)
+                }
+            }
+            log.debug("Backup upload to temporary location completed successfully")
+
+            // Atomically rename to final location
+            val renamed = atomicRename(tempKey, finalKey)
+            if (renamed) {
+                log.debug("Backup atomically renamed to final location: {}", finalKey)
+            }
+            renamed
+        }
+    } catch (e: Exception) {
+        log.error("Failed to create and upload backup", e)
+        false
+    }
+
+    private fun addDirectoryToZip(directory: File, zipOut: ZipOutputStream) {
+        val buffer = ByteArray(BUFFER_SIZE)
+
+        fun addFileToZip(file: File, basePath: String) {
+            if (file.isDirectory) {
+                file.listFiles()?.forEach { child ->
+                    val childPath = if (basePath.isEmpty()) child.name else "$basePath/${child.name}"
+                    addFileToZip(child, childPath)
+                }
+            } else {
+                val zipEntry = ZipEntry(basePath)
+                zipEntry.time = file.lastModified()
+                zipOut.putNextEntry(zipEntry)
+
+                FileInputStream(file).use { fileInput ->
+                    var bytesRead: Int
+                    while (fileInput.read(buffer).also { bytesRead = it } != -1) {
+                        zipOut.write(buffer, 0, bytesRead)
+                    }
+                }
+
+                zipOut.closeEntry()
+            }
+        }
+
+        addFileToZip(directory, "")
+    }
+
+    private fun backupExistsInS3(): Boolean = try {
+        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+        minioClient.statObject(
+            StatObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(objectKey)
+                .build(),
+        )
+        true
+    } catch (e: Exception) {
+        log.debug("Backup does not exist in S3: ${e.message}")
+        false
+    }
+
+    private fun downloadAndExtractBackup(restorePath: Path) {
+        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+
+        minioClient.getObject(
+            GetObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(objectKey)
+                .build(),
+        ).use { inputStream ->
+            ZipInputStream(inputStream).use { zipInput ->
+                extractZipDirectory(zipInput, restorePath.toFile())
+            }
+        }
+
+        log.debug("Backup extracted to: {}", restorePath)
+    }
+
+    private fun extractZipDirectory(zipInput: ZipInputStream, targetDirectory: File) {
+        targetDirectory.mkdirs()
+        val buffer = ByteArray(BUFFER_SIZE)
+
+        var entry = zipInput.nextEntry
+        while (entry != null) {
+            val targetFile = File(targetDirectory, entry.name)
+
+            if (entry.isDirectory) {
+                targetFile.mkdirs()
+            } else {
+                // Create parent directories if needed
+                targetFile.parentFile?.mkdirs()
+
+                // Extract file content
+                FileOutputStream(targetFile).use { fileOutput ->
+                    var bytesRead: Int
+                    while (zipInput.read(buffer).also { bytesRead = it } != -1) {
+                        fileOutput.write(buffer, 0, bytesRead)
+                    }
+                }
+
+                // Preserve timestamp
+                targetFile.setLastModified(entry.time)
+            }
+
+            zipInput.closeEntry()
+            entry = zipInput.nextEntry
+        }
+    }
+
+    private fun restoreLocalDatabase(backupPath: Path) {
+        // Close current RocksDB context to release locks
+        rocksDbContext.close()
+
+        // Delete existing database directory
+        val dbPath = Paths.get(rocksDbContext.dbPath)
+        if (dbPath.exists()) {
+            log.debug("Deleting existing database directory: {}", dbPath)
+            dbPath.toFile().deleteRecursively()
+        }
+
+        // Restore from backup to the current context's database path
+        val restoreOptions = RestoreOptions(false)
+        val options = Options().setCreateIfMissing(true)
+
+        try {
+            BackupEngineOptions(backupPath.toString()).use { options ->
+                BackupEngine.open(Env.getDefault(), options).use { backupEngine ->
+                    log.debug("BackupEngine opened for restore, available backups:")
+                    val backupInfos = backupEngine.backupInfo
+                    backupInfos.forEach { info ->
+                        log.debug("  Backup ID: ${info.backupId()}, Size: ${info.size()} bytes, Timestamp: ${info.timestamp()}")
+                    }
+
+                    log.debug("Starting restore from backup path: {} to database path: {}", backupPath, rocksDbContext.dbPath)
+                    // Restore to current rocksDbContext.dbPath (both db_dir and wal_dir point to the same location)
+                    backupEngine.restoreDbFromLatestBackup(rocksDbContext.dbPath, rocksDbContext.dbPath, restoreOptions)
+                    log.debug("restoreDbFromLatestBackup completed")
+                }
+            }
+        } catch (e: Exception) {
+            log.error("Failed during RocksDB restore operation", e)
+            throw e
+        }
+
+        options.close()
+        restoreOptions.close()
+
+        // Reinitialize the RocksDB context
+        rocksDbContext.reinitialize()
+
+        log.debug("Database restored to: ${rocksDbContext.dbPath}")
+    }
+
+    /**
+     * Atomically renames an S3 object by copying to the destination and deleting the source.
+     * This ensures readers never see partial backup data.
+     */
+    private fun atomicRename(sourceKey: String, destKey: String): Boolean = try {
+        log.debug("Atomically renaming S3 object: {} -> {}", sourceKey, destKey)
+
+        // Copy to final destination (atomic operation)
+        minioClient.copyObject(
+            CopyObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(destKey)
+                .source(
+                    CopySource.builder()
+                        .bucket(backupConfig.bucket)
+                        .`object`(sourceKey)
+                        .build(),
+                )
+                .build(),
+        )
+
+        // Delete temporary file
+        minioClient.removeObject(
+            RemoveObjectArgs.builder()
+                .bucket(backupConfig.bucket)
+                .`object`(sourceKey)
+                .build(),
+        )
+
+        log.debug("Successfully renamed S3 object: {} -> {}", sourceKey, destKey)
+        true
+    } catch (e: Exception) {
+        log.error("Failed to atomically rename S3 object: {} -> {}", sourceKey, destKey, e)
+        // Attempt cleanup of temporary file
+        try {
+            minioClient.removeObject(
+                RemoveObjectArgs.builder()
+                    .bucket(backupConfig.bucket)
+                    .`object`(sourceKey)
+                    .build(),
+            )
+            log.debug("Cleaned up temporary file after failed rename: {}", sourceKey)
+        } catch (cleanupException: Exception) {
+            log.warn("Failed to clean up temporary file: {}", sourceKey, cleanupException)
+        }
+        false
+    }
+}

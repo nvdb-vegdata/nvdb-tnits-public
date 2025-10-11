@@ -9,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.delay
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
 
 class S3OutputStreamTest :
     ShouldSpec({

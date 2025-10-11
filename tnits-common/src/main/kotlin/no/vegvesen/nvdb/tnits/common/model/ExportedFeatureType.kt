@@ -2,8 +2,13 @@ package no.vegvesen.nvdb.tnits.common.model
 
 enum class ExportedFeatureType(val typeId: Int, val sourceCode: String, val typeCode: String) {
     SpeedLimit(VegobjektTyper.FARTSGRENSE, "regulation", "speedLimit"),
-
     ;
+
+    fun getTypePrefix(): String {
+        val paddedType = typeId.toString().padStart(4, '0')
+        val typePrefix = "$paddedType-$typeCode"
+        return typePrefix
+    }
 
     companion object {
         val entriesById = entries.associateBy { it.typeId }

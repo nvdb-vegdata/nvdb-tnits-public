@@ -9,14 +9,19 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
-import no.vegvesen.nvdb.tnits.generator.config.ExportTarget
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
-import no.vegvesen.nvdb.tnits.generator.geometry.SRID
-import no.vegvesen.nvdb.tnits.generator.geometry.parseWkt
-import no.vegvesen.nvdb.tnits.generator.model.IntProperty
-import no.vegvesen.nvdb.tnits.generator.model.RoadFeaturePropertyType
-import no.vegvesen.nvdb.tnits.generator.model.TnitsFeature
-import no.vegvesen.nvdb.tnits.generator.storage.S3OutputStream
+import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
+import no.vegvesen.nvdb.tnits.generator.core.model.tnits.IntProperty
+import no.vegvesen.nvdb.tnits.generator.core.model.tnits.RoadFeaturePropertyType
+import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsFeature
+import no.vegvesen.nvdb.tnits.generator.core.model.tnits.UpdateType
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureExportWriter
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
+import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter
 import org.testcontainers.containers.MinIOContainer
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -27,7 +32,10 @@ class S3IntegrationTest : ShouldSpec() {
     private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer()
     private lateinit var minioClient: MinioClient
     private val testBucket = "nvdb-tnits-test"
-    private val exporterConfig = ExporterConfig(false, ExportTarget.S3, testBucket)
+    private val exporterConfig = ExporterConfig(false, testBucket)
+
+    private lateinit var featureExporter: TnitsFeatureExporter
+    private lateinit var exportWriter: FeatureExportWriter
 
     init {
         beforeSpec {
@@ -35,6 +43,8 @@ class S3IntegrationTest : ShouldSpec() {
             minioClient = MinioTestHelper.createMinioClient(minioContainer)
             MinioTestHelper.waitForMinioReady(minioClient)
             MinioTestHelper.ensureBucketExists(minioClient, testBucket)
+            featureExporter = TnitsFeatureS3Exporter(exporterConfig, minioClient)
+            exportWriter = FeatureExportWriter(featureExporter, mockk(relaxed = true))
         }
 
         afterSpec {
@@ -141,11 +151,11 @@ class S3IntegrationTest : ShouldSpec() {
                 nvdbLocationReferences = emptyList(),
             )
 
-            val mockGenerator = mockk<TnitsFeatureGenerator> {
+            val mockGenerator = mockk<FeatureTransformer> {
                 every { generateSnapshot(any()) } returns flowOf(mockSpeedLimit)
             }
 
-            val exporter = TnitsFeatureExporter(mockGenerator, exporterConfig, minioClient, mockk(), mockk(), mockk(relaxed = true))
+            val exporter = TnitsExportService(mockGenerator, exportWriter, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
@@ -194,13 +204,16 @@ class S3IntegrationTest : ShouldSpec() {
                 nvdbLocationReferences = emptyList(),
             )
 
-            val mockGenerator = mockk<TnitsFeatureGenerator> {
+            val mockGenerator = mockk<FeatureTransformer> {
                 every { generateSnapshot(any()) } returns flowOf(mockSpeedLimit)
             }
 
-            val appConfig = exporterConfig.copy(gzip = true)
+            val exportWriter = FeatureExportWriter(
+                TnitsFeatureS3Exporter(ExporterConfig(gzip = true, bucket = testBucket), minioClient),
+                mockk(relaxed = true),
+            )
 
-            val exporter = TnitsFeatureExporter(mockGenerator, appConfig, minioClient, mockk(), mockk(), mockk(relaxed = true))
+            val exporter = TnitsExportService(mockGenerator, exportWriter, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")
 
             // Act

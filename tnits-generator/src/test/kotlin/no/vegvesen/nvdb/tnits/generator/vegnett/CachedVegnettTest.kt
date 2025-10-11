@@ -2,8 +2,8 @@ package no.vegvesen.nvdb.tnits.generator.vegnett
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.TillattRetning
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
-import no.vegvesen.nvdb.tnits.generator.openlr.TillattRetning
 import no.vegvesen.nvdb.tnits.generator.setupCachedVegnett
 
 class CachedVegnettTest :

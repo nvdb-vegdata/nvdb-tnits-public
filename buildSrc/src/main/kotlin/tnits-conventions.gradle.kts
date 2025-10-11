@@ -17,6 +17,9 @@ kotlin {
 
 ktlint {
     version = "1.7.1"
+    filter {
+        exclude("**/generated/**")
+    }
 }
 
 dependencies {
@@ -30,6 +33,7 @@ tasks.withType<KotlinCompile> {
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
         freeCompilerArgs.add("-Xcontext-parameters")
         freeCompilerArgs.add("-Xjsr305=strict")
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 

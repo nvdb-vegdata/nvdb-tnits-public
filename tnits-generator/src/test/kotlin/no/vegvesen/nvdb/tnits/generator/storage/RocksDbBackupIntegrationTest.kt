@@ -6,6 +6,8 @@ import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.infrastructure.RocksDbS3BackupService
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.testcontainers.containers.MinIOContainer
 
@@ -35,7 +37,7 @@ class RocksDbBackupIntegrationTest : ShouldSpec() {
                     path = "test-restore-path",
                 )
 
-                val backupService = RocksDbBackupService(dbContext, minioClient, backupConfig)
+                val backupService = RocksDbS3BackupService(dbContext, minioClient, backupConfig)
 
                 // Add original test data
                 dbContext.put(ColumnFamily.KEY_VALUE, "original-key".toByteArray(), "original-value".toByteArray())

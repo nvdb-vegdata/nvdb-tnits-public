@@ -5,6 +5,8 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import no.vegvesen.nvdb.tnits.generator.core.model.ReversedCoordinateSequence
+import no.vegvesen.nvdb.tnits.generator.core.model.reversedView
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import kotlin.time.measureTime

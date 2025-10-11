@@ -4,11 +4,6 @@ import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addResourceOrFileSource
 
-enum class ExportTarget {
-    File,
-    S3,
-}
-
 data class AppConfig(
     val uberiketApi: UberiketApiConfig,
     val datakatalogApi: DatakatalogApiConfig,
@@ -17,7 +12,7 @@ data class AppConfig(
     val backup: BackupConfig,
 )
 
-data class ExporterConfig(val gzip: Boolean, val target: ExportTarget, val bucket: String)
+data class ExporterConfig(val gzip: Boolean, val bucket: String)
 
 data class BackupConfig(val enabled: Boolean, val bucket: String = "", val path: String = "rocksdb-backup")
 

@@ -5,6 +5,10 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import no.vegvesen.nvdb.tnits.generator.core.api.getValue
+import no.vegvesen.nvdb.tnits.generator.core.api.putValue
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.KeyValueRocksDbStore
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.time.Instant
@@ -28,42 +32,42 @@ class KeyValueRocksDbStoreTest :
         }
 
         should("store and retrieve string values") {
-            store.put("test-key", "test-value")
-            val result = store.get<String>("test-key")
+            store.putValue("test-key", "test-value")
+            val result = store.getValue<String>("test-key")
 
             result shouldBe "test-value"
         }
 
         should("store and retrieve different data types") {
-            store.put("string-key", "string-value")
-            store.put("long-key", 123L)
-            store.put("boolean-key", true)
-            store.put("instant-key", Instant.parse("2023-01-01T12:00:00Z"))
+            store.putValue("string-key", "string-value")
+            store.putValue("long-key", 123L)
+            store.putValue("boolean-key", true)
+            store.putValue("instant-key", Instant.parse("2023-01-01T12:00:00Z"))
 
-            store.get<String>("string-key") shouldBe "string-value"
-            store.get<Long>("long-key") shouldBe 123L
-            store.get<Boolean>("boolean-key") shouldBe true
-            store.get<Instant>("instant-key") shouldBe Instant.parse("2023-01-01T12:00:00Z")
+            store.getValue<String>("string-key") shouldBe "string-value"
+            store.getValue<Long>("long-key") shouldBe 123L
+            store.getValue<Boolean>("boolean-key") shouldBe true
+            store.getValue<Instant>("instant-key") shouldBe Instant.parse("2023-01-01T12:00:00Z")
         }
 
         should("return null for non-existent keys") {
-            val result = store.get<String>("non-existent-key")
+            val result = store.getValue<String>("non-existent-key")
             result shouldBe null
         }
 
         should("delete keys") {
-            store.put("key-to-delete", "value")
-            store.get<String>("key-to-delete") shouldBe "value"
+            store.putValue("key-to-delete", "value")
+            store.getValue<String>("key-to-delete") shouldBe "value"
 
             store.delete("key-to-delete")
-            store.get<String>("key-to-delete") shouldBe null
+            store.getValue<String>("key-to-delete") shouldBe null
         }
 
         should("find keys by prefix") {
-            store.put("prefix_key1", "value1")
-            store.put("prefix_key2", "value2")
-            store.put("other_key", "value3")
-            store.put("prefix_another", "value4")
+            store.putValue("prefix_key1", "value1")
+            store.putValue("prefix_key2", "value2")
+            store.putValue("other_key", "value3")
+            store.putValue("prefix_another", "value4")
 
             val keys = store.findKeysByPrefix("prefix_")
 
@@ -72,10 +76,10 @@ class KeyValueRocksDbStoreTest :
         }
 
         should("count keys by prefix") {
-            store.put("count_key1", "value1")
-            store.put("count_key2", "value2")
-            store.put("other_key", "value3")
-            store.put("count_another", "value4")
+            store.putValue("count_key1", "value1")
+            store.putValue("count_key2", "value2")
+            store.putValue("other_key", "value3")
+            store.putValue("count_another", "value4")
 
             val count = store.countKeysByPrefix("count_")
 
@@ -83,11 +87,11 @@ class KeyValueRocksDbStoreTest :
         }
 
         should("count keys matching pattern with prefix and suffix") {
-            store.put("range_1_completed", true)
-            store.put("range_2_completed", true)
-            store.put("range_3_started", false)
-            store.put("range_4_completed", true)
-            store.put("other_completed", true)
+            store.putValue("range_1_completed", true)
+            store.putValue("range_2_completed", true)
+            store.putValue("range_3_started", false)
+            store.putValue("range_4_completed", true)
+            store.putValue("other_completed", true)
 
             val count = store.countKeysMatchingPattern("range_", "_completed")
 
@@ -95,22 +99,22 @@ class KeyValueRocksDbStoreTest :
         }
 
         should("delete keys by prefix") {
-            store.put("delete_key1", "value1")
-            store.put("delete_key2", "value2")
-            store.put("keep_key", "value3")
-            store.put("delete_another", "value4")
+            store.putValue("delete_key1", "value1")
+            store.putValue("delete_key2", "value2")
+            store.putValue("keep_key", "value3")
+            store.putValue("delete_another", "value4")
 
             store.deleteKeysByPrefix("delete_")
 
-            store.get<String>("delete_key1") shouldBe null
-            store.get<String>("delete_key2") shouldBe null
-            store.get<String>("delete_another") shouldBe null
-            store.get<String>("keep_key") shouldBe "value3"
+            store.getValue<String>("delete_key1") shouldBe null
+            store.getValue<String>("delete_key2") shouldBe null
+            store.getValue<String>("delete_another") shouldBe null
+            store.getValue<String>("keep_key") shouldBe "value3"
         }
 
         should("handle empty prefix operations") {
-            store.put("key1", "value1")
-            store.put("key2", "value2")
+            store.putValue("key1", "value1")
+            store.putValue("key2", "value2")
 
             store.findKeysByPrefix("nonexistent_") shouldHaveSize 0
             store.countKeysByPrefix("nonexistent_") shouldBe 0
@@ -118,18 +122,18 @@ class KeyValueRocksDbStoreTest :
         }
 
         should("clear all data") {
-            store.put("key1", "value1")
-            store.put("key2", "value2")
-            store.put("key3", "value3")
+            store.putValue("key1", "value1")
+            store.putValue("key2", "value2")
+            store.putValue("key3", "value3")
 
             store.size() shouldBe 3
 
             store.clear()
 
             store.size() shouldBe 0
-            store.get<String>("key1") shouldBe null
-            store.get<String>("key2") shouldBe null
-            store.get<String>("key3") shouldBe null
+            store.getValue<String>("key1") shouldBe null
+            store.getValue<String>("key2") shouldBe null
+            store.getValue<String>("key3") shouldBe null
         }
 
         should("handle serializable data classes") {
@@ -138,17 +142,17 @@ class KeyValueRocksDbStoreTest :
 
             val testData = TestData(123L, "test-name", true)
 
-            store.put("data-key", testData)
-            val result = store.get<TestData>("data-key")
+            store.putValue("data-key", testData)
+            val result = store.getValue<TestData>("data-key")
 
             result shouldBe testData
         }
 
         should("update existing keys") {
-            store.put("update-key", "original-value")
-            store.get<String>("update-key") shouldBe "original-value"
+            store.putValue("update-key", "original-value")
+            store.getValue<String>("update-key") shouldBe "original-value"
 
-            store.put("update-key", "updated-value")
-            store.get<String>("update-key") shouldBe "updated-value"
+            store.putValue("update-key", "updated-value")
+            store.getValue<String>("update-key") shouldBe "updated-value"
         }
     })
