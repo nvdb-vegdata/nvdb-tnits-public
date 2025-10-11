@@ -3,7 +3,6 @@ package no.vegvesen.nvdb.tnits.generator.core.services.vegnett
 import jakarta.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
@@ -78,8 +77,8 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                     val feltstrekningerLookup = felstrekningerLoad.await()
                     val frcLookup = frcLoad.await()
 
-                    veglenkerLookup.forEach { (_, veglenker) ->
-                        launch {
+                    log.measure("Assign FRC and feltoversikt to veglenker", logStart = true) {
+                        veglenkerLookup.forEach { (_, veglenker) ->
                             veglenker.filter {
                                 it.isRelevant()
                             }.forEach { veglenke ->
