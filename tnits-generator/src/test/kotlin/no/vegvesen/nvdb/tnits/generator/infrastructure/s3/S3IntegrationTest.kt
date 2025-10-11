@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator
+package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
@@ -9,6 +9,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
@@ -20,8 +21,6 @@ import no.vegvesen.nvdb.tnits.generator.core.model.tnits.UpdateType
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureExportWriter
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter
 import org.testcontainers.containers.MinIOContainer
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream

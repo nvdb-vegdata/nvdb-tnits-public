@@ -14,7 +14,7 @@ data class AppConfig(
 
 data class ExporterConfig(val gzip: Boolean, val bucket: String)
 
-data class BackupConfig(val enabled: Boolean, val bucket: String = "", val path: String = "rocksdb-backup")
+data class BackupConfig(val enabled: Boolean, val bucket: String, val path: String = "rocksdb-backup")
 
 data class UberiketApiConfig(val baseUrl: String)
 

@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.services
+package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.nulls.shouldBeNull
@@ -9,8 +9,8 @@ import io.minio.PutObjectArgs
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.clear
+import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3TimestampService
 import org.testcontainers.containers.MinIOContainer
 import java.io.ByteArrayInputStream
 import kotlin.time.Instant
@@ -30,7 +30,13 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
             minioClient = MinioTestHelper.createMinioClient(minioContainer)
             MinioTestHelper.waitForMinioReady(minioClient)
             MinioTestHelper.ensureBucketExists(minioClient, testBucket)
-            timestampService = S3TimestampService(minioClient, testBucket)
+            timestampService = S3TimestampService(
+                minioClient,
+                ExporterConfig(
+                    gzip = false,
+                    bucket = testBucket,
+                ),
+            )
         }
 
         afterSpec {

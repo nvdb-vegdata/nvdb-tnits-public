@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.storage
+package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec

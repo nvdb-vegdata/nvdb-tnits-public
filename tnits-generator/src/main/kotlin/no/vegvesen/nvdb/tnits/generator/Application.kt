@@ -1,9 +1,9 @@
 package no.vegvesen.nvdb.tnits.generator
 
 import io.minio.MinioClient
-import no.vegvesen.nvdb.tnits.generator.core.useCases.PerformInspireRoadnetExport
-import no.vegvesen.nvdb.tnits.generator.core.useCases.PerformSmartTnitsExport
-import no.vegvesen.nvdb.tnits.generator.core.useCases.PerformTnitsSnapshotExport
+import no.vegvesen.nvdb.tnits.generator.core.useCases.InspireRoadnetCycle
+import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsAutomaticCycle
+import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsSnapshotCycle
 import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsUpdateCycle
 import org.koin.core.annotation.KoinApplication
 import org.koin.ksp.generated.startKoin
@@ -16,10 +16,10 @@ suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
     val app = ProductionApp.startKoin()
     when (args.firstOrNull()) {
-        "snapshot" -> app.koin.get<PerformTnitsSnapshotExport>().execute()
+        "snapshot" -> app.koin.get<TnitsSnapshotCycle>().execute()
         "update" -> app.koin.get<TnitsUpdateCycle>().execute()
-        "inspire-roadnet" -> app.koin.get<PerformInspireRoadnetExport>().execute()
-        "auto", null -> app.koin.get<PerformSmartTnitsExport>().execute()
+        "inspire-roadnet" -> app.koin.get<InspireRoadnetCycle>().execute()
+        "auto", null -> app.koin.get<TnitsAutomaticCycle>().execute()
         else -> {
             log.error("Unknown command '${args.first()}', use one of 'snapshot', 'update', 'inspire-roadnet' or 'auto'")
         }

@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.extensions
+package no.vegvesen.nvdb.tnits.generator.core.extensions
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
@@ -10,7 +10,7 @@ import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
-class KeyValueRocksDbExtensionsTest :
+class KeyValueStoreExtensionsTest :
     ShouldSpec({
 
         lateinit var tempDir: File

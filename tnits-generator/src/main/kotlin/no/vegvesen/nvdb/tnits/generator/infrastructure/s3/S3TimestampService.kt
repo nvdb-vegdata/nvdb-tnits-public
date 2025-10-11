@@ -3,15 +3,20 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.messages.Item
+import jakarta.inject.Singleton
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
 import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
 import kotlin.time.Instant
 
-class S3TimestampService(private val minioClient: MinioClient, private val bucketName: String) :
+@Singleton
+class S3TimestampService(private val minioClient: MinioClient, exporterConfig: ExporterConfig) :
     TimestampService,
     WithLogger {
+
+    private val bucketName = exporterConfig.bucket
 
     override fun getLastSnapshotTimestamp(featureType: ExportedFeatureType): Instant? = getLastExportTimestamp(featureType, TnitsExportType.Snapshot)
 

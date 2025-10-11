@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator
+package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
@@ -8,7 +8,7 @@ import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter.Companion.generateS3Key
 import kotlin.time.Instant
 
-class GenerateS3KeyTest : ShouldSpec({
+class TnitsFeatureS3ExporterTest : ShouldSpec({
 
     should("format S3 key with padded vegobjekttype for speed limits") {
         // Arrange

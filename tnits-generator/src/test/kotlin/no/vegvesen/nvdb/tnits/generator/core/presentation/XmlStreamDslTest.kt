@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.xml
+package no.vegvesen.nvdb.tnits.generator.core.presentation
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe

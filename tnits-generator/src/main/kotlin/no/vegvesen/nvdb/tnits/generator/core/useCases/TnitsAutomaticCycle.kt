@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.core.useCases
 
+import jakarta.inject.Singleton
 import kotlinx.datetime.toLocalDateTime
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
@@ -15,7 +16,8 @@ import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import kotlin.time.Clock
 
-class PerformSmartTnitsExport(
+@Singleton
+class TnitsAutomaticCycle(
     private val rocksDbBackupService: LocalBackupService,
     private val timestampService: TimestampService,
     private val keyValueStore: KeyValueStore,
