@@ -74,7 +74,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")
     testImplementation("io.kotest:kotest-runner-junit5:6.0.0")
     testImplementation("io.kotest:kotest-assertions-core:6.0.0")
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("io.mockk:mockk:1.14.6")
 
     // Testcontainers for integration testing
     testImplementation("org.testcontainers:minio:1.21.3")
@@ -93,6 +93,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 application {
     mainClass.set("no.vegvesen.nvdb.tnits.generator.ApplicationKt")
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 // Clean only Uberiket API generated sources
