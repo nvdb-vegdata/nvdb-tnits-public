@@ -104,24 +104,20 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
                 veglenkerInitialized = true
 
-                log.measure("Load OpenLR lines") {
-                    coroutineScope {
-                        veglenkerLookup.forEach { (_, veglenker) ->
-                            launch {
-                                veglenker.filter {
-                                    it.isRelevant()
-                                }.forEach { veglenke ->
-                                    val tillattRetning = tillattRetningByVeglenke[veglenke]
-                                    if (tillattRetning != null) {
-                                        if (TillattRetning.Med in tillattRetning) {
-                                            linesByVeglenkerForward[veglenke] =
-                                                createOpenLrLine(veglenke, TillattRetning.Med)
-                                        }
-                                        if (TillattRetning.Mot in tillattRetning) {
-                                            linesByVeglenkerReverse[veglenke] =
-                                                createOpenLrLine(veglenke, TillattRetning.Mot)
-                                        }
-                                    }
+                log.measure("Load OpenLR lines", logStart = true) {
+                    veglenkerLookup.forEach { (_, veglenker) ->
+                        veglenker.filter {
+                            it.isRelevant()
+                        }.forEach { veglenke ->
+                            val tillattRetning = tillattRetningByVeglenke[veglenke]
+                            if (tillattRetning != null) {
+                                if (TillattRetning.Med in tillattRetning) {
+                                    linesByVeglenkerForward[veglenke] =
+                                        createOpenLrLine(veglenke, TillattRetning.Med)
+                                }
+                                if (TillattRetning.Mot in tillattRetning) {
+                                    linesByVeglenkerReverse[veglenke] =
+                                        createOpenLrLine(veglenke, TillattRetning.Mot)
                                 }
                             }
                         }
