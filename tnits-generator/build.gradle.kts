@@ -92,7 +92,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 application {
-    mainClass.set("no.vegvesen.nvdb.tnits.ApplicationKt")
+    mainClass.set("no.vegvesen.nvdb.tnits.generator.ApplicationKt")
 }
 
 // Clean only Uberiket API generated sources

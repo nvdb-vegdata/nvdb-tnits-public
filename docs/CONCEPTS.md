@@ -17,7 +17,7 @@ This document defines key concepts and terminology used in the nvdb-tnits projec
 - Length: 2.5 km
 - Represents: Highway E6 from junction A to junction B
 
-**In code:** `model/Veglenke.kt`, `VeglenkerRocksDbStore.kt`
+**In code:** `core/model/Veglenke.kt`, `infrastructure/rocksdb/VeglenkerRocksDbStore.kt`
 
 ### Veglenke
 
@@ -81,7 +81,7 @@ Vegobjekt(
 )
 ```
 
-See: `model/Vegobjekt.kt`, `model/VegobjektTyper.kt:5`
+See: `core/model/Vegobjekt.kt`, `tnits-common/.../VegobjektTyper.kt`
 
 ### Stedfesting
 
@@ -110,7 +110,7 @@ Stedfesting(
 - From 25% to 75% along the sequence
 - In the direction of the road (MED = with, MOT = against)
 
-**In code:** `model/StedfestingUtstrekning.kt`
+**In code:** `core/model/StedfestingUtstrekning.kt`
 
 ### Retning
 
@@ -145,7 +145,7 @@ Egenskap(
 - **9338:** Vegklasse (Road class)
 - **5528:** Feltoversikt i veglenkeretning (Lane overview)
 
-See: `model/VegobjektTyper.kt:11`
+See: `tnits-common/.../VegobjektTyper.kt` and `core/model/EgenskapsTyper.kt`
 
 ### Feltoversikt
 
@@ -209,7 +209,7 @@ See: `model/VegobjektTyper.kt:11`
 - Snapshot: Update type is not specified
 - Update: Objects have `updateType` as `Add`, `Modify`, or `Remove`
 
-See: `UpdateType.kt`
+See: `core/model/tnits/UpdateType.kt`
 
 ### Lifespan Versioning
 
@@ -306,7 +306,7 @@ Latitude: 59.9139 degrees
 Longitude: 10.7522 degrees
 ```
 
-See: `geometry/GeometryHelpers.kt:22`
+See: `core/extensions/GeometryHelpers.kt`
 
 ### Geometry Types
 
@@ -354,7 +354,7 @@ MULTILINESTRING((0 0, 10 0), (20 0, 30 0))
 
 **Library:** JTS (Java Topology Suite)
 
-See: `geometry/GeometryHelpers.kt:41`
+See: `core/extensions/GeometryHelpers.kt`
 
 ### SRID
 
@@ -388,7 +388,7 @@ val simplified = geometry.simplify(distanceTolerance = 1.0)  // 1 meter in UTM33
 // Result: ~100 points (90% reduction)
 ```
 
-See: `geometry/GeometryHelpers.kt:66`
+See: `core/extensions/GeometryHelpers.kt`
 
 ### Coordinate Transformation
 
@@ -404,7 +404,7 @@ val wgs84Geometry = utm33Geometry.projectTo(SRID.WGS84)
 // Result: LINESTRING(59.9139 10.7522, 59.9148 10.7537)
 ```
 
-See: `geometry/GeometryHelpers.kt:46`
+See: `core/extensions/GeometryHelpers.kt`
 
 ## OpenLR Concepts
 
@@ -468,7 +468,7 @@ fun EnumVerdi.toFrc() = when (verdi) {
 }
 ```
 
-See: `model/VegobjektTyper.kt:17`
+See: `tnits-common/.../VegobjektTyper.kt` and `core/services/vegnett/OpenLrService.kt`
 
 ### Form of Way (FOW)
 
@@ -502,7 +502,7 @@ Negative offset: 50 meters   (end at 50m before end)
 Effective range: 100m to 950m (850 meters total)
 ```
 
-See: `openlr/OpenLrService.kt:24`
+See: `core/services/vegnett/OpenLrService.kt`
 
 ## Storage Concepts
 
@@ -543,7 +543,7 @@ See: [Storage Architecture](STORAGE.md)
 - DIRTY_VEGLENKESEKVENSER column family
 - DIRTY_VEGOBJEKTER column family
 
-See: `storage/DirtyCheckingRocksDbStore.kt`
+See: `infrastructure/rocksdb/DirtyCheckingRocksDbStore.kt`
 
 ### Protocol Buffers (Protobuf)
 
@@ -595,7 +595,7 @@ rocksDbContext.writeBatch {
 // All operations succeed or all fail
 ```
 
-See: `storage/WriteBatchContext.kt`
+See: `core/services/storage/WriteBatchContext.kt`
 
 ## Processing Concepts
 
@@ -614,7 +614,7 @@ See: `storage/WriteBatchContext.kt`
 
 **Resumable:** Tracks progress, can resume after failure.
 
-See: [Data Flow](DATA_FLOW.md), `handlers/PerformBackfillHandler.kt`
+See: [Data Flow](DATA_FLOW.md), `core/services/nvdb/NvdbBackfillOrchestrator.kt`
 
 ### Incremental Update
 
@@ -629,7 +629,7 @@ See: [Data Flow](DATA_FLOW.md), `handlers/PerformBackfillHandler.kt`
 
 **Frequency:** Typically run daily.
 
-See: [Data Flow](DATA_FLOW.md), `handlers/PerformUpdateHandler.kt`
+See: [Data Flow](DATA_FLOW.md), `core/services/nvdb/NvdbUpdateOrchestrator.kt`
 
 ### Parallel Processing
 
@@ -645,7 +645,7 @@ See: [Data Flow](DATA_FLOW.md), `handlers/PerformUpdateHandler.kt`
 
 **Speedup:** 4-8x typical performance improvement
 
-See: `TnitsFeatureExporter.kt`
+See: `core/services/tnits/TnitsExportService.kt`
 
 ### Streaming Processing
 
@@ -659,7 +659,7 @@ See: `TnitsFeatureExporter.kt`
 
 **Memory usage:** O(1) constant vs O(n) for in-memory approaches
 
-See: `xml/XmlStreamDsl.kt`
+See: `core/presentation/XmlStreamDsl.kt`
 
 ## API Concepts
 
@@ -739,27 +739,65 @@ class VeglenkerRocksDbStore(
 
 **Definition:** Single location where all dependencies are constructed and wired together.
 
-**In project:** `Services.kt:46`
+**In project:** `MainModule.kt` - Koin module with component scanning
 
 **Pattern:**
 
+The project uses **Koin** with annotations for dependency injection. Dependencies are declared using `@Singleton` annotations and automatically discovered through component scanning.
+
 ```kotlin
-class Services : AutoCloseable {
-  val config = loadConfig()
-  val rocksDbContext = RocksDbContext()
-  val veglenkerRepository = VeglenkerRocksDbStore(rocksDbContext)
-  val vegobjekterRepository = VegobjekterRocksDbStore(rocksDbContext)
-  // ... all services initialized here
+@Module
+@Configuration
+@ComponentScan
+class MainModule {
+    @Singleton
+    fun appConfig() = loadConfig()
+
+    @Singleton
+    @Named("uberiketHttpClient")
+    fun uberiketHttpClient(config: UberiketApiConfig) =
+        createUberiketHttpClient(config.baseUrl)
+
+    @Singleton
+    fun minioClient(config: AppConfig): MinioClient = /* ... */
+}
+```
+
+Services and repositories are annotated with `@Singleton` for automatic discovery:
+
+```kotlin
+@Singleton
+class VeglenkerRocksDbStore(
+    private val rocksDbContext: RocksDbContext
+) : VeglenkerRepository {
+    // Automatically binds to VeglenkerRepository interface
+}
+
+@Singleton
+class PerformSmartTnitsExport(
+    private val tnitsExportService: TnitsExportService,
+    private val rocksDbBackupService: RocksDbS3BackupService,
+    // Dependencies automatically resolved by Koin
+) {
+    suspend fun execute() { /* ... */ }
 }
 ```
 
 **Usage:**
 
 ```kotlin
-Services().use { services ->
-  services.tnitsFeatureExporter.exportSnapshot(...)
+fun main(args: Array<String>) = runBlocking {
+    startKoin {
+        printLogger(Level.INFO)
+        modules(MainModule().module)
+    }
+
+    val app = koin.get<Application>()
+    app.main(args)
 }
 ```
+
+For comprehensive documentation on Koin usage, see [Koin Dependency Injection Guide](KOIN_DEPENDENCY_INJECTION.md).
 
 ### Cached Vegnett
 
@@ -775,7 +813,7 @@ Services().use { services ->
 
 **Benefit:** Enable complex spatial queries without RocksDB access.
 
-See: `vegnett/CachedVegnett.kt`
+See: `core/services/vegnett/CachedVegnett.kt`
 
 ## Abbreviations
 

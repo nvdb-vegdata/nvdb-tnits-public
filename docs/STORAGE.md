@@ -2,6 +2,8 @@
 
 This document describes the RocksDB-based storage layer used in nvdb-tnits.
 
+Diagrams are written in [Mermaid](https://mermaid.js.org) syntax; use [IntelliJ Mermaid Plugin](https://plugins.jetbrains.com/plugin/20146-mermaid) to view them in the IDE.
+
 ## Overview
 
 The application uses **RocksDB** as its primary storage engine, replacing traditional SQL databases. RocksDB is an embedded key-value store optimized for fast storage on SSD and flash drives.
@@ -35,7 +37,7 @@ RocksDB uses **column families** to logically separate different types of data. 
 
 ### Column Family Schema
 
-Defined in: `storage/ColumnFamily.kt`
+Defined in: `core/services/storage/ColumnFamily.kt`
 
 | Column Family               | Purpose              | Key Format                    | Value Format                    |
 |-----------------------------|----------------------|-------------------------------|---------------------------------|
@@ -45,7 +47,6 @@ Defined in: `storage/ColumnFamily.kt`
 | **VEGOBJEKTER**             | Road objects         | Composite (typeId + objektId) | Vegobjekt (protobuf)            |
 | **DIRTY_VEGLENKESEKVENSER** | Changed road links   | Long (veglenkesekvensId)      | Empty                           |
 | **DIRTY_VEGOBJEKTER**       | Changed road objects | Composite (typeId + objektId) | Empty                           |
-| **VEGOBJEKTER_HASH**        | Export hash tracking | Composite (typeId + objektId) | ByteArray (hash)                |
 | **EXPORTED_FEATURES**       | Export metadata      | Composite (typeId + objektId) | ExportedFeature (protobuf)      |
 
 ### Example: VEGLENKER Column Family
@@ -79,49 +80,24 @@ The application uses a clean abstraction layer to encapsulate RocksDB operations
 
 ### Architecture
 
-```
-┌─────────────────────────────────────────────┐
-│  Business Logic (handlers, services)        │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│  Repository Interfaces                      │
-│  • VeglenkerRepository                      │
-│  • VegobjekterRepository                    │
-│  • DirtyCheckingRepository                  │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│  RocksDB Store Implementations              │
-│  • VeglenkerRocksDbStore                    │
-│  • VegobjekterRocksDbStore                  │
-│  • DirtyCheckingRocksDbStore                │
-│  • KeyValueRocksDbStore                     │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│  RocksDbContext                             │
-│  Wrapper methods for type-safe operations   │
-│  • get(columnFamily, key)                   │
-│  • put(columnFamily, key, value)            │
-│  • getBatch(columnFamily, keys)             │
-│  • writeBatch { ... }                       │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│  RocksDB Native Library                     │
-└─────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Business["Core Layer - Business Logic<br/>(Use Cases & Services)"]
+    Interfaces["Core API - Repository Interfaces (Ports)<br/>• VeglenkerRepository<br/>• VegobjekterRepository<br/>• DirtyCheckingRepository<br/>• KeyValueStore"]
+    Implementations["Infrastructure - RocksDB Implementations (Adapters)<br/>• VeglenkerRocksDbStore<br/>• VegobjekterRocksDbStore<br/>• DirtyCheckingRocksDbStore<br/>• KeyValueRocksDbStore"]
+    Context["RocksDbContext<br/>Type-safe wrapper methods:<br/>• get(columnFamily, key)<br/>• put(columnFamily, key, value)<br/>• getBatch(columnFamily, keys)<br/>• writeBatch { ... }"]
+    Native["RocksDB Native Library"]
+    Business -->|depends on| Interfaces
+    Interfaces -. implements .-> Implementations
+    Implementations -->|uses| Context
+    Context -->|calls| Native
 ```
 
 ### Key Classes
 
 #### RocksDbContext
 
-**Location:** `storage/RocksDbContext.kt:14`
+**Location:** `infrastructure/rocksdb/RocksDbContext.kt`
 
 Core context managing database connection, column families, and providing wrapper methods.
 
@@ -154,7 +130,7 @@ fun streamEntriesByPrefix(columnFamily: ColumnFamily, prefix: ByteArray): Sequen
 
 #### VeglenkerRocksDbStore
 
-**Location:** `storage/VeglenkerRocksDbStore.kt:8`
+**Location:** `infrastructure/rocksdb/VeglenkerRocksDbStore.kt`
 
 Repository for road network data storage.
 
@@ -174,18 +150,18 @@ store.upsert(41251, listOf(veglenke1, veglenke2))
 
 // Batch update with dirty marking
 rocksDbContext.writeBatch {
-  store.batchUpdate(
-    mapOf(
-      41251 to listOf(veglenke1),
-      41252 to null  // Delete
+    store.batchUpdate(
+        mapOf(
+            41251 to listOf(veglenke1),
+            41252 to null  // Delete
+        )
     )
-  )
 }
 ```
 
 #### WriteBatchContext
 
-**Location:** `storage/WriteBatchContext.kt`
+**Location:** `core/services/storage/WriteBatchContext.kt`
 
 Provides Unit-of-Work pattern for atomic multi-operation transactions.
 
@@ -193,10 +169,10 @@ Provides Unit-of-Work pattern for atomic multi-operation transactions.
 
 ```kotlin
 rocksDbContext.writeBatch {
-  // All operations are atomic - either all succeed or all fail
-  veglenkerStore.batchUpdate(updates)
-  dirtyCheckingStore.markDirty(veglenkesekvensIds)
-  keyValueStore.setLastProcessedEventId(eventId)
+    // All operations are atomic - either all succeed or all fail
+    veglenkerStore.batchUpdate(updates)
+    dirtyCheckingStore.markDirty(veglenkesekvensIds)
+    keyValueStore.setLastProcessedEventId(eventId)
 }
 ```
 
@@ -219,14 +195,14 @@ All data is serialized using **Protocol Buffers** (protobuf) for efficient binar
 // Serialize
 val veglenker = listOf(Veglenke(...))
 val bytes = ProtoBuf.encodeToByteArray(
-  ListSerializer(Veglenke.serializer()),
-  veglenker
+    ListSerializer(Veglenke.serializer()),
+    veglenker
 )
 
 // Deserialize
 val veglenker = ProtoBuf.decodeFromByteArray(
-  ListSerializer(Veglenke.serializer()),
-  bytes
+    ListSerializer(Veglenke.serializer()),
+    bytes
 )
 ```
 
@@ -240,8 +216,8 @@ Batch operations are crucial for performance when dealing with large datasets.
 
 ```kotlin
 sealed class BatchOperation {
-  data class Put(val key: ByteArray, val value: ByteArray) : BatchOperation()
-  data class Delete(val key: ByteArray) : BatchOperation()
+    data class Put(val key: ByteArray, val value: ByteArray) : BatchOperation()
+    data class Delete(val key: ByteArray) : BatchOperation()
 }
 ```
 
@@ -249,9 +225,9 @@ sealed class BatchOperation {
 
 ```kotlin
 val operations = listOf(
-  BatchOperation.Put(key1, value1),
-  BatchOperation.Put(key2, value2),
-  BatchOperation.Delete(key3)
+    BatchOperation.Put(key1, value1),
+    BatchOperation.Put(key2, value2),
+    BatchOperation.Delete(key3)
 )
 
 rocksDbContext.writeBatch(ColumnFamily.VEGLENKER, operations)
@@ -290,7 +266,7 @@ Each column family uses the same compression and optimization settings for consi
 
 ```kotlin
 val columnFamilyOptions = ColumnFamilyOptions().apply {
-  setCompressionType(CompressionType.LZ4_COMPRESSION)
+    setCompressionType(CompressionType.LZ4_COMPRESSION)
 }
 ```
 
@@ -308,7 +284,7 @@ Application state is tracked in the `KEY_VALUE` column family.
 | `last_update_check_{typeId}` | Instant    | Last update check timestamp       |
 | `backfill_complete_{typeId}` | Boolean    | Backfill status                   |
 
-**Access via:** `KeyValueRocksDbStore` and extension functions in `extensions/KeyValueRocksDbExtensions.kt`
+**Access via:** `KeyValueRocksDbStore` (infrastructure/rocksdb/) and extension functions in `core/extensions/KeyValueStoreExtensions.kt`
 
 ## Dirty Checking System
 
@@ -353,13 +329,13 @@ Find all vegobjekter positioned on dirty veglenkesekvenser:
 
 ```kotlin
 val dirtyObjects = dirtyCheckingStore.findVegobjekterOnDirtyVeglenkesekvenser(
-  typeId = 105
+    typeId = 105
 )
 ```
 
 This enables cascade updates: when a road segment changes, find all speed limits on that segment.
 
-See: `storage/DirtyCheckingRocksDbStore.kt`
+See: `infrastructure/rocksdb/DirtyCheckingRocksDbStore.kt`
 
 ## Backup and Restore
 
@@ -397,7 +373,7 @@ rocksDbBackupService.restoreIfNeeded()
 3. Restore using RocksDB BackupEngine
 4. Clean up temporary files
 
-See: `storage/RocksDbBackupService.kt`
+See: `infrastructure/RocksDbS3BackupService.kt`
 
 ## Performance Characteristics
 
@@ -447,13 +423,13 @@ Critical sections use `@Synchronized`:
 ```kotlin
 @Synchronized
 fun clear() {
-  close()
-  File(dbPath).deleteRecursively()
-  initialize()
+    close()
+    File(dbPath).deleteRecursively()
+    initialize()
 }
 ```
 
-See: `RocksDbContext.kt:188`
+See: `infrastructure/rocksdb/RocksDbContext.kt`
 
 ## Common Patterns
 
@@ -474,18 +450,18 @@ val batchResults = veglenkerStore.batchGet(ids)
 
 ```kotlin
 rocksDbContext.streamEntriesByPrefix(ColumnFamily.VEGLENKER, prefix)
-  .map { (key, value) -> deserialize(value) }
-  .filter { it.lengde > 100.0 }
-  .forEach { process(it) }
+    .map { (key, value) -> deserialize(value) }
+    .filter { it.lengde > 100.0 }
+    .forEach { process(it) }
 ```
 
 ### Atomic Multi-Operation
 
 ```kotlin
 rocksDbContext.writeBatch {
-  veglenkerStore.batchUpdate(updates)
-  dirtyCheckingStore.markDirty(ids)
-  keyValueStore.setTimestamp(now)
+    veglenkerStore.batchUpdate(updates)
+    dirtyCheckingStore.markDirty(ids)
+    keyValueStore.setTimestamp(now)
 }
 ```
 
@@ -502,11 +478,11 @@ val veglenkerCount = rocksDbContext.getEstimatedKeys(ColumnFamily.VEGLENKER)
 
 ```kotlin
 rocksDbContext.newIterator(ColumnFamily.VEGLENKER).use { iterator ->
-  iterator.seekToFirst()
-  while (iterator.isValid) {
-    println("Key: ${iterator.key().toLong()}")
-    iterator.next()
-  }
+    iterator.seekToFirst()
+    while (iterator.isValid) {
+        println("Key: ${iterator.key().toLong()}")
+        iterator.next()
+    }
 }
 ```
 

@@ -50,7 +50,7 @@ All operations launch concurrently in a `coroutineScope` and run in parallel. On
 
 ### Backfill Process Details
 
-**Implementation:** `handlers/PerformBackfillHandler.kt`
+**Implementation:** `core/services/nvdb/NvdbBackfillOrchestrator.kt`
 
 #### Step 1: Veglenkesekvenser Backfill
 
@@ -141,7 +141,7 @@ Both update processes run independently and can execute in parallel.
 
 ### Update Process Details
 
-**Implementation:** `handlers/PerformUpdateHandler.kt`
+**Implementation:** `core/services/nvdb/NvdbUpdateOrchestrator.kt`
 
 #### Event Types
 
@@ -325,7 +325,7 @@ flowchart TD
 
 **Output:** JTS LineString in UTM33 projection
 
-See: `geometry/GeometryHelpers.kt:78`
+See: `core/extensions/GeometryHelpers.kt`
 
 #### 2. OpenLR Encoding
 
@@ -341,7 +341,7 @@ See: `geometry/GeometryHelpers.kt:78`
 
 **Output:** Base64-encoded OpenLR string
 
-See: `openlr/OpenLrService.kt:46`
+See: `core/services/vegnett/OpenLrService.kt`
 
 **Note:** Current implementation uses placeholder encoding. Real OpenLR encoding requires an OpenLR library.
 
@@ -357,7 +357,7 @@ See: `openlr/OpenLrService.kt:46`
 
 **Output:** WGS84 coordinates (EPSG:4326)
 
-See: `geometry/GeometryHelpers.kt:46`
+See: `core/extensions/GeometryHelpers.kt`
 
 #### 4. Geometry Simplification
 
@@ -371,7 +371,7 @@ See: `geometry/GeometryHelpers.kt:46`
 
 **Output:** Simplified linestring (tolerance: ~1 meter)
 
-See: `geometry/GeometryHelpers.kt:66`
+See: `core/extensions/GeometryHelpers.kt`
 
 ## Data Dependencies
 
@@ -383,7 +383,7 @@ See: `geometry/GeometryHelpers.kt:66`
 | **821** | Funksjonell vegklasse | FRC for OpenLR                 |
 | **616** | Feltstrekning         | Direction for connection links |
 
-Defined in: `model/VegobjektTyper.kt:5`
+Defined in: `tnits-common/src/main/kotlin/no/vegvesen/nvdb/tnits/common/model/VegobjektTyper.kt`
 
 ### Type Configuration
 
@@ -391,7 +391,7 @@ Defined in: `model/VegobjektTyper.kt:5`
 
 **Supporting types:** Feltstrekning (616), Funksjonell vegklasse (821)
 
-See: `Application.kt:16`
+See: `Application.kt` and `MainModule.kt`
 
 ## State Tracking
 
@@ -433,7 +433,7 @@ NVDB API calls use exponential backoff retry:
 - Retry on server errors and timeouts
 - Exponential delay up to 30 seconds
 
-See: `Services.kt:60`
+See: `infrastructure/http/UberiketApiGateway.kt`
 
 ### Transaction Rollback
 
@@ -456,7 +456,7 @@ Progress is persisted after each batch, enabling resumable operations on restart
 
 **Memory usage:** ~2-3 GB for Norwegian road network
 
-See: `vegnett/CachedVegnett.kt`
+See: `core/services/vegnett/CachedVegnett.kt`
 
 ### Batch Sizing
 
@@ -475,7 +475,7 @@ Use StAX (Streaming API for XML) instead of DOM:
 - DOM: O(n) - entire document in memory
 - StAX: O(1) - constant memory
 
-See: `xml/XmlStreamDsl.kt`
+See: `core/presentation/XmlStreamDsl.kt`
 
 ## Monitoring Progress
 

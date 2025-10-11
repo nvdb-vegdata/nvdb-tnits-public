@@ -26,9 +26,9 @@ Tests are located in the `src/test/kotlin` directory, mirroring the source struc
 ```
 src/
 ├── main/kotlin/no/vegvesen/nvdb/tnits/
-│   ├── storage/
+│   ├── infrastructure/rocksdb/
 │   │   └── VeglenkerRocksDbStore.kt
-│   └── xml/
+│   └── core/presentation/
 │       └── XmlStreamDsl.kt
 └── test/kotlin/no/vegvesen/nvdb/tnits/
     ├── storage/

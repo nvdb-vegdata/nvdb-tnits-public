@@ -81,7 +81,11 @@ s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
 8. Clear dirty state (for updates)
 ```
 
-**Implementation:** `TnitsFeatureExporter.kt`
+**Implementation:**
+- `core/useCases/PerformSmartTnitsExport.kt` - Orchestrates the overall export decision
+- `core/services/tnits/TnitsExportService.kt` - Core export orchestration
+- `core/services/tnits/FeatureTransformer.kt` - Feature generation (formerly TnitsFeatureGenerator)
+- `infrastructure/s3/TnitsFeatureS3Exporter.kt` - S3 upload
 
 ### Detailed Steps
 
@@ -101,7 +105,7 @@ cachedVegnett.initialize()
 
 **Time:** ~30-60 seconds
 
-See: `vegnett/CachedVegnett.kt`
+See: `core/services/vegnett/CachedVegnett.kt`
 
 #### Step 2: Determine Export Scope
 
@@ -179,7 +183,7 @@ fun generateFeature(typeId: Int, objektId: Long, timestamp: Instant): TnitsFeatu
 }
 ```
 
-See: `TnitsFeatureGenerator.kt`
+See: `core/services/tnits/FeatureTransformer.kt`
 
 #### Step 5: Stream XML Output
 
@@ -215,7 +219,7 @@ writeXmlDocument(outputStream, "tn-its:SpeedLimitDataset", namespaces) {
 }
 ```
 
-See: `xml/XmlStreamDsl.kt`
+See: `core/presentation/XmlStreamDsl.kt`
 
 #### Step 6: Upload to S3
 
@@ -246,7 +250,7 @@ if (gzipEnabled) {
 0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 ```
 
-See: `storage/S3OutputStream.kt`
+See: `infrastructure/s3/S3OutputStream.kt`
 
 ## TN-ITS Data Mapping
 
@@ -273,7 +277,7 @@ NVDB → TN-ITS field mapping:
 | Closed                              | `Modify`    | Set to sluttdato        |
 | Deleted                             | `Remove`    | Set to export timestamp |
 
-**Implementation:** `UpdateType.kt`, `TnitsFeatureGenerator.kt`
+**Implementation:** `core/model/tnits/UpdateType.kt`, `core/services/tnits/FeatureTransformer.kt`
 
 ### Business Rules
 
@@ -371,7 +375,7 @@ From `README.md:12`:
 Stedfesting → Veglenker → OpenLR Lines → Encode → Base64
 ```
 
-**Implementation:** `openlr/OpenLrService.kt:46`
+**Implementation:** `core/services/vegnett/OpenLrService.kt`
 
 #### Step 1: Build OpenLR Lines
 
@@ -455,7 +459,7 @@ Project to WGS84
 TN-ITS XML output
 ```
 
-**Implementation:** `geometry/GeometryHelpers.kt`
+**Implementation:** `core/extensions/GeometryHelpers.kt`
 
 ### Geometry Simplification
 
@@ -496,7 +500,7 @@ val hash = SipHasher.hash(
 )
 ```
 
-See: `hash/SipHasher.kt`
+See: `core/services/hash/SipHasher.kt`
 
 ### Change Detection
 
@@ -626,7 +630,7 @@ if (!hasSnapshotThisMonth) {
 - Snapshot: Once per month
 - Update: Once per day
 
-See: `Application.kt:78`
+See: `core/useCases/PerformSmartTnitsExport.kt`
 
 ## Validation
 
