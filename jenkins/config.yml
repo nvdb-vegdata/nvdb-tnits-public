@@ -3,5 +3,5 @@ credentials:
   refreshToken: 'refreshToken-Nvdbapil'
 releaseBranch: 'main'
 iktlosning: 'nvdbapil'
-baseImage: 'openjdk21'
+baseImage: 'openjdk25'
 slackChannel: 'digital-drivkraft-pr'

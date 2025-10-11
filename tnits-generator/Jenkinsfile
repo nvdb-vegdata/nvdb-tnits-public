@@ -17,7 +17,7 @@ def FAILED_STAGE
 pipeline {
   agent any
   tools {
-    jdk 'java-21'
+    jdk 'java-25'
   }
   environment {
     ATLAS_REFRESH_TOKEN_CREDENTIALS_ID = "${config.credentials.refreshToken}"
