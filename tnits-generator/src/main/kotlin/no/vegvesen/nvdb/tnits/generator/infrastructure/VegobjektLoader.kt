@@ -24,12 +24,12 @@ class VegobjektLoader(
     private val vegobjekterRepository: VegobjekterRepository,
     private val rocksDbContext: RocksDbContext,
 ) : WithLogger {
-    suspend fun backfillVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean) {
+    suspend fun backfillVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
         val backfillCompleted = keyValueStore.getValue<Instant>("vegobjekter_${typeId}_backfill_completed")
 
         if (backfillCompleted != null) {
             log.info("Backfill for type $typeId er allerede fullført den $backfillCompleted")
-            return
+            return 0
         }
 
         var lastId = keyValueStore.getValue<Long>("vegobjekter_${typeId}_backfill_last_id")
@@ -62,6 +62,8 @@ class VegobjektLoader(
                 log.debug("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
             }
         } while (vegobjekter.isNotEmpty())
+
+        return totalCount
     }
 
     private suspend fun getOriginalStartdatoWhereDifferent(typeId: Int, vegobjekter: Collection<ApiVegobjekt>): Map<Long, LocalDate> {

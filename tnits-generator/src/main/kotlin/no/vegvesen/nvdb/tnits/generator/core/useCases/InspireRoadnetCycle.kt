@@ -22,10 +22,13 @@ class InspireRoadnetCycle(
     suspend fun execute() {
         healthCheckService.verifyConnections()
         rocksDbBackupService.restoreIfNeeded()
-        nvdbBackfillOrchestrator.performBackfill()
-        nvdbUpdateOrchestrator.performUpdate()
+        val backfillCount = nvdbBackfillOrchestrator.performBackfill()
+        val updateCount = nvdbUpdateOrchestrator.performUpdate()
         val timestamp = Clock.System.now()
-        rocksDbBackupService.createBackup()
+        if (backfillCount + updateCount > 0) {
+            // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)
+            rocksDbBackupService.createBackup()
+        }
         cachedVegnett.initialize()
         inspireRoadNetExporter.exportRoadNet(timestamp)
         rocksDbBackupService.createBackup()

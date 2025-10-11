@@ -53,11 +53,13 @@ class TnitsAutomaticCycle(
 
         if (shouldPerformSnapshot || shouldPerformUpdate) {
             log.info("Starting automatic TN-ITS process. shouldPerformSnapshot=$shouldPerformSnapshot, shouldPerformUpdate=$shouldPerformUpdate")
-            nvdbBackfillOrchestrator.performBackfill()
-            nvdbUpdateOrchestrator.performUpdate()
+            val backfillCount = nvdbBackfillOrchestrator.performBackfill()
+            val updateCount = nvdbUpdateOrchestrator.performUpdate()
             val timestamp = Clock.System.now()
-            // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)
-            rocksDbBackupService.createBackup()
+            if (backfillCount + updateCount > 0) {
+                // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)
+                rocksDbBackupService.createBackup()
+            }
             cachedVegnett.initialize()
             // Run update before snapshot, because snapshot will update hashes (thus causing us to miss updates if we did snapshot first)
             if (shouldPerformUpdate) {

@@ -20,11 +20,13 @@ class TnitsUpdateCycle(
 
     suspend fun execute() {
         rocksDbBackupService.restoreIfNeeded()
-        nvdbBackfillOrchestrator.performBackfill()
-        nvdbUpdateOrchestrator.performUpdate()
+        val backfillCount = nvdbBackfillOrchestrator.performBackfill()
+        val updateCount = nvdbUpdateOrchestrator.performUpdate()
         val timestamp = Clock.System.now()
-        // First backup before cache, in case of OOM
-        rocksDbBackupService.createBackup()
+        if (backfillCount + updateCount > 0) {
+            // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)
+            rocksDbBackupService.createBackup()
+        }
         cachedVegnett.initialize()
         tnitsExportService.exportUpdate(timestamp, ExportedFeatureType.SpeedLimit)
         // Second backup after cache and export (updated hashes etc.)

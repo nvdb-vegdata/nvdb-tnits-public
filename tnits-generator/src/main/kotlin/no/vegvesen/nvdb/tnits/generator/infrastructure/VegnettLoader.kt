@@ -21,12 +21,12 @@ class VegnettLoader(
     private val rocksDbContext: RocksDbContext,
 ) : WithLogger {
 
-    suspend fun backfillVeglenkesekvenser() {
+    suspend fun backfillVeglenkesekvenser(): Int {
         val backfillCompleted = keyValueStore.getValue<Instant>("veglenkesekvenser_backfill_completed")
 
         if (backfillCompleted != null) {
             log.info("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
-            return
+            return 0
         }
 
         var lastId = keyValueStore.getValue<Long>("veglenkesekvenser_backfill_last_id")
@@ -63,6 +63,8 @@ class VegnettLoader(
                 log.debug("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
             }
         } while (veglenkesekvenser.isNotEmpty())
+
+        return totalCount
     }
 
     suspend fun updateVeglenkesekvenser(): Int {

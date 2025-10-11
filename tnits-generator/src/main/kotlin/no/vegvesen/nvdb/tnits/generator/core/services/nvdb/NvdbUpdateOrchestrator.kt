@@ -16,30 +16,31 @@ class NvdbUpdateOrchestrator(
     private val vegnettLoader: VegnettLoader,
     private val vegobjektLoader: VegobjektLoader,
 ) {
-    suspend fun performUpdate() {
-        coroutineScope {
-            do {
-                val veglenkesekvensHendelseCount =
+    suspend fun performUpdate(): Int = coroutineScope {
+        var totalCount = 0
+        do {
+            val veglenkesekvensHendelseCount =
+                async {
+                    vegnettLoader.updateVeglenkesekvenser()
+                }
+            val changedMainVegobjekterCounts =
+                mainVegobjektTyper.map { typeId ->
                     async {
-                        vegnettLoader.updateVeglenkesekvenser()
+                        vegobjektLoader.updateVegobjekter(typeId, true)
                     }
-                val changedMainVegobjekterCounts =
-                    mainVegobjektTyper.map { typeId ->
-                        async {
-                            vegobjektLoader.updateVegobjekter(typeId, true)
-                        }
+                }
+            val changedSupportingVegobjekterCounts =
+                supportingVegobjektTyper.map { typeId ->
+                    async {
+                        vegobjektLoader.updateVegobjekter(typeId, false)
                     }
-                val changedSupportingVegobjekterCounts =
-                    supportingVegobjektTyper.map { typeId ->
-                        async {
-                            vegobjektLoader.updateVegobjekter(typeId, false)
-                        }
-                    }
+                }
 
-                val total =
-                    veglenkesekvensHendelseCount.await() + changedMainVegobjekterCounts.sumOf { it.await() } +
-                        changedSupportingVegobjekterCounts.sumOf { it.await() }
-            } while (total > 0)
-        }
+            val total =
+                veglenkesekvensHendelseCount.await() + changedMainVegobjekterCounts.sumOf { it.await() } +
+                    changedSupportingVegobjekterCounts.sumOf { it.await() }
+            totalCount += total
+        } while (total > 0)
+        totalCount
     }
 }
