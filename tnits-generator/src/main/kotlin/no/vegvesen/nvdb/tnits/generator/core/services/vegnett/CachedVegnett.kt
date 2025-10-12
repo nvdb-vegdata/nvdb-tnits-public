@@ -82,6 +82,8 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                     val frcLookup = frcLoad.await()
 
                     log.measure("Assign FRC and feltoversikt to veglenker", logStart = true) {
+                        log.logMemoryUsage("Before assigning FRC and feltoversikt to veglenker")
+
                         veglenkerLookup.forEach { (_, veglenker) ->
                             veglenker.filter {
                                 it.isRelevant()
@@ -115,9 +117,6 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                     tillattRetningByVeglenke = HashMap(tillattRetningByVeglenke)
                     frcByVeglenke = HashMap(frcByVeglenke)
                 }
-
-                // Force garbage collection after a large memory allocation
-                System.gc()
 
                 log.logMemoryUsage("After veglenker initialization and HashMap conversion")
             }
