@@ -25,6 +25,7 @@ inline fun <T> Logger.measure(label: String, logStart: Boolean = false, level: L
 }
 
 fun Logger.logMemoryUsage(label: String) {
+    System.gc()
     val runtime = Runtime.getRuntime()
     val usedMemoryMB = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
     val maxMemoryMB = runtime.maxMemory() / 1024 / 1024
