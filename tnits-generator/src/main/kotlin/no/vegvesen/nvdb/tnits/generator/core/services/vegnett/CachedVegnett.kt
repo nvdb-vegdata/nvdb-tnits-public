@@ -63,7 +63,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             log.measure("Bygger vegnett-cache", logStart = true) {
                 coroutineScope {
                     val veglenkerLoad = async {
-                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() } } }
+                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() || true } } }
                     }
 
                     veglenkerLookup = veglenkerLoad.await()
@@ -83,21 +83,21 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                                 },
                             ).awaitAll()
 
-                            val veglenker = chunk.flatMap { it.value }
-                            veglenker.forEach { veglenke ->
-
-                                val feltoversikt = if (veglenke.konnektering) {
-                                    findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
-                                        ?: feltstrekningerLookup.findFeltoversikt(veglenke)
-                                } else {
-                                    veglenke.feltoversikt
-                                }
-                                if (feltoversikt.isNotEmpty()) {
-                                    val frc = frcLookup.findFrc(veglenke)
-                                    frcByVeglenke[veglenke.veglenkeId] = frc.toByte()
-                                    addVeglenke(veglenke, feltoversikt)
-                                } else {
-                                    // Sannsynligvis gangveg uten fartsgrense
+                            for ((_, veglenker) in chunk) {
+                                veglenker.forEach { veglenke ->
+                                    val feltoversikt = if (veglenke.konnektering) {
+                                        findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
+                                            ?: feltstrekningerLookup.findFeltoversikt(veglenke)
+                                    } else {
+                                        veglenke.feltoversikt
+                                    }
+                                    if (feltoversikt.isNotEmpty()) {
+                                        val frc = frcLookup.findFrc(veglenke)
+                                        frcByVeglenke[veglenke.veglenkeId] = frc.toByte()
+                                        addVeglenke(veglenke, feltoversikt)
+                                    } else {
+                                        // Sannsynligvis gangveg uten fartsgrense
+                                    }
                                 }
                             }
                         }
