@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.core.services.vegnett
 import com.github.benmanes.caffeine.cache.Caffeine
 import jakarta.inject.Singleton
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -62,32 +63,28 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             log.measure("Bygger vegnett-cache", logStart = true) {
                 coroutineScope {
                     val veglenkerLoad = async {
-                        log.measure("Load veglenker") { veglenkerRepository.getAll() }
-                    }
-
-                    val felstrekningerLoad = async {
-                        log.measure("Load feltstrekninger") {
-                            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING)
-                        }
-                    }
-
-                    val frcLoad = async {
-                        log.measure("Load funksjonell vegklasse") {
-                            vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE)
-                        }
+                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() } } }
                     }
 
                     veglenkerLookup = veglenkerLoad.await()
-                    val feltstrekningerLookup = felstrekningerLoad.await()
-                    val frcLookup = frcLoad.await()
 
                     log.measure("Assign FRC and feltoversikt to veglenker", logStart = true) {
                         log.logMemoryUsage("Before assigning FRC and feltoversikt to veglenker")
 
-                        veglenkerLookup.forEach { (_, veglenker) ->
-                            veglenker.filter {
-                                it.isRelevant()
-                            }.forEach { veglenke ->
+                        veglenkerLookup.entries.chunked(1000).forEach { chunk ->
+                            val veglenkesekvensIds = chunk.map { it.key }
+
+                            val (feltstrekningerLookup, frcLookup) = listOf(
+                                async {
+                                    vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FELTSTREKNING, veglenkesekvensIds)
+                                },
+                                async {
+                                    vegobjekterRepository.getVegobjektStedfestingLookup(VegobjektTyper.FUNKSJONELL_VEGKLASSE, veglenkesekvensIds)
+                                },
+                            ).awaitAll()
+
+                            val veglenker = chunk.flatMap { it.value }
+                            veglenker.forEach { veglenke ->
 
                                 val feltoversikt = if (veglenke.konnektering) {
                                     findClosestNonKonnekteringVeglenke(veglenke, veglenker)?.feltoversikt
@@ -157,9 +154,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
     fun getVeglenker(veglenkesekvensId: Long): List<Veglenke> {
         check(veglenkerInitialized) { "CachedVegnett is not initialized" }
-        return veglenkerLookup[veglenkesekvensId]?.filter {
-            it.isRelevant()
-        } ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
+        return veglenkerLookup[veglenkesekvensId] ?: error("Mangler veglenker for veglenkesekvensId $veglenkesekvensId")
     }
 
     fun getAllVeglenker(): Map<Long, List<Veglenke>> {

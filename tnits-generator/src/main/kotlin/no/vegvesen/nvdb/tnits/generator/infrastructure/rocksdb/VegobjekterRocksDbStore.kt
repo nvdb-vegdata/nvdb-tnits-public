@@ -27,6 +27,27 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         return ids.mapIndexed { i, id -> id to values[i] }.toMap()
     }
 
+    override fun getVegobjektStedfestingLookup(vegobjektType: Int, veglenkesekvensIds: List<Long>): Map<Long, List<Vegobjekt>> {
+        val vegobjektIds = mutableSetOf<Long>()
+
+        for (veglenkesekvensId in veglenkesekvensIds) {
+            val prefix = getStedfestingPrefix(vegobjektType, veglenkesekvensId)
+            rocksDbContext.streamKeysByPrefix(columnFamily, prefix).forEach { key ->
+                vegobjektIds.add(getStedfestingVegobjektId(key))
+            }
+        }
+
+        val vegobjektKeys = vegobjektIds.map { getVegobjektKey(vegobjektType, it) }
+        val lookup = mutableMapOf<Long, MutableList<Vegobjekt>>()
+        rocksDbContext.getBatch(columnFamily, vegobjektKeys).mapNotNull { it?.toVegobjekt() }.forEach { vegobjekt ->
+            val vegobjektVeglenkesekvensIds = vegobjekt.stedfestinger.map { it.veglenkesekvensId }.toSet()
+            for (veglenkesekvensId in vegobjektVeglenkesekvensIds) {
+                lookup.computeIfAbsent(veglenkesekvensId) { mutableListOf() }.add(vegobjekt)
+            }
+        }
+        return lookup
+    }
+
     override fun countVegobjekter(vegobjektType: Int): Int {
         val prefix = getVegobjektTypePrefix(vegobjektType)
         return rocksDbContext.countEntriesByPrefix(columnFamily, prefix)
