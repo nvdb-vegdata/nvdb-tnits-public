@@ -40,6 +40,7 @@ class VegnettLoader(
         }
 
         var totalCount = 0
+        var batchCount = 0
 
         do {
             val veglenkesekvenser = uberiketApi.streamVeglenkesekvenser(start = lastId).toList()
@@ -60,7 +61,10 @@ class VegnettLoader(
                 }
 
                 totalCount += veglenkesekvenser.size
-                log.debug("Behandlet ${veglenkesekvenser.size} veglenkesekvenser, totalt antall: $totalCount")
+                batchCount++
+                if (batchCount % 50 == 0) {
+                    log.info("Lastet $totalCount veglenkesekvenser")
+                }
             }
         } while (veglenkesekvenser.isNotEmpty())
 

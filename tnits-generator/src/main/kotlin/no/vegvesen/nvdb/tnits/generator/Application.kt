@@ -15,18 +15,21 @@ val log: Logger = LoggerFactory.getLogger("no.vegvesen.nvdb.tnits.generator.Appl
 suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
     val app = ProductionApp.startKoin()
-    when (args.firstOrNull()) {
-        "snapshot" -> app.koin.get<TnitsSnapshotCycle>().execute()
-        "update" -> app.koin.get<TnitsUpdateCycle>().execute()
-        "inspire-roadnet" -> app.koin.get<InspireRoadnetCycle>().execute()
-        "auto", null -> app.koin.get<TnitsAutomaticCycle>().execute()
-        else -> {
-            log.error("Unknown command '${args.first()}', use one of 'snapshot', 'update', 'inspire-roadnet' or 'auto'")
+    try {
+        when (args.firstOrNull()) {
+            "snapshot" -> app.koin.get<TnitsSnapshotCycle>().execute()
+            "update" -> app.koin.get<TnitsUpdateCycle>().execute()
+            "inspire-roadnet" -> app.koin.get<InspireRoadnetCycle>().execute()
+            "auto", null -> app.koin.get<TnitsAutomaticCycle>().execute()
+            else -> {
+                log.error("Unknown command '${args.first()}', use one of 'snapshot', 'update', 'inspire-roadnet' or 'auto'")
+            }
         }
+        log.info("NVDB TN-ITS application finished")
+    } finally {
+        // To keep the underlying OkHttp client from hanging for a minute
+        app.koin.get<MinioClient>().close()
     }
-    log.info("NVDB TN-ITS application finished")
-    // To keep the underlying OkHttp client from hanging for a minute
-    app.koin.get<MinioClient>().close()
 }
 
 @KoinApplication

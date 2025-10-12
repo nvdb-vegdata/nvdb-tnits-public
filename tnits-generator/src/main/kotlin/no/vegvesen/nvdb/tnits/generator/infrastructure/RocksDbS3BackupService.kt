@@ -91,20 +91,16 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
     }
 
     override fun restoreIfNeeded() {
-        try {
-            if (!rocksDbContext.existsAndHasData()) {
-                log.info("RocksDB database is empty or missing, checking for backup to restore...")
-                val restored = restoreFromBackup()
-                if (restored) {
-                    log.info("Successfully restored RocksDB from backup")
-                } else {
-                    log.info("No backup available or restore failed, will proceed with full backfill")
-                }
+        if (!rocksDbContext.existsAndHasData()) {
+            log.info("RocksDB database is empty or missing, checking for backup to restore...")
+            val restored = restoreFromBackup()
+            if (restored) {
+                log.info("Successfully restored RocksDB from backup")
             } else {
-                log.info("RocksDB database exists and has data, skipping restore")
+                log.info("No backup available or restore failed, will proceed with full backfill")
             }
-        } catch (e: Exception) {
-            log.error("Error during RocksDB restore check", e)
+        } else {
+            log.info("RocksDB database exists and has data, skipping restore")
         }
     }
 

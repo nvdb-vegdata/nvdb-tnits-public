@@ -40,8 +40,8 @@ class S3TimestampService(private val minioClient: MinioClient, exporterConfig: E
 
         latestTimestamp
     } catch (e: Exception) {
-        log.warn("Failed to retrieve ${exportType.name.lowercase()} timestamp from S3, falling back to RocksDB timestamps", e)
-        null
+        log.warn("Failed to retrieve ${exportType.name.lowercase()} timestamp from S3")
+        throw e
     }
 
     private fun listExportsByType(prefix: String, exportType: TnitsExportType): List<Item> {

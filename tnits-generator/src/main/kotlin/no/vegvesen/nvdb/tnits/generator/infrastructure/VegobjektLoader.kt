@@ -43,6 +43,7 @@ class VegobjektLoader(
         }
 
         var totalCount = 0
+        var batchCount = 0
 
         do {
             val vegobjekter = uberiketApi.streamVegobjekter(typeId = typeId, start = lastId).toList()
@@ -59,7 +60,10 @@ class VegobjektLoader(
                     keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!, Long.serializer())
                 }
                 totalCount += vegobjekter.size
-                log.debug("Satt inn ${vegobjekter.size} vegobjekter for type $typeId, totalt antall: $totalCount")
+                batchCount++
+                if (batchCount % 50 == 0) {
+                    log.info("Lastet $totalCount vegobjekter for type $typeId")
+                }
             }
         } while (vegobjekter.isNotEmpty())
 
