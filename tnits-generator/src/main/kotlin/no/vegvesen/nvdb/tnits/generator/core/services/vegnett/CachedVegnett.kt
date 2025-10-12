@@ -29,10 +29,6 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     private var outgoingVeglenkerReverse: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
     private var incomingVeglenkerReverse: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
 
-    private var tillattRetningByVeglenke: MutableMap<VeglenkeId, Byte> = ConcurrentHashMap()
-
-    private var frcByVeglenke: MutableMap<VeglenkeId, Byte> = ConcurrentHashMap()
-
     private val nodes = ConcurrentHashMap<Long, OpenLrNode>()
 
     private val lineCache = Caffeine.newBuilder()
@@ -44,15 +40,11 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     private var initialized = false
 
     fun hasRetning(veglenke: Veglenke, retning: TillattRetning): Boolean {
-        require(veglenkerInitialized)
-        val retningByte = tillattRetningByVeglenke[veglenke.veglenkeId] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}")
+        val retningByte = veglenke.tillattRetning ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}")
         return retning in retningByte.toTillattRetning()
     }
 
-    fun getFrc(veglenke: Veglenke): FunctionalRoadClass? {
-        require(veglenkerInitialized)
-        return frcByVeglenke[veglenke.veglenkeId]?.toFunctionalRoadClass()
-    }
+    fun getFrc(veglenke: Veglenke): FunctionalRoadClass? = veglenke.frc?.toFunctionalRoadClass()
 
     private val initMutex = Mutex()
 
@@ -63,7 +55,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             log.measure("Bygger vegnett-cache", logStart = true) {
                 coroutineScope {
                     val veglenkerLoad = async {
-                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() || true } } }
+                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() } } }
                     }
 
                     veglenkerLookup = veglenkerLoad.await()
@@ -92,8 +84,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                                         veglenke.feltoversikt
                                     }
                                     if (feltoversikt.isNotEmpty()) {
-                                        val frc = frcLookup.findFrc(veglenke)
-                                        frcByVeglenke[veglenke.veglenkeId] = frc.toByte()
+                                        veglenke.frc = frcLookup.findFrc(veglenke)
                                         addVeglenke(veglenke, feltoversikt)
                                     } else {
                                         // Sannsynligvis gangveg uten fartsgrense
@@ -111,8 +102,6 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                     incomingVeglenkerForward = HashMap(incomingVeglenkerForward)
                     outgoingVeglenkerReverse = HashMap(outgoingVeglenkerReverse)
                     incomingVeglenkerReverse = HashMap(incomingVeglenkerReverse)
-                    tillattRetningByVeglenke = HashMap(tillattRetningByVeglenke)
-                    frcByVeglenke = HashMap(frcByVeglenke)
                 }
 
                 log.logMemoryUsage("After veglenker initialization and HashMap conversion")
@@ -125,7 +114,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     private fun addVeglenke(veglenke: Veglenke, feltoversikt: List<String>) {
         val tillattRetning = getTillattRetning(feltoversikt)
 
-        tillattRetningByVeglenke[veglenke.veglenkeId] = tillattRetning.toByte()
+        veglenke.tillattRetning = tillattRetning.toByte()
 
         if (TillattRetning.Med in tillattRetning) {
             outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
@@ -244,7 +233,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     }
 
     private fun createOpenLrLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
-        val frc = frcByVeglenke[veglenke.veglenkeId]?.toFunctionalRoadClass() ?: FunctionalRoadClass.FRC_7
+        val frc = veglenke.frc?.toFunctionalRoadClass() ?: FunctionalRoadClass.FRC_7
         val fow = veglenke.typeVeg.toFormOfWay()
         return OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
     }
@@ -309,22 +298,22 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         }
 
         /** Finn høyeste (laveste viktighet) funksjonell vegklasse for veglenke */
-        private fun Map<Long, List<Vegobjekt>>.findFrc(veglenke: Veglenke): FunctionalRoadClass {
+        private fun Map<Long, List<Vegobjekt>>.findFrc(veglenke: Veglenke): Byte {
             val frc = this[veglenke.veglenkesekvensId]?.mapNotNull { it.egenskaper[EgenskapsTyper.VEGKLASSE] as? EnumVerdi }
                 ?.maxByOrNull { it.verdi }?.toFrc()
             // Mange gangveger har ikke funksjonell vegklasse
-            return frc ?: FunctionalRoadClass.FRC_7
+            return frc ?: 7
         }
 
-        private fun EnumVerdi.toFrc() = when (verdi) {
-            13060 -> FunctionalRoadClass.FRC_0
-            13061 -> FunctionalRoadClass.FRC_1
-            13062 -> FunctionalRoadClass.FRC_2
-            13063 -> FunctionalRoadClass.FRC_3
-            13064 -> FunctionalRoadClass.FRC_4
-            13065 -> FunctionalRoadClass.FRC_5
-            13066 -> FunctionalRoadClass.FRC_6
-            else -> FunctionalRoadClass.FRC_7
+        private fun EnumVerdi.toFrc(): Byte = when (verdi) {
+            13060 -> 0
+            13061 -> 1
+            13062 -> 2
+            13063 -> 3
+            13064 -> 4
+            13065 -> 5
+            13066 -> 6
+            else -> 7
         }
     }
 }

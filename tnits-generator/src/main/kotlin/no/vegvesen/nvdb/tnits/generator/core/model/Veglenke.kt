@@ -31,6 +31,12 @@ data class Veglenke(
     val detaljniva: Detaljniva,
     val feltoversikt: List<String> = emptyList(),
     val superstedfesting: Superstedfesting? = null,
+    // added after fetching from NVDB
+    @Transient
+    var frc: Byte? = null,
+    // bitmask for allowed directions, added after fetching from NVDB
+    @Transient
+    var tillattRetning: Byte? = null,
 ) : StedfestingUtstrekning {
     val veglenkeId: VeglenkeId
         get() = VeglenkeId(veglenkesekvensId, veglenkenummer)
