@@ -23,14 +23,14 @@ import java.util.concurrent.ConcurrentHashMap
 class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) :
     WithLogger {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
-    private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
-    private val incomingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
-    private val outgoingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
-    private val incomingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
+    private var outgoingVeglenkerForward: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
+    private var incomingVeglenkerForward: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
+    private var outgoingVeglenkerReverse: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
+    private var incomingVeglenkerReverse: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
 
-    private val tillattRetningByVeglenke = ConcurrentHashMap<VeglenkeId, Set<TillattRetning>>()
+    private var tillattRetningByVeglenke: MutableMap<VeglenkeId, Byte> = ConcurrentHashMap()
 
-    private val frcByVeglenke = ConcurrentHashMap<VeglenkeId, FunctionalRoadClass>()
+    private var frcByVeglenke: MutableMap<VeglenkeId, Byte> = ConcurrentHashMap()
 
     private val nodes = ConcurrentHashMap<Long, OpenLrNode>()
 
@@ -44,12 +44,13 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
     fun hasRetning(veglenke: Veglenke, retning: TillattRetning): Boolean {
         require(veglenkerInitialized)
-        return retning in (tillattRetningByVeglenke[veglenke.veglenkeId] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
+        val retningByte = tillattRetningByVeglenke[veglenke.veglenkeId] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}")
+        return retning in retningByte.toTillattRetning()
     }
 
     fun getFrc(veglenke: Veglenke): FunctionalRoadClass? {
         require(veglenkerInitialized)
-        return frcByVeglenke[veglenke.veglenkeId]
+        return frcByVeglenke[veglenke.veglenkeId]?.toFunctionalRoadClass()
     }
 
     private val initMutex = Mutex()
@@ -94,7 +95,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                                 }
                                 if (feltoversikt.isNotEmpty()) {
                                     val frc = frcLookup.findFrc(veglenke)
-                                    frcByVeglenke[veglenke.veglenkeId] = frc
+                                    frcByVeglenke[veglenke.veglenkeId] = frc.toByte()
                                     addVeglenke(veglenke, feltoversikt)
                                 } else {
                                     // Sannsynligvis gangveg uten fartsgrense
@@ -106,10 +107,19 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
                 veglenkerInitialized = true
 
+                log.measure("Convert to immutable HashMaps") {
+                    outgoingVeglenkerForward = HashMap(outgoingVeglenkerForward)
+                    incomingVeglenkerForward = HashMap(incomingVeglenkerForward)
+                    outgoingVeglenkerReverse = HashMap(outgoingVeglenkerReverse)
+                    incomingVeglenkerReverse = HashMap(incomingVeglenkerReverse)
+                    tillattRetningByVeglenke = HashMap(tillattRetningByVeglenke)
+                    frcByVeglenke = HashMap(frcByVeglenke)
+                }
+
                 // Force garbage collection after a large memory allocation
                 System.gc()
 
-                log.logMemoryUsage("After veglenker initialization")
+                log.logMemoryUsage("After veglenker initialization and HashMap conversion")
             }
 
             initialized = true
@@ -119,7 +129,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     private fun addVeglenke(veglenke: Veglenke, feltoversikt: List<String>) {
         val tillattRetning = getTillattRetning(feltoversikt)
 
-        tillattRetningByVeglenke[veglenke.veglenkeId] = tillattRetning
+        tillattRetningByVeglenke[veglenke.veglenkeId] = tillattRetning.toByte()
 
         if (TillattRetning.Med in tillattRetning) {
             outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
@@ -240,12 +250,51 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     }
 
     private fun createOpenLrLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
-        val frc = frcByVeglenke[veglenke.veglenkeId] ?: FunctionalRoadClass.FRC_7
+        val frc = frcByVeglenke[veglenke.veglenkeId]?.toFunctionalRoadClass() ?: FunctionalRoadClass.FRC_7
         val fow = veglenke.typeVeg.toFormOfWay()
         return OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
     }
 
+    private fun Byte.toFunctionalRoadClass(): FunctionalRoadClass = when (this.toInt()) {
+        0 -> FunctionalRoadClass.FRC_0
+        1 -> FunctionalRoadClass.FRC_1
+        2 -> FunctionalRoadClass.FRC_2
+        3 -> FunctionalRoadClass.FRC_3
+        4 -> FunctionalRoadClass.FRC_4
+        5 -> FunctionalRoadClass.FRC_5
+        6 -> FunctionalRoadClass.FRC_6
+        else -> FunctionalRoadClass.FRC_7
+    }
+
+    private fun FunctionalRoadClass.toByte(): Byte = when (this) {
+        FunctionalRoadClass.FRC_0 -> 0
+        FunctionalRoadClass.FRC_1 -> 1
+        FunctionalRoadClass.FRC_2 -> 2
+        FunctionalRoadClass.FRC_3 -> 3
+        FunctionalRoadClass.FRC_4 -> 4
+        FunctionalRoadClass.FRC_5 -> 5
+        FunctionalRoadClass.FRC_6 -> 6
+        FunctionalRoadClass.FRC_7 -> 7
+    }
+
+    private fun Set<TillattRetning>.toByte(): Byte = when {
+        TillattRetning.Med in this && TillattRetning.Mot in this -> RETNING_BOTH
+        TillattRetning.Med in this -> RETNING_MED
+        TillattRetning.Mot in this -> RETNING_MOT
+        else -> 0
+    }
+
+    private fun Byte.toTillattRetning(): Set<TillattRetning> = when (this) {
+        RETNING_BOTH -> setOf(TillattRetning.Med, TillattRetning.Mot)
+        RETNING_MED -> setOf(TillattRetning.Med)
+        RETNING_MOT -> setOf(TillattRetning.Mot)
+        else -> emptySet()
+    }
+
     companion object {
+        private const val RETNING_MED: Byte = 0b01
+        private const val RETNING_MOT: Byte = 0b10
+        private const val RETNING_BOTH: Byte = 0b11
 
         /**
          * Finn feltoversikt for veglenke ved å lete opp første feltstrekning med overlappende stedfesting.

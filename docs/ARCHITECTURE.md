@@ -322,6 +322,9 @@ See: `core/services/tnits/TnitsExportService.kt` for parallel processing impleme
 - Streaming XML generation (no DOM)
 - Lazy sequence processing for large datasets
 - Protocol Buffers for compact serialization
+- Optimized CachedVegnett with lazy computation and byte compression
+
+See: [Memory Optimization Guide](MEMORY_OPTIMIZATION.md) for details on 72% memory reduction
 
 ## Related Documentation
 
@@ -331,3 +334,4 @@ See: `core/services/tnits/TnitsExportService.kt` for parallel processing impleme
 - [TN-ITS Export](TNITS_EXPORT.md) - Export functionality
 - [Testing Guide](TESTING.md) - Test structure and execution
 - [Concepts Glossary](CONCEPTS.md) - Domain terminology
+- [Memory Optimization](MEMORY_OPTIMIZATION.md) - CachedVegnett memory optimization
