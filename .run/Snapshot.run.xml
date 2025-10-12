@@ -4,7 +4,8 @@
     <module name="nvdb-tnits-public.tnits-generator.main" />
     <option name="PROGRAM_PARAMETERS" value="snapshot" />
     <shortenClasspath name="NONE" />
-    <option name="VM_PARAMETERS" value="-XX:MaxDirectMemorySize=10M -XX:MaxMetaspaceSize=120M -Xss1M -Xms7400M -Xmx7400M -XX:ReservedCodeCacheSize=120M" />
+    <option name="VM_PARAMETERS" value="-XX:MaxDirectMemorySize=10M -XX:MaxMetaspaceSize=100M -Xss1M -Xms7000M -Xmx7000M -XX:ReservedCodeCacheSize=100M" />
+    <option name="WORKING_DIRECTORY" value="tnits-generator" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

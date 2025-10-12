@@ -69,6 +69,9 @@ dependencies {
     implementation("io.insert-koin:koin-annotations:2.2.0")
     ksp("io.insert-koin:koin-ksp-compiler:2.2.0")
 
+    // Caching
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
+
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")

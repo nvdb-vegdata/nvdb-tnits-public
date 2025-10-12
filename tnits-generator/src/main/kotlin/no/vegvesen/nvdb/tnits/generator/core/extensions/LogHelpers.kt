@@ -23,3 +23,11 @@ inline fun <T> Logger.measure(label: String, logStart: Boolean = false, level: L
     logger.log("${if (logStart) "End: " else "Timed: "}$label, time: $time")
     return result
 }
+
+fun Logger.logMemoryUsage(label: String) {
+    val runtime = Runtime.getRuntime()
+    val usedMemoryMB = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
+    val maxMemoryMB = runtime.maxMemory() / 1024 / 1024
+    val percentUsed = (usedMemoryMB * 100.0 / maxMemoryMB).toInt()
+    info("$label - Memory: ${usedMemoryMB}MB / ${maxMemoryMB}MB ($percentUsed%)")
+}

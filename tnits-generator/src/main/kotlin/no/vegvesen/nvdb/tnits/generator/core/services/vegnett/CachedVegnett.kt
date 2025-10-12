@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.core.services.vegnett
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import jakarta.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -10,6 +11,7 @@ import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.generator.core.extensions.logMemoryUsage
 import no.vegvesen.nvdb.tnits.generator.core.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.*
@@ -21,19 +23,20 @@ import java.util.concurrent.ConcurrentHashMap
 class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) :
     WithLogger {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
-    private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
-    private val incomingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
-    private val outgoingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
-    private val incomingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<Veglenke>>()
+    private val outgoingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
+    private val incomingVeglenkerForward = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
+    private val outgoingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
+    private val incomingVeglenkerReverse = ConcurrentHashMap<Long, MutableSet<VeglenkeId>>()
 
-    private val linesByVeglenkerForward = ConcurrentHashMap<Veglenke, OpenLrLine>()
-    private val linesByVeglenkerReverse = ConcurrentHashMap<Veglenke, OpenLrLine>()
+    private val tillattRetningByVeglenke = ConcurrentHashMap<VeglenkeId, Set<TillattRetning>>()
 
-    private val tillattRetningByVeglenke = ConcurrentHashMap<Veglenke, Set<TillattRetning>>()
-
-    private val frcByVeglenke = ConcurrentHashMap<Veglenke, FunctionalRoadClass>()
+    private val frcByVeglenke = ConcurrentHashMap<VeglenkeId, FunctionalRoadClass>()
 
     private val nodes = ConcurrentHashMap<Long, OpenLrNode>()
+
+    private val lineCache = Caffeine.newBuilder()
+        .maximumSize(10_000)
+        .build<Pair<Veglenke, TillattRetning>, OpenLrLine>()
 
     private var veglenkerInitialized = false
 
@@ -41,12 +44,12 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
     fun hasRetning(veglenke: Veglenke, retning: TillattRetning): Boolean {
         require(veglenkerInitialized)
-        return retning in (tillattRetningByVeglenke[veglenke] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
+        return retning in (tillattRetningByVeglenke[veglenke.veglenkeId] ?: error("Mangler tillatt retning for veglenke ${veglenke.veglenkeId}"))
     }
 
     fun getFrc(veglenke: Veglenke): FunctionalRoadClass? {
         require(veglenkerInitialized)
-        return frcByVeglenke[veglenke]
+        return frcByVeglenke[veglenke.veglenkeId]
     }
 
     private val initMutex = Mutex()
@@ -91,7 +94,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
                                 }
                                 if (feltoversikt.isNotEmpty()) {
                                     val frc = frcLookup.findFrc(veglenke)
-                                    frcByVeglenke[veglenke] = frc
+                                    frcByVeglenke[veglenke.veglenkeId] = frc
                                     addVeglenke(veglenke, feltoversikt)
                                 } else {
                                     // Sannsynligvis gangveg uten fartsgrense
@@ -103,25 +106,10 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
 
                 veglenkerInitialized = true
 
-                log.measure("Load OpenLR lines", logStart = true) {
-                    veglenkerLookup.forEach { (_, veglenker) ->
-                        veglenker.filter {
-                            it.isRelevant()
-                        }.forEach { veglenke ->
-                            val tillattRetning = tillattRetningByVeglenke[veglenke]
-                            if (tillattRetning != null) {
-                                if (TillattRetning.Med in tillattRetning) {
-                                    linesByVeglenkerForward[veglenke] =
-                                        createOpenLrLine(veglenke, TillattRetning.Med)
-                                }
-                                if (TillattRetning.Mot in tillattRetning) {
-                                    linesByVeglenkerReverse[veglenke] =
-                                        createOpenLrLine(veglenke, TillattRetning.Mot)
-                                }
-                            }
-                        }
-                    }
-                }
+                // Force garbage collection after a large memory allocation
+                System.gc()
+
+                log.logMemoryUsage("After veglenker initialization")
             }
 
             initialized = true
@@ -131,15 +119,15 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     private fun addVeglenke(veglenke: Veglenke, feltoversikt: List<String>) {
         val tillattRetning = getTillattRetning(feltoversikt)
 
-        tillattRetningByVeglenke[veglenke] = tillattRetning
+        tillattRetningByVeglenke[veglenke.veglenkeId] = tillattRetning
 
         if (TillattRetning.Med in tillattRetning) {
-            outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
-            incomingVeglenkerForward.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
+            outgoingVeglenkerForward.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
+            incomingVeglenkerForward.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
         }
         if (TillattRetning.Mot in tillattRetning) {
-            outgoingVeglenkerReverse.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
-            incomingVeglenkerReverse.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke)
+            outgoingVeglenkerReverse.computeIfAbsent(veglenke.sluttnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
+            incomingVeglenkerReverse.computeIfAbsent(veglenke.startnode) { ConcurrentHashMap.newKeySet() }.add(veglenke.veglenkeId)
         }
     }
 
@@ -188,7 +176,8 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             TillattRetning.Med -> outgoingVeglenkerForward
             TillattRetning.Mot -> outgoingVeglenkerReverse
         }
-        return outgoingVeglenker[nodeId] ?: emptySet()
+        val veglenkeIds = outgoingVeglenker[nodeId] ?: emptySet()
+        return veglenkeIds.mapNotNull { getVeglenkeById(it) }.toSet()
     }
 
     fun getIncomingVeglenker(nodeId: Long, retning: TillattRetning): Set<Veglenke> {
@@ -197,7 +186,12 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
             TillattRetning.Med -> incomingVeglenkerForward
             TillattRetning.Mot -> incomingVeglenkerReverse
         }
-        return incomingVeglenker[nodeId] ?: emptySet()
+        val veglenkeIds = incomingVeglenker[nodeId] ?: emptySet()
+        return veglenkeIds.mapNotNull { getVeglenkeById(it) }.toSet()
+    }
+
+    private fun getVeglenkeById(veglenkeId: VeglenkeId): Veglenke? = veglenkerLookup[veglenkeId.veglenkesekvensId]?.firstOrNull {
+        it.veglenkeId == veglenkeId
     }
 
     fun getIncomingLines(nodeId: Long, retning: TillattRetning): List<OpenLrLine> {
@@ -232,27 +226,21 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
     }
 
     fun getLines(veglenker: List<Veglenke>, retning: TillattRetning): List<OpenLrLine> {
-        require(initialized)
-        val linesByVeglenker = when (retning) {
-            TillattRetning.Med -> linesByVeglenkerForward
-            TillattRetning.Mot -> linesByVeglenkerReverse
-        }
+        require(veglenkerInitialized)
         return veglenker.map { veglenke ->
-            linesByVeglenker[veglenke] ?: error("Veglenker $veglenke not found")
+            getLine(veglenke, retning)
         }
     }
 
     fun getLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
-        require(initialized)
-        val linesByVeglenker = when (retning) {
-            TillattRetning.Med -> linesByVeglenkerForward
-            TillattRetning.Mot -> linesByVeglenkerReverse
+        require(veglenkerInitialized)
+        return lineCache.get(veglenke to retning) {
+            createOpenLrLine(veglenke, retning)
         }
-        return linesByVeglenker[veglenke] ?: error("Veglenker $veglenke not found")
     }
 
     private fun createOpenLrLine(veglenke: Veglenke, retning: TillattRetning): OpenLrLine {
-        val frc = frcByVeglenke[veglenke] ?: FunctionalRoadClass.FRC_7
+        val frc = frcByVeglenke[veglenke.veglenkeId] ?: FunctionalRoadClass.FRC_7
         val fow = veglenke.typeVeg.toFormOfWay()
         return OpenLrLine.fromVeglenke(veglenke, frc, fow, this, retning)
     }

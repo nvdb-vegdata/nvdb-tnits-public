@@ -2,7 +2,7 @@ package no.vegvesen.nvdb.tnits.generator.core.services.vegnett
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.TillattRetning
+import io.mockk.mockk
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.generator.setupCachedVegnett
 
@@ -15,10 +15,10 @@ class CachedVegnettTest :
 
                 cachedVegnett.initialize()
 
-                cachedVegnett.getNode(1901475, TillattRetning.Med) { TODO() }.valid shouldBe true
-                cachedVegnett.getNode(1901474, TillattRetning.Med) { TODO() }.valid shouldBe true
-                cachedVegnett.getNode(1901475, TillattRetning.Mot) { TODO() }.valid shouldBe true
-                cachedVegnett.getNode(1901474, TillattRetning.Mot) { TODO() }.valid shouldBe true
+                cachedVegnett.getNode(1901475, TillattRetning.Med) { mockk() }.valid shouldBe true
+                cachedVegnett.getNode(1901474, TillattRetning.Med) { mockk() }.valid shouldBe true
+                cachedVegnett.getNode(1901475, TillattRetning.Mot) { mockk() }.valid shouldBe true
+                cachedVegnett.getNode(1901474, TillattRetning.Mot) { mockk() }.valid shouldBe true
             }
         }
     })
