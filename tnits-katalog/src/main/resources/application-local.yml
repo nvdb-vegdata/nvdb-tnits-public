@@ -3,3 +3,7 @@ minio:
   accessKey: user
   secretKey: password
   bucket: nvdb-tnits-local-data-01
+server:
+  port: 8999
+app:
+  baseUrl: http://localhost:8999

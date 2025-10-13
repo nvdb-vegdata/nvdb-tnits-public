@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.katalog.presentation
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.swagger.v3.oas.annotations.tags.Tag
+import no.vegvesen.nvdb.tnits.katalog.config.AppConfiguration
 import no.vegvesen.nvdb.tnits.katalog.config.MinioProperties
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.SnapshotResponse
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.UpdatesResponse
@@ -19,17 +20,21 @@ private const val updateSuffix = "/update.xml.gz"
 @RestController
 @RequestMapping("/api/v1/tnits")
 @Tag(name = "TN-ITS")
-class TnitsController(private val minioClient: MinioClient, private val minioProperties: MinioProperties) {
+class TnitsController(private val minioClient: MinioClient, private val minioProperties: MinioProperties, private val appConfiguration: AppConfiguration) {
 
     @GetMapping("/snapshots/latest")
     fun getLatestSnapshot(): SnapshotResponse = getSpeedLimitObjects(snapshotSuffix)
         .maxByOrNull { it.timestamp }
         ?.let { (objectName, timestamp) ->
             SnapshotResponse(
-                href = "${minioProperties.endpoint}/${minioProperties.bucket}/$objectName",
-                newUpdates = "http://localhost:8080/api/v1/updates?from=$timestamp",
+                href = getDownloadUrl(objectName),
+                newUpdates = getUpdatesUrl(timestamp),
             )
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+
+    private fun getUpdatesUrl(timestamp: String): String = "${appConfiguration.baseUrl}/api/v1/tnits/updates?from=$timestamp"
+
+    private fun getDownloadUrl(objectName: String): String = "${appConfiguration.baseUrl}/api/v1/download?path=$objectName"
 
     @GetMapping("/updates")
     fun getUpdatesFrom(from: String): UpdatesResponse = getSpeedLimitObjects(updateSuffix)
@@ -37,8 +42,8 @@ class TnitsController(private val minioClient: MinioClient, private val minioPro
         .sortedBy { it.timestamp }
         .let { updates ->
             UpdatesResponse(
-                hrefs = updates.map { "${minioProperties.endpoint}/${minioProperties.bucket}/${it.objectName}" },
-                newUpdates = "http://localhost:8080/api/v1/updates?from=${updates.lastOrNull()?.timestamp ?: from}",
+                hrefs = updates.map { getDownloadUrl(it.objectName) },
+                newUpdates = getUpdatesUrl(updates.lastOrNull()?.timestamp ?: from),
             )
         }
 
