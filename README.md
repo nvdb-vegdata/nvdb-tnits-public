@@ -1,51 +1,59 @@
-# XML-eksport fra NVDB
+# XML Export from NVDB
 
-Dette prosjektet muliggjør generering og publisering rundt XML-eksport av vegdata fra NVDB, i henhold til [TN-ITS](https://tn-its.eu/standardisation/) og [INSPIRE](https://inspire.ec.europa.eu/).
+This project enables generation and publication of XML exports of road data from NVDB (Norwegian Road Database), in accordance with [TN-ITS](https://tn-its.eu/standardisation/) and [INSPIRE](https://inspire.ec.europa.eu/).
 
-## Dokumentasjon
+## Public repository and reference
 
-Dokumentasjon på engelsk finnes i [docs/](docs/):
+This is a public repository that also serves as a good example of how to integrate with roadnet data from NVDB using backfill + event-based updates.
 
-- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Komme i gang
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Arkitektur
-- [CONCEPTS.md](docs/CONCEPTS.md) - Viktige konsepter
-- [DATA_FLOW.md](docs/DATA_FLOW.md) - Dataflyt
-- [STORAGE.md](docs/STORAGE.md) - Lagring
+## Documentation
+
+Detailed documentation can be found in [docs](docs):
+
+- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Getting Started
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Architecture
+- [CONCEPTS.md](docs/CONCEPTS.md) - Important Concepts
+- [DATA_FLOW.md](docs/DATA_FLOW.md) - Data Flow
+- [STORAGE.md](docs/STORAGE.md) - Storage
 - [TESTING.md](docs/TESTING.md) - Testing
-- [TNITS_EXPORT.md](docs/TNITS_EXPORT.md) - Om TN-ITS eksport
-- [INSPIRE_ROADNET_EXPORT.md](docs/INSPIRE_ROADNET_EXPORT.md) - Om INSPIRE eksport
+- [TNITS_EXPORT.md](docs/TNITS_EXPORT.md) - About TN-ITS Export
+- [INSPIRE_ROADNET_EXPORT.md](docs/INSPIRE_ROADNET_EXPORT.md) - About INSPIRE Export
 
-## Utvikleroppsett
+## Developer Setup
 
-- Kjør `./gradlew installGitHooks` for å installere pre-commit hook som kjører formattering før commit.
-- Kjør `docker compose up -d` for å starte MinIO.
-- Kjør `./gradlew tnits-generator:run` for å starte generatoren. Den vil automatisk utføre backfill og generere snapshot.
-- Kjør `./gradlew tnits-katalog:bootRun` for å starte en enkel katalogtjeneste som serverer filer fra MinIO.
+- Run `./gradlew installGitHooks` to install pre-commit hook that runs formatting before commits.
+- Run `docker compose up -d` to start MinIO.
+- Run `./gradlew tnits-generator:run` to start the generator. It will automatically perform backfill and generate a snapshot.
+- Run `./gradlew tnits-katalog:bootRun` to start a simple catalog service that serves files from MinIO.
+
+## SVV Atlas configuration
+
+Deployment details for SVV Atlas hosting are found in a [separate, private repo](https://git.vegvesen.no/projects/NVDBDATA/repos/nvdb-tnits-atlas).
 
 ### IntelliJ IDEA Plugins
 
-- [Mermaid Support](https://plugins.jetbrains.com/plugin/20146-mermaid) - For å vise mermaid-diagrammer i markdown-filer.
+- [Mermaid Support](https://plugins.jetbrains.com/plugin/20146-mermaid) - For viewing Mermaid diagrams in markdown files.
 
-## TN-ITS eksport
+## TN-ITS Export
 
-### Valg og antagelser
+### Choices and Assumptions
 
-Vi setter følgende TN-ITS-felt der det kan være tvetydighet:
+We set the following TN-ITS fields where there may be ambiguity:
 
-- `validFrom`: Settes til startdato for vegobjektets første versjon
-- `validTo`, `endLivespanVersion`: Settes til sluttdato for vegobjektets siste versjon ved lukking. For slettede vegobjekter settes den til dato for selve eksporten.
-- `beginLifespanVersion`: Settes til startdato for vegobjektets gjeldende versjon
+- `validFrom`: Set to the start date of the road feature's first version
+- `validTo`, `endLivespanVersion`: Set to the end date of the road feature's last version when closed. For deleted road features, it is set to the date of the export itself.
+- `beginLifespanVersion`: Set to the start date of the road feature's current version
 
-For OpenLR gjør vi følgende valg:
+For OpenLR, we make the following choices:
 
-- `frc`: Leses fra vegobjekt 821 Funksjonell Vegklasse, med tilbakefall til FRC 7. Hvis det finnes flere vegklasser på samme veglenke, velges den med lavest viktighet (høyest FRC-verdi).
-- tillatt kjøreretning: Leses fra veglenkens feltoversikt, eller fra vegobjekt 616 Feltstrekning for konnekteringslenker.
+- `frc`: Read from road feature 821 (Functional Road Class), with fallback to FRC 7. If multiple road classes exist on the same road link, the one with lowest importance (highest FRC value) is chosen.
+- Allowed driving direction: Read from the road link's lane overview, or from road feature 616 (Lane Section) for connecting links.
 
-### Lukking og fjerning
+### Closing and Removal
 
-- Ved lukking av et vegobjekt, setter vi UpdateType til `Modify`, og `validTo` til sluttdato for vegobjektets siste versjon.
-- Ved fjerning/sletting av et vegobjekt, viser vi slik vegobjektet så ut før det ble slettet, og vi setter UpdateType til `Remove`, og `validTo` til dato for selve eksporten.
+- When closing a road feature, we set UpdateType to `Modify`, and `validTo` to the end date of the road feature's last version.
+- When removing/deleting a road feature, we show how the road feature looked before it was deleted, and we set UpdateType to `Remove`, and `validTo` to the date of the export itself.
 
-#### API-modeller vs domenemodeller
+#### API Models vs Domain Models
 
-Vi bruker domenemodeller for serialisert lagring og logikk, ellers benyttes API-modeller direkte, for å redusere boilerplate og mapping-kode.
+We use domain models for serialized storage and logic, otherwise API models are used directly to reduce boilerplate and mapping code.

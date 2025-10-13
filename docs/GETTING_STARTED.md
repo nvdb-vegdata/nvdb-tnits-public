@@ -10,7 +10,7 @@ Ensure you have the following installed on your development machine:
 
 | Tool         | Minimum Version | Purpose                    | Download                           |
 |--------------|-----------------|----------------------------|------------------------------------|
-| **Java JDK** | 21+             | Runtime and compilation    | [Adoptium](https://adoptium.net)   |
+| **Java JDK** | 25+             | Runtime and compilation    | [Adoptium](https://adoptium.net)   |
 | **Docker**   | 20.10+          | Running MinIO for local S3 | [docker.com](https://docker.com)   |
 | **Git**      | 2.30+           | Source control             | [git-scm.com](https://git-scm.com) |
 
@@ -69,7 +69,6 @@ The application has three main commands:
 ./gradlew run                      # Auto mode (default)
 ./gradlew run --args="snapshot"    # Generate full TN-ITS snapshot
 ./gradlew run --args="update"      # Generate delta update
-./gradlew run --args="--help"      # Show all options
 ```
 
 **Auto mode** (default):
