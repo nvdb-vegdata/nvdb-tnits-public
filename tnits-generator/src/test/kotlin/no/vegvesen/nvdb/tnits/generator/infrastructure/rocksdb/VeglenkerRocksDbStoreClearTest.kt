@@ -5,10 +5,9 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.locationtech.jts.geom.Coordinate
 
@@ -20,7 +19,7 @@ class VeglenkerRocksDbStoreClearTest :
                 // Arrange - Create store and add data
                 val store = VeglenkerRocksDbStore(config)
 
-                val geometryFactory = geometryFactories[SRID.WGS84]!!
+                val geometryFactory = geometryFactories[UTM33]!!
                 val testGeometry =
                     geometryFactory.createLineString(
                         arrayOf(

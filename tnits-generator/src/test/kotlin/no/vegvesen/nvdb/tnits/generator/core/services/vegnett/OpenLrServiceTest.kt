@@ -5,9 +5,9 @@ import io.kotest.inspectors.shouldForAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import no.vegvesen.nvdb.tnits.generator.core.extensions.toRounded
 import no.vegvesen.nvdb.tnits.generator.core.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.generator.core.model.getStedfestingLinjer
-import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import no.vegvesen.nvdb.tnits.generator.marshaller
 import no.vegvesen.nvdb.tnits.generator.objectMapper
@@ -39,25 +39,25 @@ class OpenLrServiceTest : ShouldSpec({
             openLrReferences shouldHaveSize 4
 
             // Første stedfesting, med lenkeretning
-            openLrReferences[0].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[0].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.45458 to 63.43004,
                     10.45995 to 63.42732,
                 )
             // Siste stedfesting, med lenkeretning
-            openLrReferences[1].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[1].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.46041 to 63.42712,
                     10.46647 to 63.42433,
                 )
             // Siste stedfesting, mot lenkeretning
-            openLrReferences[2].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[2].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.46647 to 63.42433,
                     10.46041 to 63.42712,
                 )
             // Første stedfesting, mot lenkeretning
-            openLrReferences[3].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[3].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.45995 to 63.42732,
                     10.45458 to 63.43004,
@@ -66,10 +66,10 @@ class OpenLrServiceTest : ShouldSpec({
 
             binary shouldBe
                 listOf(
-                    "CwdvMy0bFzLQBwIZ/vAzOy0=",
+                    "CwdvMy0bFzLQBwIZ/u8zOy0=",
                     "CwdwQy0ajzPMBwJe/ukyfCQV",
                     "CwdxXS0aDTLcB/2iARczbBUk",
-                    "CwdwLi0amDPbB/3nARAyUC0=",
+                    "CwdwLS0amDPbB/3nAREyUC0=",
                 )
         }
     }
@@ -93,12 +93,12 @@ class OpenLrServiceTest : ShouldSpec({
 
             // Assert
             openLrReferences shouldHaveSize 2
-            openLrReferences[0].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[0].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.50101 to 63.4266,
                     10.50769 to 63.42537,
                 )
-            openLrReferences[1].locationReferencePoints.map { it.coordinate.x to it.coordinate.y } shouldBe
+            openLrReferences[1].locationReferencePoints.map { it.coordinate.x.toRounded(5) to it.coordinate.y.toRounded(5) } shouldBe
                 listOf(
                     10.50769 to 63.42537,
                     10.50101 to 63.4266,
@@ -107,8 +107,8 @@ class OpenLrServiceTest : ShouldSpec({
 
             binary shouldBe
                 listOf(
-                    "Cwd3py0adjPIBgKc/4UzGg==",
-                    "Cwd43i0aPTPaBv1kAHszCA==",
+                    "Cwd3py0adjPIBgKd/4YzGg==",
+                    "Cwd43y0aPTPaBv1jAHozCA==",
                 )
         }
     }
@@ -137,9 +137,9 @@ class OpenLrServiceTest : ShouldSpec({
             }
             binary shouldBe
                 listOf(
-                    "CwOZ4iuf5jPeAP/dACwzDg==",
+                    "CwOZ4iuf5jPdAP/dACwzDg==",
                     "CwOZwiugDTPCBgI7AKEzFw==",
-                    "CwOazCugWDPXCP4K/wszHg==",
+                    "CwOazCugWDPXCP4K/wszHQ==",
                 )
         }
     }
@@ -172,7 +172,7 @@ class OpenLrServiceTest : ShouldSpec({
                 it.locationReferencePoints[1].functionalRoadClass shouldBe FunctionalRoadClass.FRC_0
             }
 
-            binary shouldBe listOf("Cweq+ip17APyAwB6/1kDGQ==")
+            binary shouldBe listOf("Cweq+ip17APxAwB7/1kDGQ==")
         }
     }
 })

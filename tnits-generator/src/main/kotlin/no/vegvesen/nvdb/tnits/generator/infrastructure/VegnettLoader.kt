@@ -6,7 +6,11 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.generator.core.api.*
-import no.vegvesen.nvdb.tnits.generator.core.extensions.*
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.EPSG5973
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
+import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
+import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
 import no.vegvesen.nvdb.tnits.generator.core.model.Superstedfesting
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
@@ -152,6 +156,10 @@ class VegnettLoader(
                         portLookup[veglenke.sluttport]
                             ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${this.id}")
 
+                    val srid = veglenke.geometri.srid.value.toInt()
+
+                    check(srid == EPSG5973)
+
                     Veglenke(
                         veglenkesekvensId = this.id,
                         veglenkenummer = veglenke.nummer,
@@ -161,11 +169,8 @@ class VegnettLoader(
                         sluttnode = sluttport.nodeId,
                         startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
                         sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
-                        geometri = parseWkt(
-                            veglenke.geometri.wkt,
-                            veglenke.geometri.srid.value
-                                .toInt(),
-                        ).projectTo(SRID.WGS84),
+                        // 3D -> 2D
+                        geometri = parseWkt(veglenke.geometri.wkt, UTM33),
                         typeVeg = veglenke.typeVeg,
                         detaljniva = veglenke.detaljniva,
                         feltoversikt = veglenke.feltoversikt,

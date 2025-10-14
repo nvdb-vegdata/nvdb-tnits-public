@@ -10,7 +10,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
-import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
@@ -136,7 +135,7 @@ class FeatureTransformer(
 
                 // Process ranges in parallel - each worker fetches and processes its range
                 val getFeatureProperties = getPropertyMapper(featureType)
-                val features: List<TnitsFeature> = processIdRangesInParallel(idRanges, getFeatureProperties)
+                val features: List<TnitsFeature> = processIdRangesInParallel(featureType, idRanges, getFeatureProperties)
 
                 count += features.size
                 features.sortedBy { it.id }.forEach { feature ->
@@ -145,7 +144,7 @@ class FeatureTransformer(
             }
         }
 
-        log.info("Ferdig med å generere fartsgrenser. Totalt $count av $totalCount")
+        log.info("Ferdig med å generere ${featureType.typeCode}. Totalt $count av $totalCount")
     }
 
     private fun createIdRanges(ids: List<Long>): List<IdRange> {
@@ -170,19 +169,27 @@ class FeatureTransformer(
         }
     }
 
-    private suspend fun processIdRangesInParallel(idRanges: List<IdRange>, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeature> = coroutineScope {
+    private suspend fun processIdRangesInParallel(
+        featureType: ExportedFeatureType,
+        idRanges: List<IdRange>,
+        getFeatureProperties: VegobjektPropertyMapper,
+    ): List<TnitsFeature> = coroutineScope {
         idRanges
             .map { idRange ->
                 async {
-                    processIdRangeForSnapshot(idRange, getFeatureProperties)
+                    processIdRangeForSnapshot(featureType, idRange, getFeatureProperties)
                 }
             }.awaitAll()
             .flatten()
     }
 
-    private fun processIdRangeForSnapshot(idRange: IdRange, getFeatureProperties: VegobjektPropertyMapper): List<TnitsFeature> = try {
+    private fun processIdRangeForSnapshot(
+        featureType: ExportedFeatureType,
+        idRange: IdRange,
+        getFeatureProperties: VegobjektPropertyMapper,
+    ): List<TnitsFeature> = try {
         // Each worker fetches and processes its own data range directly
-        val vegobjekter = vegobjekterRepository.findVegobjekter(VegobjektTyper.FARTSGRENSE, idRange)
+        val vegobjekter = vegobjekterRepository.findVegobjekter(featureType.typeId, idRange)
             .filter { !it.fjernet && (it.sluttdato == null || it.sluttdato > today) }
 
         check(vegobjekter.size <= fetchSize) {
@@ -193,7 +200,7 @@ class FeatureTransformer(
             try {
                 processVegobjektToFeature(vegobjekt, getFeatureProperties, UpdateType.Snapshot)
             } catch (e: Exception) {
-                log.error("Warning: Error processing speed limit ${vegobjekt.id}", e)
+                log.error("Warning: Error processing ${featureType.typeCode} ${vegobjekt.id}", e)
                 null // Skip this item but continue processing others
             }
         }
@@ -255,8 +262,9 @@ class FeatureTransformer(
             "Finner ingen veglenker for $type ${vegobjekt.id} med stedfesting ${vegobjekt.stedfestinger}"
         }
 
-        val geometry = mergeGeometries(lineStrings)?.projectTo(SRID.UTM33)?.simplify(1.0)?.projectTo(SRID.WGS84)
-            ?: error("Klarte ikke lage geometri for $type ${vegobjekt.id}")
+        val merged = mergeGeometries(lineStrings) ?: error("Klarte ikke slå sammen geometrier for $type ${vegobjekt.id}")
+
+        val geometry = merged.simplify(1.0)
 
         val openLrLocationReferences = openLrService.toOpenLr(vegobjekt.stedfestinger)
 

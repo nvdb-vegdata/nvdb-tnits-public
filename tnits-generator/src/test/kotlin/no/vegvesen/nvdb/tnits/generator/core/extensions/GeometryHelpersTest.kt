@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 class GeometryHelpersTest :
     ShouldSpec({
 
-        should("project UTM33 to WGS84 with 6 decimals") {
+        should("project UTM33 to WGS84") {
             val wkt = "LINESTRING (512345 6123456, 512445 6123556)"
             val geometry = parseWkt(wkt, SRID.UTM33)
 

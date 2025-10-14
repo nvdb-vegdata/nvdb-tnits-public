@@ -5,6 +5,7 @@ import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.WGS84
 import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.*
 import org.locationtech.jts.geom.LineString
@@ -138,7 +139,7 @@ object TnitsXmlWriter : WithLogger {
                                         attribute("srsDimension", "2")
                                         attribute("srsName", "EPSG:4326")
                                         "gml:posList" {
-                                            lineString.coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
+                                            lineString.projectTo(WGS84).coordinates.joinToString(" ") { "${it.y.toRounded(5)} ${it.x.toRounded(5)}" }
                                         }
                                     }
                                 }

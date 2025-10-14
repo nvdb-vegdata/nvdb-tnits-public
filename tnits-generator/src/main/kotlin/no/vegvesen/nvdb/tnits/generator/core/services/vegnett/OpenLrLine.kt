@@ -1,6 +1,8 @@
 package no.vegvesen.nvdb.tnits.generator.core.services.vegnett
 
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.projectTo
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.core.model.VeglenkeId
 import no.vegvesen.nvdb.tnits.generator.core.model.reversedView
@@ -68,7 +70,7 @@ data class OpenLrLine private constructor(
             cachedVegnett: CachedVegnett,
             tillattRetning: TillattRetning,
         ): OpenLrLine {
-            val geometry = veglenke.geometri
+            val geometry = veglenke.geometri.projectTo(SRID.WGS84)
 
             if (geometry !is LineString) {
                 error("Expected LineString geometry, but got ${geometry.geometryType} for VeglenkeId: ${veglenke.veglenkeId}")

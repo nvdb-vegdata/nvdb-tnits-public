@@ -8,13 +8,10 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
 import java.nio.file.Files
 
 class VeglenkerRocksDbStoreTest : ShouldSpec() {
@@ -41,7 +38,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
 
     init {
         should("store and retrieve veglenker") {
-            val geometryFactory = GeometryFactory()
+            val geometryFactory = geometryFactories[UTM33]!!
             val testGeometry =
                 geometryFactory
                     .createLineString(
@@ -49,7 +46,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
                             Coordinate(10.0, 60.0),
                             Coordinate(10.1, 60.1),
                         ),
-                    ).also { it.srid = SRID.WGS84 }
+                    )
 
             val testVeglenker =
                 listOf(
@@ -87,7 +84,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
         }
 
         should("perform batch operations") {
-            val geometryFactory = geometryFactories[SRID.WGS84]!!
+            val geometryFactory = geometryFactories[UTM33]!!
             val testGeometry =
                 geometryFactory
                     .createLineString(

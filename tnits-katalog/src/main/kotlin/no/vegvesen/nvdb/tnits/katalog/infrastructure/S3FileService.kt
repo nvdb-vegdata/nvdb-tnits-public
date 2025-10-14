@@ -1,13 +1,18 @@
 package no.vegvesen.nvdb.tnits.katalog.infrastructure
 
+import io.minio.GetObjectArgs
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
+import io.minio.errors.ErrorResponseException
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.common.model.RoadFeatureTypeCode
 import no.vegvesen.nvdb.tnits.katalog.config.MinioProperties
 import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
+import no.vegvesen.nvdb.tnits.katalog.core.model.FileDownload
 import no.vegvesen.nvdb.tnits.katalog.core.model.FileObject
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.server.ResponseStatusException
 import kotlin.time.Instant
 
 @Component
@@ -29,6 +34,36 @@ class S3FileService(private val minioClient: MinioClient, private val minioPrope
                     timestamp = it.removePrefix(prefix).removeSuffix(suffix).let { Instant.parse(it) },
                 )
             }
+    }
+
+    override fun downloadFile(objectName: String): FileDownload {
+        val fileName = objectName.substringAfterLast('/')
+        val contentType = determineContentType(objectName)
+
+        val inputStream = try {
+            minioClient.getObject(
+                GetObjectArgs.builder()
+                    .bucket(minioProperties.bucket)
+                    .`object`(objectName)
+                    .build(),
+            )
+        } catch (e: ErrorResponseException) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $objectName", e)
+        } catch (e: Exception) {
+            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error downloading file: $objectName", e)
+        }
+
+        return FileDownload(
+            inputStream = inputStream,
+            fileName = fileName,
+            contentType = contentType,
+        )
+    }
+
+    private fun determineContentType(path: String): String = when {
+        path.endsWith(".xml.gz") -> "application/gzip"
+        path.endsWith(".xml") -> "application/xml"
+        else -> "application/octet-stream"
     }
 
     companion object {
