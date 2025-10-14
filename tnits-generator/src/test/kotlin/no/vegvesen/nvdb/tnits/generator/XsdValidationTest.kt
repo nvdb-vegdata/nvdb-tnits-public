@@ -15,16 +15,26 @@ const val Manual = "Manual"
 @RequiresTag(Manual)
 class XsdValidationTest : ShouldSpec() {
     init {
-        should("validate expected snapshot against its XSD") {
-            val xml = readFile("105-expected-snapshot.xml")
+        context("speed limits") {
+            should("validate expected snapshot against its XSD") {
+                val xml = readFile("105-expected-snapshot.xml")
 
-            shouldBeValidXsd(xml)
+                shouldBeValidXsd(xml)
+            }
+
+            should("validate expected update against its XSD") {
+                val xml = readFile("105-expected-update.xml")
+
+                shouldBeValidXsd(xml)
+            }
         }
 
-        should("validate expected update against its XSD") {
-            val xml = readFile("105-expected-update.xml")
+        context("road names") {
+            should("validate expected snapshot against its XSD") {
+                val xml = readFile("538-expected-snapshot.xml")
 
-            shouldBeValidXsd(xml)
+                shouldBeValidXsd(xml)
+            }
         }
     }
 }
