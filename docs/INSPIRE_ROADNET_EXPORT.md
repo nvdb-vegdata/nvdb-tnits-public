@@ -56,16 +56,16 @@ Each RoadLink uses a composite ID combining the veglenkesekvens ID and veglenke 
 
 ### Storage vs Export
 
-| Stage               | Coordinate System               | Notes                                              |
-|---------------------|---------------------------------|----------------------------------------------------|
-| **NVDB API**        | UTM33 (EPSG:25833) or EPSG:5973 | Source data from NVDB                              |
-| **RocksDB Storage** | WGS84 (EPSG:4326)               | Converted during backfill for TN-ITS compatibility |
-| **INSPIRE Export**  | UTM33 (EPSG:25833)              | Converted back for INSPIRE standard                |
+| Stage               | Coordinate System               | Notes                                         |
+|---------------------|---------------------------------|-----------------------------------------------|
+| **NVDB API**        | UTM33 (EPSG:25833) or EPSG:5973 | Source data from NVDB                         |
+| **RocksDB Storage** | UTM33 (EPSG:25833)              | Stored in original CRS for precision          |
+| **INSPIRE Export**  | UTM33 (EPSG:25833)              | No conversion needed - direct export          |
 
 ### Transformation Pipeline
 
 ```
-NVDB (UTM33) → RocksDB (WGS84) → INSPIRE Export (UTM33)
+NVDB (UTM33) → RocksDB (UTM33) → INSPIRE Export (UTM33)
 ```
 
 The application uses **ETRS89** datum (EPSG:25833) for INSPIRE exports, which is the Norwegian standard projected coordinate system.
@@ -319,6 +319,7 @@ The INSPIRE export complements the existing TN-ITS export:
 | **Coordinates**  | WGS84 (EPSG:4326)               | UTM33 (EPSG:25833)    |
 | **Format**       | Custom TN-ITS XML               | INSPIRE/WFS XML       |
 | **Typical Size** | 10-50 MB                        | 50-100 MB             |
+| **Storage**      | UTM33, converted to WGS84       | UTM33, direct export  |
 
 Both exports use the same underlying RocksDB storage and CachedVegnett infrastructure.
 

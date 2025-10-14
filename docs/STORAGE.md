@@ -49,6 +49,8 @@ Defined in: `core/services/storage/ColumnFamily.kt`
 | **DIRTY_VEGOBJEKTER**       | Changed road objects | Composite (typeId + objektId) | Empty                           |
 | **EXPORTED_FEATURES**       | Export metadata      | Composite (typeId + objektId) | ExportedFeature (protobuf)      |
 
+**Note on Coordinate Systems:** Geometries in the `VEGLENKER` column family are stored in their original UTM33 (EPSG:25833) coordinate reference system from NVDB. This preserves precision and avoids unnecessary coordinate transformations. Conversion to WGS84 (EPSG:4326) only happens during TN-ITS XML export.
+
 ### Example: VEGLENKER Column Family
 
 **Key:** Veglenkesekvens ID as 8-byte Long

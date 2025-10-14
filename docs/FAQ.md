@@ -4,7 +4,7 @@
     - Veglenkesekvenser:
         - We use the ports from the veglenkesekvens to fill out start/sluttposisjon and start/sluttnode for each veglenke
         - We filter out closed veglenker (has sluttdato)
-        - We convert geometry to WGS84 (used by OpenLR)
+        - We store geometry in UTM33 (original CRS from NVDB) for precision; conversion to WGS84 happens during TN-ITS export
         - We store veglenker sorted by startposisjon and grouped by veglenkesekvensId
     - Vegobjekter:
         - For main vegobjekttyper (e.g. speed limits) we have to fetch the original start date (startdato for first version), because TN-ITS `validFrom` should be from the entire feature's lifetime

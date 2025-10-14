@@ -228,7 +228,7 @@ flowchart TD
   SCOPE{"Determine scope"}
   SNAP["Snapshot: ALL"]
   UPDATE["Update: DIRTY"]
-  GEN["TnitsFeatureGenerator<br/>• Fetch vegobjekt<br/>• Calculate geometry<br/>• Encode OpenLR<br/>• Transform WGS84"]
+  GEN["TnitsFeatureGenerator<br/>• Fetch vegobjekt<br/>• Calculate geometry (UTM33)<br/>• Encode OpenLR<br/>• Transform to WGS84 for XML"]
   EXPORT["TnitsFeatureExporter<br/>• Parallel processing<br/>• Stream XML"]
   XML["XmlStreamDsl<br/>Generate XML (StAX)"]
   OUT["S3OutputStream or FileOutput"]
@@ -347,15 +347,16 @@ See: `core/services/vegnett/OpenLrService.kt`
 
 #### 3. Coordinate Transformation
 
-**Input:** Geometry in UTM33 (EPSG:25833)
+**Input:** Geometry in UTM33 (EPSG:25833) from storage
 
 **Process:**
 
-1. Project to WGS84 (EPSG:4326)
-2. Use GeoTools CRS transformation
-3. Longitude/latitude order for OpenLR
+1. Geometry stored in RocksDB remains in UTM33
+2. During TN-ITS XML export: Project to WGS84 (EPSG:4326)
+3. Use GeoTools CRS transformation
+4. Longitude/latitude order for OpenLR
 
-**Output:** WGS84 coordinates (EPSG:4326)
+**Output:** WGS84 coordinates (EPSG:4326) for TN-ITS XML
 
 See: `core/extensions/GeometryHelpers.kt`
 

@@ -157,10 +157,10 @@ fun generateFeature(typeId: Int, objektId: Long, timestamp: Instant): TnitsFeatu
   // 2. Extract stedfesting (positioning)
   val stedfestinger = vegobjekt.stedfesting.linjer
 
-  // 3. Calculate geometry
+  // 3. Calculate geometry (stored in UTM33)
   val geometry = calculateGeometry(stedfestinger)
-    .projectTo(SRID.WGS84)
     .simplify(distanceTolerance = 1.0)
+    // Note: Conversion to WGS84 happens during XML writing
 
   // 4. Encode OpenLR
   val openLrRefs = openLrService.toOpenLr(stedfestinger)
@@ -258,15 +258,15 @@ See: `infrastructure/s3/S3OutputStream.kt`
 
 NVDB → TN-ITS field mapping:
 
-| NVDB Field                             | TN-ITS Field                    | Notes                       |
-|----------------------------------------|---------------------------------|-----------------------------|
-| `metadata.startdato` (first version)   | `validFrom`                     | Inception date              |
-| `metadata.startdato` (current version) | `beginLifespanVersion`          | Current version start       |
-| `metadata.sluttdato`                   | `validTo`, `endLifespanVersion` | For closed/deleted objects  |
-| `egenskaper[2021]`                     | `speedLimitValue`               | Speed limit in km/h         |
-| `stedfesting` → geometry               | `geometry`                      | WGS84 coordinates           |
-| `stedfesting` → OpenLR                 | `openLRLocationReference`       | Encoded location            |
-| Vegobjekt type + ID                    | `identifier`                    | Format: `NO-105-{objektId}` |
+| NVDB Field                             | TN-ITS Field                    | Notes                                |
+|----------------------------------------|---------------------------------|--------------------------------------|
+| `metadata.startdato` (first version)   | `validFrom`                     | Inception date                       |
+| `metadata.startdato` (current version) | `beginLifespanVersion`          | Current version start                |
+| `metadata.sluttdato`                   | `validTo`, `endLifespanVersion` | For closed/deleted objects           |
+| `egenskaper[2021]`                     | `speedLimitValue`               | Speed limit in km/h                  |
+| `stedfesting` → geometry               | `geometry`                      | Stored in UTM33, output as WGS84     |
+| `stedfesting` → OpenLR                 | `openLRLocationReference`       | Encoded location                     |
+| Vegobjekt type + ID                    | `identifier`                    | Format: `NO-105-{objektId}`          |
 
 ### Update Type Rules
 
@@ -438,10 +438,10 @@ val base64 = Base64.getEncoder().encodeToString(encoded.data)
 
 ### Coordinate Systems
 
-| System    | EPSG Code | Usage                      |
-|-----------|-----------|----------------------------|
-| **UTM33** | 25833     | NVDB storage, calculations |
-| **WGS84** | 4326      | TN-ITS output, OpenLR      |
+| System    | EPSG Code | Usage                               |
+|-----------|-----------|-------------------------------------|
+| **UTM33** | 25833     | NVDB source, RocksDB storage        |
+| **WGS84** | 4326      | TN-ITS XML output, OpenLR encoding  |
 
 ### Transformation Pipeline
 
@@ -452,6 +452,9 @@ Extract segment based on stedfesting
     ↓
 Merge connected segments
     ↓
+Store in RocksDB (UTM33)
+    ↓
+[At export time:]
 Simplify (Douglas-Peucker, 1m tolerance)
     ↓
 Project to WGS84
