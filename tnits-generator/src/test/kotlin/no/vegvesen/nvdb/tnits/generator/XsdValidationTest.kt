@@ -16,13 +16,13 @@ const val Manual = "Manual"
 class XsdValidationTest : ShouldSpec() {
     init {
         should("validate expected snapshot against its XSD") {
-            val xml = readFile("expected-snapshot.xml")
+            val xml = readFile("105-expected-snapshot.xml")
 
             shouldBeValidXsd(xml)
         }
 
         should("validate expected update against its XSD") {
-            val xml = readFile("expected-update.xml")
+            val xml = readFile("105-expected-update.xml")
 
             shouldBeValidXsd(xml)
         }

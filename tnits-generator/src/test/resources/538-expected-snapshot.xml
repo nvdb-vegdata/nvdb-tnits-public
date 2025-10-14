@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RoadFeatureDataset xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://spec.tn-its.eu/schemas/" xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
+	<metadata>
+		<Metadata>
+			<datasetId>NVDB-TNITS-RoadName_Snapshot_2025-09-26T10:30:00Z</datasetId>
+			<datasetCreationTime>2025-09-26T10:30:00Z</datasetCreationTime>
+		</Metadata>
+	</metadata>
+	<type>Snapshot</type>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2019-01-04</validFrom>
+			<beginLifespanVersion>2019-01-03T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadName"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialName"></type>
+					<value>Åsvegen</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>977736797</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>63.82105 11.41908 63.82117 11.41922 63.82143 11.41942 63.82165 11.41956 63.82168 11.41951</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>Cwge3C1iYjvwAf/V/8E7Ag==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwgeyC1iRTviAQArAD87EA==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@1786245:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@2605437:MOT:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+</RoadFeatureDataset>

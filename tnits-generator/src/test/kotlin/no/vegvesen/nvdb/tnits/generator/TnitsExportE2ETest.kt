@@ -45,79 +45,96 @@ class TnitsExportE2ETest : ShouldSpec() {
             minioClient.clear(testBucket)
         }
 
-        should("export snapshot") {
-            withTestServices(minioClient) {
-                val timestamp = Instant.parse("2025-09-26T10:30:00Z")
-                val expectedXml = readFile("expected-snapshot.xml")
-                setupBackfill()
+        context("speed limits") {
+            should("export snapshot") {
+                withTestServices(minioClient) {
+                    val timestamp = Instant.parse("2025-09-26T10:30:00Z")
+                    val expectedXml = readFile("105-expected-snapshot.xml")
+                    setupBackfill()
 
-                featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
 
-                val xml = getExportedXml(timestamp, TnitsExportType.Snapshot)
-                xml shouldBe expectedXml
+                    val xml = getExportedXml(timestamp, TnitsExportType.Snapshot)
+                    xml shouldBe expectedXml
+                }
+            }
+
+            should("export update with backup and restore, with closed and removed features") {
+                val backfillTimestamp = Instant.parse("2025-09-26T10:30:00Z")
+                val updateTimestamp = backfillTimestamp.plus(1.days)
+                val expectedXml = readFile("105-expected-update.xml")
+
+                withTestServices(minioClient) {
+                    setupBackfill()
+                    featureExportCoordinator.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
+                    rocksDbBackupService.createBackup()
+                }
+
+                withTestServices(minioClient) {
+                    dbContext.setPreserveOnClose(true)
+                    rocksDbBackupService.restoreFromBackup()
+                    dbContext.setPreserveOnClose(false)
+                    coEvery { uberiketApi.getLatestVeglenkesekvensHendelseId(any()) } returns 1
+                    coEvery { uberiketApi.streamVeglenkesekvensHendelser(any()) } returns emptyFlow()
+                    coEvery { uberiketApi.getLatestVegobjektHendelseId(any(), any()) } returns 1
+                    coEvery { uberiketApi.streamVegobjektHendelser(any(), any()) } answers {
+                        val typeId = firstArg<Int>()
+                        val start = secondArg<Long?>()
+                        when (start) {
+                            1L -> {
+                                when (typeId) {
+                                    105 -> flowOf(
+                                        VegobjektNotifikasjon().apply {
+                                            hendelseId = 2
+                                            vegobjektTypeId = 105
+                                            vegobjektId = 78712521
+                                            vegobjektVersjon = 1
+                                            hendelseType = "VegobjektVersjonEndret"
+                                        },
+                                        VegobjektNotifikasjon().apply {
+                                            hendelseId = 3
+                                            vegobjektTypeId = 105
+                                            vegobjektId = 83589630
+                                            vegobjektVersjon = 1
+                                            hendelseType = "VegobjektVersjonFjernet"
+                                        },
+                                    )
+
+                                    else -> emptyFlow()
+                                }
+                            }
+
+                            else -> emptyFlow()
+                        }
+                    }
+                    // 78712521 er lukket, 83589630 er fjernet
+                    coEvery { uberiketApi.getVegobjekterPaginated(105, setOf(78712521, 83589630)) } returns flowOf(
+                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json").apply {
+                            gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
+                        },
+                    )
+                    performUpdateHandler.performUpdate()
+
+                    tnitsExportService.exportUpdate(updateTimestamp, ExportedFeatureType.SpeedLimit)
+
+                    val xml = getExportedXml(updateTimestamp, TnitsExportType.Update)
+                    xml shouldBe expectedXml
+                }
             }
         }
 
-        should("export update with backup and restore, with closed and removed vegobjekter") {
-            val backfillTimestamp = Instant.parse("2025-09-26T10:30:00Z")
-            val updateTimestamp = backfillTimestamp.plus(1.days)
-            val expectedXml = readFile("expected-update.xml")
+        context("road names") {
+            should("export snapshot") {
+                withTestServices(minioClient) {
+                    val timestamp = Instant.parse("2025-09-26T10:30:00Z")
+                    val expectedXml = readFile("538-expected-snapshot.xml")
+                    setupBackfill()
 
-            withTestServices(minioClient) {
-                setupBackfill()
-                featureExportCoordinator.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
-                rocksDbBackupService.createBackup()
-            }
+                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.RoadName)
 
-            withTestServices(minioClient) {
-                dbContext.setPreserveOnClose(true)
-                rocksDbBackupService.restoreFromBackup()
-                dbContext.setPreserveOnClose(false)
-                coEvery { uberiketApi.getLatestVeglenkesekvensHendelseId(any()) } returns 1
-                coEvery { uberiketApi.streamVeglenkesekvensHendelser(any()) } returns emptyFlow()
-                coEvery { uberiketApi.getLatestVegobjektHendelseId(any(), any()) } returns 1
-                coEvery { uberiketApi.streamVegobjektHendelser(any(), any()) } answers {
-                    val typeId = firstArg<Int>()
-                    val start = secondArg<Long?>()
-                    when (start) {
-                        1L -> {
-                            when (typeId) {
-                                105 -> flowOf(
-                                    VegobjektNotifikasjon().apply {
-                                        hendelseId = 2
-                                        vegobjektTypeId = 105
-                                        vegobjektId = 78712521
-                                        vegobjektVersjon = 1
-                                        hendelseType = "VegobjektVersjonEndret"
-                                    },
-                                    VegobjektNotifikasjon().apply {
-                                        hendelseId = 3
-                                        vegobjektTypeId = 105
-                                        vegobjektId = 83589630
-                                        vegobjektVersjon = 1
-                                        hendelseType = "VegobjektVersjonFjernet"
-                                    },
-                                )
-
-                                else -> emptyFlow()
-                            }
-                        }
-
-                        else -> emptyFlow()
-                    }
+                    val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.RoadName)
+                    xml shouldBe expectedXml
                 }
-                // 78712521 er lukket, 83589630 er fjernet
-                coEvery { uberiketApi.getVegobjekterPaginated(105, setOf(78712521, 83589630)) } returns flowOf(
-                    objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json").apply {
-                        gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
-                    },
-                )
-                performUpdateHandler.performUpdate()
-
-                tnitsExportService.exportUpdate(updateTimestamp, ExportedFeatureType.SpeedLimit)
-
-                val xml = getExportedXml(updateTimestamp, TnitsExportType.Update)
-                xml shouldBe expectedXml
             }
         }
     }
