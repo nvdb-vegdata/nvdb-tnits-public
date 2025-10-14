@@ -58,22 +58,28 @@ class OpenLrService(private val cachedVegnett: CachedVegnett) {
         val reversePaths = mutableListOf<Path<OpenLrLine>>()
 
         for (stedfesting in stedfestinger) {
-            val veglenker =
-                cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
-                    it.overlaps(stedfesting)
-                }
+            val veglenker = getOverlappingVeglenker(stedfesting)
 
-            createPaths(veglenker, stedfesting, TillattRetning.Med).let(forwardPaths::addAll)
-            createPaths(veglenker, stedfesting, TillattRetning.Mot).let(reversePaths::addAll)
+            val forwardRetning = when (stedfesting.retning) {
+                Retning.MED -> TillattRetning.Med
+                Retning.MOT -> TillattRetning.Mot
+                null -> TillattRetning.Med
+            }
+
+            createPaths(veglenker, stedfesting, forwardRetning).let(forwardPaths::addAll)
+            createPaths(veglenker, stedfesting, forwardRetning.reverse()).let(reversePaths::addAll)
         }
 
-        val retning = stedfestinger.first().retning
-
         return listOfNotNull(
-            forwardPaths.let { if (retning == Retning.MED) it else it.asReversed() }.ifEmpty { null },
-            reversePaths.let { if (retning == Retning.MED) it.asReversed() else it }.ifEmpty { null },
+            forwardPaths.ifEmpty { null },
+            reversePaths.asReversed().ifEmpty { null },
         )
     }
+
+    private fun getOverlappingVeglenker(stedfesting: StedfestingUtstrekning): List<Veglenke> =
+        cachedVegnett.getVeglenker(stedfesting.veglenkesekvensId).filter {
+            it.overlaps(stedfesting)
+        }
 
     private fun createPaths(veglenker: List<Veglenke>, stedfesting: StedfestingUtstrekning, retning: TillattRetning): List<Path<OpenLrLine>> {
         val directed =

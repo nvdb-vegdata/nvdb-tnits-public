@@ -175,6 +175,26 @@ class OpenLrServiceTest : ShouldSpec({
             binary shouldBe listOf("Cweq+ip17APxAwB7/1kDGQ==")
         }
     }
+
+    should("handle road name located across multiple veglenkesekvenser with opposite retning") {
+        withTempDb { config ->
+            // Arrange
+            val openLrService =
+                setupOpenLrService(
+                    config,
+                    "veglenkesekvenser-1786245-2605437.json",
+                )
+            val stedfestinger = loadStedfestinger("vegobjekt-538-977736797.json")
+
+            // Act
+            val openLrReferences = openLrService.toOpenLr(stedfestinger)
+            val binary = openLrReferences.map(marshaller::marshallToBase64String)
+
+            // Assert
+            openLrReferences shouldHaveSize 2
+            binary shouldBe listOf("Cwge3C1iYjvwAf/V/8E7Ag==", "CwgeyC1iRTviAQArAD87EA==")
+        }
+    }
 })
 
 private suspend fun setupOpenLrService(dbContext: RocksDbContext, vararg paths: String): OpenLrService {
@@ -186,6 +206,5 @@ private suspend fun setupOpenLrService(dbContext: RocksDbContext, vararg paths: 
 
 private fun loadStedfestinger(path: String): List<StedfestingUtstrekning> {
     val fartsgrense = objectMapper.readJson<ApiVegobjekt>(path)
-    val stedfestinger = fartsgrense.getStedfestingLinjer()
-    return stedfestinger
+    return fartsgrense.getStedfestingLinjer()
 }

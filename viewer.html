@@ -3,7 +3,7 @@
   <meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
   <meta charset="UTF-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>TN-ITS Speed Limit Map Viewer</title>
+  <title>TN-ITS Map Viewer</title>
   <!-- Leaflet CSS -->
   <link
     crossorigin=""
@@ -48,9 +48,9 @@
 </head>
 <body>
 <div class="content">
-  <header>TN-ITS Speed Limit Map Viewer</header>
+  <header>TN-ITS Map Viewer</header>
   <p>
-    Select a TN-ITS XML file (speed limits) to visualize the road segments on
+    Select a TN-ITS XML file to visualize the road segments on
     a map.
   </p>
   <input accept=".xml" id="fileInput" type="file"/>
@@ -288,7 +288,7 @@
       const group = L.featureGroup(polylines).addTo(map)
       map.fitBounds(group.getBounds())
     } else {
-      alert('No speed limit geometry found in the XML file.')
+      alert('No geometry found in the XML file.')
     }
   }
 </script>

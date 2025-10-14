@@ -1,0 +1,124 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 1786245,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 1448612,
+          "nodePortNummer": 2,
+          "posisjon": 0.0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 1786257,
+          "nodePortNummer": 1,
+          "posisjon": 1.0
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "2009-06-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 2,
+          "kommune": 5038,
+          "geometri": {
+            "wkt": "LINESTRING Z(323825.33 7082085.6 20.536, 323827.5 7082082.85 20.766, 323827.56 7082082.09 20.926, 323826.69 7082078.99 21.076, 323823.02 7082068.72 21.766, 323819.56 7082058.91 22.926)",
+            "srid": 5973,
+            "lengde": 28.9074521175269,
+            "datafangstdato": "2014-05-05",
+            "temakode": 7001,
+            "kommune": 5038,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": 24,
+              "noyaktighet": 32,
+              "noyaktighetHoyde": 12,
+              "synbarhet": 0,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot",
+              "datafangstmetodeHoyde": "fot"
+            }
+          },
+          "lengde": 28.9074521175269,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 32.803006522915,
+      "sistEndret": "2025-05-02T13:18:27.871042Z"
+    },
+    {
+      "id": 2605437,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 2605385,
+          "nodePortNummer": 2,
+          "posisjon": 0.0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 1786257,
+          "nodePortNummer": 3,
+          "posisjon": 1.0
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "2016-03-08"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 2,
+          "kommune": 5038,
+          "geometri": {
+            "wkt": "LINESTRING Z(323800.26 7082016.85 28.277, 323803.95 7082022.21 27.657, 323807.78 7082029.5 26.737, 323811.42 7082038.66 25.197, 323815.77 7082049.95 23.816, 323819.56 7082058.91 22.926)",
+            "srid": 5973,
+            "lengde": 46.7459415891507,
+            "datafangstdato": "2014-05-05",
+            "temakode": 7001,
+            "kommune": 5038,
+            "kvalitet": {
+              "malemetode": 20,
+              "malemetodeHoyde": 24,
+              "noyaktighet": 32,
+              "noyaktighetHoyde": 12,
+              "synbarhet": 0,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot",
+              "datafangstmetodeHoyde": "fot"
+            }
+          },
+          "lengde": 46.7459415891507,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 46.7459415891507,
+      "sistEndret": "2025-05-02T13:25:03.834244Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 2,
+    "sidestorrelse": 500
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": 977736797,
+  "versjon": 1,
+  "typeId": 538,
+  "gyldighetsperiode": {
+    "startdato": "2019-01-04"
+  },
+  "egenskaper": {
+    "4588": {
+      "type": "HeltallEgenskap",
+      "verdi": 4970
+    },
+    "4589": {
+      "type": "TekstEgenskap",
+      "verdi": "Åsvegen"
+    },
+    "12622": {
+      "type": "TekstEgenskap",
+      "verdi": "5038"
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 1786245,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      },
+      {
+        "id": 2605437,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MOT"
+      }
+    ]
+  },
+  "sistEndret": "2025-10-14T14:41:01.366031Z"
+}
