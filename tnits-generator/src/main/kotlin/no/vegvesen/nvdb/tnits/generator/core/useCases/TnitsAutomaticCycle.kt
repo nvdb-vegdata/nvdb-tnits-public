@@ -27,32 +27,40 @@ class TnitsAutomaticCycle(
     private val tnitsExportService: TnitsExportService,
 ) : WithLogger {
 
+    data class UpdateStatus(
+        val pendingSnapshot: Boolean,
+        val pendingUpdate: Boolean,
+    )
+
     suspend fun execute() {
         rocksDbBackupService.restoreIfNeeded()
-        val lastSnapshot = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
-        val lastUpdate = timestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit)
 
-        // TODO: Make configurable somehow?
-        val hasSnapshotBeenTakenThisMonth = lastSnapshot?.let {
-            val snapshotDate = it.toLocalDateTime(OsloZone).date
-            today.year == snapshotDate.year && today.month == snapshotDate.month
-        } ?: false
+        val updateStatusByType = ExportedFeatureType.entries.associateWith { exportedFeatureType ->
+            val lastSnapshot = timestampService.getLastSnapshotTimestamp(exportedFeatureType)
+            val lastUpdate = timestampService.getLastUpdateTimestamp(exportedFeatureType)
 
-        val hasUpdateBeenTakenToday = lastUpdate?.let {
-            val updateDate = it.toLocalDateTime(OsloZone).date
-            today == updateDate
-        } ?: false
+            val hasSnapshotBeenTakenThisMonth = lastSnapshot?.let {
+                val snapshotDate = it.toLocalDateTime(OsloZone).date
+                today.year == snapshotDate.year && today.month == snapshotDate.month
+            } ?: false
 
-        val hasUpdateBeenCheckedToday = keyValueStore.getLastUpdateCheck(ExportedFeatureType.SpeedLimit)?.let {
-            val updateCheckDate = it.toLocalDateTime(OsloZone).date
-            today == updateCheckDate
-        } ?: false
+            val hasUpdateBeenTakenToday = lastUpdate?.let {
+                val updateDate = it.toLocalDateTime(OsloZone).date
+                today == updateDate
+            } ?: false
 
-        val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
-        val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
+            val hasUpdateBeenCheckedToday = keyValueStore.getLastUpdateCheck(exportedFeatureType)?.let {
+                val updateCheckDate = it.toLocalDateTime(OsloZone).date
+                today == updateCheckDate
+            } ?: false
 
-        if (shouldPerformSnapshot || shouldPerformUpdate) {
-            log.info("Starting automatic TN-ITS process. shouldPerformSnapshot=$shouldPerformSnapshot, shouldPerformUpdate=$shouldPerformUpdate")
+            val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
+            val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
+            UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate)
+        }
+
+        if (updateStatusByType.values.any { it.pendingSnapshot || it.pendingUpdate }) {
+            log.info("Starting automatic TN-ITS process. Update status by type: $updateStatusByType")
             val backfillCount = nvdbBackfillOrchestrator.performBackfill()
             val updateCount = nvdbUpdateOrchestrator.performUpdate()
             val timestamp = Clock.System.now()
@@ -62,18 +70,21 @@ class TnitsAutomaticCycle(
             }
             cachedVegnett.initialize()
             // Run update before snapshot, because snapshot will update hashes (thus causing us to miss updates if we did snapshot first)
-            if (shouldPerformUpdate) {
-                tnitsExportService.exportUpdate(timestamp, ExportedFeatureType.SpeedLimit)
+            for ((exportedFeatureType, updateStatus) in updateStatusByType) {
+                if (updateStatus.pendingUpdate) {
+                    tnitsExportService.exportUpdate(timestamp, exportedFeatureType)
+                }
+                if (updateStatus.pendingSnapshot) {
+                    tnitsExportService.exportSnapshot(timestamp, exportedFeatureType)
+                }
             }
-            if (shouldPerformSnapshot) {
-                tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
-            }
+
             // Second backup after cache and export (updated hashes etc.)
             rocksDbBackupService.createBackup()
             log.info("Automatic TN-ITS process finished")
         } else {
             log.info(
-                "Skipping automatic TN-ITS process, already performed today or this month. hasSnapshotBeenTakenThisMonth=${true}, hasUpdateBeenTakenToday=$hasUpdateBeenTakenToday, hasUpdateBeenCheckedToday=$hasUpdateBeenCheckedToday",
+                "Skipping automatic TN-ITS process, already performed today or this month",
             )
         }
     }
