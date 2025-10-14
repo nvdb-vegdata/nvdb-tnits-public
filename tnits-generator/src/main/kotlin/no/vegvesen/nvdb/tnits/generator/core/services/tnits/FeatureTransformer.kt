@@ -200,7 +200,7 @@ class FeatureTransformer(
             try {
                 processVegobjektToFeature(vegobjekt, getFeatureProperties, UpdateType.Snapshot)
             } catch (e: Exception) {
-                log.error("Warning: Error processing ${featureType.typeCode} ${vegobjekt.id}", e)
+                log.warn("Error processing ${featureType.typeCode} ${vegobjekt.id}", e)
                 null // Skip this item but continue processing others
             }
         }

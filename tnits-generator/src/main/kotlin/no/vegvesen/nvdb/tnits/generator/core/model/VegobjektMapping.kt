@@ -59,7 +59,7 @@ fun List<ApiVegobjekt>.toDomainVegobjekter(validFromById: Map<Long, LocalDate> =
     try {
         apiVegobjekt.toDomain(validFromById[apiVegobjekt.id])
     } catch (e: Throwable) {
-        logger.log.error("Feil ved mapping av vegobjekt med type ${apiVegobjekt.typeId} og id ${apiVegobjekt.id}: ${e.message}", e)
+        logger.log.warn("Feil ved mapping av vegobjekt med type ${apiVegobjekt.typeId} og id ${apiVegobjekt.id}: ${e.message}", e)
         null
     }
 }
