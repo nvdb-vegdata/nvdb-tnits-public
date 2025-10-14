@@ -57,7 +57,7 @@ You can access the MinIO console to view uploaded files and manage buckets.
 java -version
 ```
 
-Should show Java 21 or higher.
+Should show Java 25 or higher.
 
 ## First Run
 
@@ -136,11 +136,11 @@ The katalog service provides HTTP access to exported files:
 ./gradlew tnits-katalog:bootRun
 ```
 
-Access the API at http://localhost:8080:
+Access the API at http://localhost:8999:
 
-- `GET /api/snapshots/{typeId}` - List available snapshots
-- `GET /api/updates/{typeId}` - List available updates
-- `GET /api/file/{typeId}/{timestamp}/{filename}` - Download a specific file
+- `GET /api/v1/snapshots/{typeId}/latest` - List latest snapshot
+- `GET /api/v1/updates/{typeId}?from=<timestamp>` - List available updates since a given time
+- `GET /api/v1/download?path={file}` - Download a specific file
 
 ## Common Development Tasks
 

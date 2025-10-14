@@ -34,6 +34,11 @@ tasks.withType<KotlinCompile> {
         freeCompilerArgs.add("-Xcontext-parameters")
         freeCompilerArgs.add("-Xjsr305=strict")
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        optIn.addAll(
+            "kotlin.time.ExperimentalTime",
+            "kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "kotlinx.serialization.ExperimentalSerializationApi",
+        )
     }
 }
 

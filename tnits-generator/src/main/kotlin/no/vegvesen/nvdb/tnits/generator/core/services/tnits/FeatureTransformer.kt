@@ -105,6 +105,7 @@ class FeatureTransformer(
 
     fun getPropertyMapper(type: ExportedFeatureType): VegobjektPropertyMapper = when (type) {
         ExportedFeatureType.SpeedLimit -> VegobjektPropertyMapper(::getSpeedLimitProperties)
+        ExportedFeatureType.RoadName -> VegobjektPropertyMapper(::getRoadNameProperties)
     }
 
     private fun getSpeedLimitProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
@@ -112,6 +113,13 @@ class FeatureTransformer(
         val kmh = kmhByEgenskapVerdi[kmhEnum.verdi] ?: error("Ukjent verdi for fartsgrense: ${kmhEnum.verdi}")
         return mapOf(
             RoadFeaturePropertyType.MaximumSpeedLimit to IntProperty(kmh),
+        )
+    }
+
+    private fun getRoadNameProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
+        val nameEgenskap = vegobjekt.egenskaper[EgenskapsTyper.ADRESSENAVN] as? TekstVerdi ?: return emptyMap()
+        return mapOf(
+            RoadFeaturePropertyType.RoadName to StringProperty(nameEgenskap.verdi),
         )
     }
 
@@ -195,14 +203,17 @@ class FeatureTransformer(
     }
 
     private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper, updateType: UpdateType): TnitsFeature? {
-        // Early validation - extract properties and validate before expensive operations
+        // Early return for invalid vegobjekter to avoid expensive operations
         val properties = propertyMapper.getFeatureProperties(vegobjekt)
         val type = ExportedFeatureType.from(vegobjekt.type)
 
-        // Validate business rules first (equivalent to old isValid() check)
         val isValid = when (type) {
             ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit) &&
                 vegobjekt.stedfestinger.isNotEmpty()
+
+            ExportedFeatureType.RoadName -> properties[RoadFeaturePropertyType.RoadName].let {
+                it is StringProperty && it.value.isNotBlank()
+            } && vegobjekt.stedfestinger.isNotEmpty()
         }
 
         if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {

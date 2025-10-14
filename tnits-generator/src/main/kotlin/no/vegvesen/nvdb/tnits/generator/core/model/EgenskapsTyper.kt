@@ -5,6 +5,8 @@ object EgenskapsTyper {
     const val VEGKLASSE = 9338
     const val FELTOVERSIKT_I_VEGLENKERETNING = 5528
 
+    const val ADRESSENAVN = 4589
+
     val hardcodedFartsgrenseTillatteVerdier = mapOf(
         19885 to 5,
         11576 to 20,

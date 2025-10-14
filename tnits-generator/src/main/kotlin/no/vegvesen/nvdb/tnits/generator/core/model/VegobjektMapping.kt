@@ -6,6 +6,7 @@ import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import kotlin.time.toKotlinInstant
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
@@ -20,6 +21,7 @@ private val relevanteEgenskaperPerType: Map<Int, Set<Int>> = mapOf(
     VegobjektTyper.FARTSGRENSE to setOf(EgenskapsTyper.FARTSGRENSE),
     VegobjektTyper.FUNKSJONELL_VEGKLASSE to setOf(EgenskapsTyper.VEGKLASSE),
     VegobjektTyper.FELTSTREKNING to setOf(EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING),
+    VegobjektTyper.ADRESSE to setOf(EgenskapsTyper.ADRESSENAVN),
 )
 
 /**
@@ -48,11 +50,18 @@ fun ApiVegobjekt.toDomain(overrideValidFrom: LocalDate? = null): Vegobjekt {
     )
 }
 
+val logger = object : WithLogger {}
+
 /**
  * Converts a collection of API vegobjekter to domain vegobjekter with optional valid-from overrides.
  */
-fun List<ApiVegobjekt>.toDomainVegobjekter(validFromById: Map<Long, LocalDate> = emptyMap()): List<Vegobjekt> = map { apiVegobjekt ->
-    apiVegobjekt.toDomain(validFromById[apiVegobjekt.id])
+fun List<ApiVegobjekt>.toDomainVegobjekter(validFromById: Map<Long, LocalDate> = emptyMap()): List<Vegobjekt> = mapNotNull { apiVegobjekt ->
+    try {
+        apiVegobjekt.toDomain(validFromById[apiVegobjekt.id])
+    } catch (e: Throwable) {
+        logger.log.error("Feil ved mapping av vegobjekt med type ${apiVegobjekt.typeId} og id ${apiVegobjekt.id}: ${e.message}", e)
+        null
+    }
 }
 
 fun ApiVegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val stedfesting = this.stedfesting) {

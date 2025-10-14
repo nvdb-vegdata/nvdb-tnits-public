@@ -22,7 +22,7 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
-fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readApiVegobjekt(path).toDomain()
+fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readApiVegobjekt(path).toDomain()!!
 
 fun ObjectMapper.readApiVegobjekt(path: String): ApiVegobjekt = readJson<ApiVegobjekt>(path)
 
@@ -54,7 +54,7 @@ fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedV
 
     val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
     for (vegobjekt in vegobjekter) {
-        vegobjekterStore.insert(vegobjekt.toDomain())
+        vegobjekterStore.insert(vegobjekt.toDomain()!!)
     }
 
     return CachedVegnett(veglenkerStore, vegobjekterStore)

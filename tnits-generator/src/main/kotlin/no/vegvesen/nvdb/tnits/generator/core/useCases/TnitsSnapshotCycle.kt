@@ -27,7 +27,9 @@ class TnitsSnapshotCycle(
             rocksDbBackupService.createBackup()
         }
         cachedVegnett.initialize()
-        tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+        for (featureType in ExportedFeatureType.entries) {
+            tnitsExportService.exportSnapshot(timestamp, featureType)
+        }
         // Second backup after cache and export (updated hashes etc.)
         rocksDbBackupService.createBackup()
     }

@@ -138,7 +138,7 @@ class VegobjektLoader(
     private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Set<Long>, fetchOriginalStartDate: Boolean): Map<Long, Vegobjekt> =
         uberiketApi.getVegobjekterPaginated(typeId, ids, setOf(InkluderIVegobjekt.ALLE)).toList()
             .groupBy { it.id }
-            .mapValues { (_, versjoner) ->
+            .mapNotNull { (id, versjoner) ->
                 val latest = versjoner.maxBy { it.versjon }
                 val originalStartDate = if (fetchOriginalStartDate) {
                     val first = versjoner.minBy { it.versjon }
@@ -151,8 +151,8 @@ class VegobjektLoader(
                     null
                 }
 
-                latest.toDomain(originalStartDate)
-            }
+                latest.toDomain(originalStartDate)?.let { id to it }
+            }.toMap()
 
     private suspend fun getLastHendelseId(typeId: Int): Long =
         keyValueStore.getValue<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(

@@ -37,3 +37,7 @@ sealed interface RoadFeatureProperty
 @Serializable
 @SerialName("IntProperty")
 data class IntProperty(val value: Int) : RoadFeatureProperty
+
+@Serializable
+@SerialName("StringProperty")
+data class StringProperty(val value: String) : RoadFeatureProperty
