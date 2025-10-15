@@ -65,7 +65,7 @@ object TnitsXmlWriter : WithLogger {
             else -> sideposisjon.name
         }
         val kjorefelt = kjorefelt.joinToString("#").ifEmpty { "-" }
-        return "$startposisjon-$sluttposisjon@$veglenkesekvensId:$retning:$sideposisjon:$kjorefelt"
+        return "${startposisjon.toFormattedString(8)}-${sluttposisjon.toFormattedString(8)}@$veglenkesekvensId:$retning:$sideposisjon:$kjorefelt"
     }
 
     private fun XmlStreamDsl.writeFeatureProperty(property: RoadFeatureProperty) {

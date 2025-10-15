@@ -1,5 +1,7 @@
 package no.vegvesen.nvdb.tnits.generator.core.extensions
 
+import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.math.floor
 import kotlin.math.pow
 
@@ -9,3 +11,6 @@ fun Double.toRounded(decimals: Int): Double {
     val shifted = this * pow
     return floor(shifted + 0.5) / pow
 }
+
+/** Formats a Double as a string with the specified number of decimals, avoiding scientific notation */
+fun Double.toFormattedString(decimals: Int): String = BigDecimal(this).setScale(decimals, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
