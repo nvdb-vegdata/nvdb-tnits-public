@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.katalog.config
 
+import io.swagger.v3.oas.annotations.ExternalDocumentation
 import io.swagger.v3.oas.annotations.OpenAPIDefinition
 import io.swagger.v3.oas.annotations.info.Contact
 import io.swagger.v3.oas.annotations.info.Info
@@ -12,7 +13,11 @@ import org.springframework.context.annotation.Configuration
     info = Info(
         title = "NVDB TN-ITS & INSPIRE Export API",
         version = "v1",
-        description = "This API provides access to TN-ITS and INSPIRE data exports from the Norwegian National Road Database (NVDB).",
+        description = """
+This API provides access to TN-ITS and INSPIRE data exports from the Norwegian National Road Database (NVDB).
+
+For a web-based viewer to explore the exported TN-ITS data, visit the [TN-ITS Export Viewer](https://nvdb-vegdata.github.io/nvdb-tnits-public/).
+        """,
         contact = Contact(
             name = "Nasjonal vegdatabank (NVDB)",
             url = "https://nvdb.atlas.vegvesen.no/",
@@ -24,5 +29,9 @@ import org.springframework.context.annotation.Configuration
         ),
     ),
     servers = [Server(url = "/", description = "Default Server URL")],
+    externalDocs = ExternalDocumentation(
+        description = "TN-ITS Export Viewer",
+        url = "https://nvdb-vegdata.github.io/nvdb-tnits-public/",
+    ),
 )
 class OpenApiConfiguration

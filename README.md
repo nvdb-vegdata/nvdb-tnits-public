@@ -26,6 +26,26 @@ Detailed documentation can be found in [docs](docs):
 - Run `./gradlew tnits-generator:run` to start the generator. It will automatically perform backfill and generate a snapshot.
 - Run `./gradlew tnits-katalog:bootRun` to start a simple catalog service that serves files from MinIO.
 
+## TN-ITS Export Viewer
+
+The `viewer.html` file provides a web-based viewer for exploring the exported TN-ITS data. When changes to `viewer.html` are pushed to the main branch on GitHub, a GitHub workflow automatically deploys it to GitHub Pages as `index.html`.
+
+View the live viewer at: https://nvdb-vegdata.github.io/nvdb-tnits-public/
+
+**Note:** The viewer must be pushed to GitHub (not the default SVV Bitbucket) to trigger the deployment workflow.
+
+Add GitHub as a remote:
+
+```bash
+git remote add github git@github.com:nvdb-vegdata/nvdb-tnits-public.git
+```
+
+Push the main branch to GitHub:
+
+```bash
+git push github main
+```
+
 ## SVV Atlas configuration
 
 Deployment details for SVV Atlas hosting are found in a [separate, private repo](https://git.vegvesen.no/projects/NVDBDATA/repos/nvdb-tnits-atlas).
