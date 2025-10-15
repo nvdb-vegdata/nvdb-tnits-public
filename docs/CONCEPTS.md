@@ -39,12 +39,12 @@ This document defines key concepts and terminology used in the nvdb-tnits projec
 
 ```kotlin
 Veglenke(
-  id = 1234567,
-  veglenkesekvensId = 41423,
-  startposisjon = 0.2,
-  sluttposisjon = 0.4,
-  lengde = 500.0,  // meters
-  geometri = LineString()
+    id = 1234567,
+    veglenkesekvensId = 41423,
+    startposisjon = 0.2,
+    sluttposisjon = 0.4,
+    lengde = 500.0,  // meters
+    geometri = LineString()
 )
 ```
 
@@ -72,12 +72,12 @@ Veglenke(
 
 ```kotlin
 Vegobjekt(
-  id = 85283590,
-  type = VegobjektType(id = 105, navn = "Fartsgrense"),
-  egenskaper = [
-    Egenskap(id = 2021, verdi = 80)  // Speed: 80 km/h
-  ],
-  stedfesting = Stedfesting()
+    id = 85283590,
+    type = VegobjektType(id = 105, navn = "Fartsgrense"),
+    egenskaper = [
+        Egenskap(id = 2021, verdi = 80)  // Speed: 80 km/h
+    ],
+    stedfesting = Stedfesting()
 )
 ```
 
@@ -93,14 +93,14 @@ See: `core/model/Vegobjekt.kt`, `tnits-common/.../VegobjektTyper.kt`
 
 ```kotlin
 Stedfesting(
-  linjer = [
-    Linje(
-      id = 41423,                    // Veglenkesekvens ID
-      startposisjon = 0.25,          // Start position (0.0-1.0)
-      sluttposisjon = 0.75,          // End position (0.0-1.0)
-      retning = Retning.MED          // Direction
-    )
-  ]
+    linjer = [
+        Linje(
+            id = 41423,                    // Veglenkesekvens ID
+            startposisjon = 0.25,          // Start position (0.0-1.0)
+            sluttposisjon = 0.75,          // End position (0.0-1.0)
+            retning = Retning.MED          // Direction
+        )
+    ]
 )
 ```
 
@@ -133,9 +133,9 @@ Stedfesting(
 
 ```kotlin
 Egenskap(
-  id = 2021,              // Property type: "Fartsgrense"
-  verdi = 80,             // Value: 80 km/h
-  datatype = "INTEGER"
+    id = 2021,              // Property type: "Fartsgrense"
+    verdi = 80,             // Value: 80 km/h
+    datatype = "INTEGER"
 )
 ```
 
@@ -200,8 +200,8 @@ See: `tnits-common/.../VegobjektTyper.kt` and `core/model/EgenskapsTyper.kt`
 
 **Values:**
 
-- **Baseline:** Complete dataset (snapshot)
-- **Modify:** Object created or updated
+- **Add:** Object created
+- **Modify:** Object updated
 - **Remove:** Object deleted or no longer applicable
 
 **Usage in exports:**
@@ -457,14 +457,14 @@ See: `core/extensions/GeometryHelpers.kt`
 
 ```kotlin
 fun EnumVerdi.toFrc() = when (verdi) {
-  13060 -> FRC_0
-  13061 -> FRC_1
-  13062 -> FRC_2
-  13063 -> FRC_3
-  13064 -> FRC_4
-  13065 -> FRC_5
-  13066 -> FRC_6
-  else -> FRC_7
+    13060 -> FRC_0
+    13061 -> FRC_1
+    13062 -> FRC_2
+    13063 -> FRC_3
+    13064 -> FRC_4
+    13065 -> FRC_5
+    13066 -> FRC_6
+    else -> FRC_7
 }
 ```
 
@@ -563,10 +563,10 @@ See: `infrastructure/rocksdb/DirtyCheckingRocksDbStore.kt`
 ```kotlin
 @Serializable
 data class Veglenke(
-  val id: Long,
-  val lengde: Double,
-  @Serializable(with = JtsGeometrySerializer::class)
-  val geometri: Geometry
+    val id: Long,
+    val lengde: Double,
+    @Serializable(with = JtsGeometrySerializer::class)
+    val geometri: Geometry
 )
 
 // Serialize
@@ -588,9 +588,9 @@ See: [Storage Architecture](STORAGE.md)
 
 ```kotlin
 rocksDbContext.writeBatch {
-  veglenkerStore.batchUpdate(updates)
-  dirtyCheckingStore.markDirty(ids)
-  keyValueStore.setLastProcessedId(lastId)
+    veglenkerStore.batchUpdate(updates)
+    dirtyCheckingStore.markDirty(ids)
+    keyValueStore.setLastProcessedId(lastId)
 }
 // All operations succeed or all fail
 ```
@@ -700,10 +700,10 @@ See: `core/presentation/XmlStreamDsl.kt`
 ```kotlin
 var start = 0
 while (true) {
-  val batch = api.fetch(start = start, limit = 1000)
-  if (batch.isEmpty()) break
-  process(batch)
-  start = batch.last().id
+    val batch = api.fetch(start = start, limit = 1000)
+    if (batch.isEmpty()) break
+    process(batch)
+    start = batch.last().id
 }
 ```
 
@@ -723,15 +723,15 @@ while (true) {
 
 ```kotlin
 interface VeglenkerRepository {
-  fun get(veglenkesekvensId: Long): List<Veglenke>?
-  fun upsert(veglenkesekvensId: Long, veglenker: List<Veglenke>)
-  fun batchGet(ids: Collection<Long>): Map<Long, List<Veglenke>>
+    fun get(veglenkesekvensId: Long): List<Veglenke>?
+    fun upsert(veglenkesekvensId: Long, veglenker: List<Veglenke>)
+    fun batchGet(ids: Collection<Long>): Map<Long, List<Veglenke>>
 }
 
 class VeglenkerRocksDbStore(
-  private val rocksDbContext: RocksDbContext
+    private val rocksDbContext: RocksDbContext
 ) : VeglenkerRepository {
-  // Implementation using RocksDB
+    // Implementation using RocksDB
 }
 ```
 
@@ -779,7 +779,8 @@ class PerformSmartTnitsExport(
     private val rocksDbBackupService: RocksDbS3BackupService,
     // Dependencies automatically resolved by Koin
 ) {
-    suspend fun execute() { /* ... */ }
+    suspend fun execute() { /* ... */
+    }
 }
 ```
 

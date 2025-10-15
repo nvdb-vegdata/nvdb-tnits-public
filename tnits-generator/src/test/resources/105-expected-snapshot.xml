@@ -2,7 +2,7 @@
 <RoadFeatureDataset xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://spec.tn-its.eu/schemas/" xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
 	<metadata>
 		<Metadata>
-			<datasetId>NVDB-TNITS-SpeedLimit_Snapshot_2025-09-26T10:30:00Z</datasetId>
+			<datasetId>NVDB-TNITS-105-SpeedLimit_Snapshot_2025-09-26T10:30:00Z</datasetId>
 			<datasetCreationTime>2025-09-26T10:30:00Z</datasetCreationTime>
 		</Metadata>
 	</metadata>
@@ -66,7 +66,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@365652:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@365652:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -120,7 +120,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@430468:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@430468:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -174,7 +174,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@430467:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@430467:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -228,7 +228,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@430466:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@430466:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -282,12 +282,12 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@41658:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@41658:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@2553792:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2553792:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -370,7 +370,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-0.4010989@41423:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-0.4010989@41423:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 			<locationReference>
@@ -419,7 +419,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@2518522:MOT:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2518522:MOT:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 			<locationReference>
@@ -429,7 +429,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@2518519:MOT:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2518519:MOT:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>

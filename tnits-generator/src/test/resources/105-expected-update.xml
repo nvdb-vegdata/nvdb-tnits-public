@@ -2,7 +2,7 @@
 <RoadFeatureDataset xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://spec.tn-its.eu/schemas/" xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
 	<metadata>
 		<Metadata>
-			<datasetId>NVDB-TNITS-SpeedLimit_Update_2025-09-27T10:30:00Z</datasetId>
+			<datasetId>NVDB-TNITS-105-SpeedLimit_Update_2025-09-27T10:30:00Z</datasetId>
 			<datasetCreationTime>2025-09-27T10:30:00Z</datasetCreationTime>
 		</Metadata>
 	</metadata>
@@ -73,7 +73,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@365652:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@365652:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>
@@ -134,7 +134,7 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@430468:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@430468:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>

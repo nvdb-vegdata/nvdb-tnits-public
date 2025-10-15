@@ -27,12 +27,31 @@
     .content {
       padding: 1rem;
       flex-shrink: 0;
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .left-section {
+      flex: 0 0 auto;
+    }
+
+    .metadata-section {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #555;
+      line-height: 1.6;
     }
 
     header {
       font-size: 1.2rem;
       font-weight: bold;
       margin-bottom: 0.5rem;
+    }
+
+    .metadata-label {
+      font-weight: bold;
+      color: #333;
     }
 
     input[type='file'] {
@@ -48,16 +67,60 @@
     .popup-reference {
       white-space: nowrap;
     }
+
+    .openlr-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+
+    .openlr-text {
+      font-family: monospace;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .icon-button {
+      cursor: pointer;
+      padding: 2px 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: #f5f5f5;
+      font-size: 14px;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .icon-button:hover {
+      background: #e0e0e0;
+    }
+
+    .icon-button:active {
+      background: #d0d0d0;
+    }
+
+    .copy-feedback {
+      color: #4CAF50;
+      font-size: 12px;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
 <div class="content">
-  <header>TN-ITS Map Viewer</header>
-  <p>
-    Select a TN-ITS XML file to visualize the road segments on
-    a map.
-  </p>
-  <input accept=".xml" id="fileInput" type="file"/>
+  <div class="left-section">
+    <header>TN-ITS Map Viewer</header>
+    <p>
+      Select a TN-ITS XML file to visualize the road segments on
+      a map.
+    </p>
+    <input accept=".xml" id="fileInput" type="file"/>
+  </div>
+  <div class="metadata-section" id="metadata">
+    <em>No file loaded</em>
+  </div>
 </div>
 <div id="map"></div>
 
@@ -93,6 +156,29 @@
       reader.readAsText(file)
     })
 
+  // Copy text to clipboard with visual feedback
+  function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId)
+    if (!element) return
+
+    const text = element.textContent
+    navigator.clipboard.writeText(text).then(() => {
+      // Create temporary feedback message
+      const feedback = document.createElement('span')
+      feedback.className = 'copy-feedback'
+      feedback.textContent = '✓ Copied!'
+      element.parentElement.appendChild(feedback)
+
+      // Remove feedback after 2 seconds
+      setTimeout(() => {
+        feedback.remove()
+      }, 2000)
+    }).catch(err => {
+      console.error('Failed to copy text: ', err)
+      alert('Failed to copy to clipboard')
+    })
+  }
+
   // Parse the XML string and draw polylines on the map
   function parseAndDisplay(xmlText) {
     // Clear existing layers (except the tile layer)
@@ -106,6 +192,37 @@
     const gmlNS = 'http://www.opengis.net/gml/3.2'
     const tnitsNS = 'http://spec.tn-its.eu/schemas/'
     const xlinkNS = 'http://www.w3.org/1999/xlink'
+
+    // Extract metadata from document
+    let nvdbType = null
+    let datasetId = null
+    let datasetCreationTime = null
+    let exportType = null
+
+    const datasetIdElems = xmlDoc.getElementsByTagNameNS(tnitsNS, 'datasetId')
+    if (datasetIdElems.length > 0) {
+      datasetId = datasetIdElems[0].textContent.trim()
+      // Format: NVDB-TNITS-105-SpeedLimit_Snapshot_2025-09-26T10:30:00Z
+      const match = datasetId.match(/NVDB-TNITS-(\d+)-/)
+      if (match) {
+        nvdbType = match[1]
+      }
+    }
+
+    const creationTimeElems = xmlDoc.getElementsByTagNameNS(tnitsNS, 'datasetCreationTime')
+    if (creationTimeElems.length > 0) {
+      datasetCreationTime = creationTimeElems[0].textContent.trim()
+    }
+
+    const typeElems = xmlDoc.getElementsByTagNameNS(tnitsNS, 'type')
+    if (typeElems.length > 0) {
+      // The first 'type' element at document level is the export type
+      const firstType = typeElems[0]
+      if (firstType.parentNode.nodeName.includes('RoadFeatureDataset')) {
+        exportType = firstType.textContent.trim()
+      }
+    }
+
     // Get all RoadFeature elements within the dataset
     const roadFeatures = xmlDoc.getElementsByTagNameNS(
       tnitsNS,
@@ -229,15 +346,26 @@
 
       // Build popup content once for this road feature
       let popupContent = ''
+      if (nvdbType !== null) {
+        popupContent += '<b>NVDB Type:</b> ' + nvdbType
+      }
       if (featureType !== null) {
+        if (popupContent !== '') popupContent += '<br>'
         popupContent += '<b>Feature type:</b> ' + featureType
       }
       if (vegobjektId !== null) {
         if (popupContent !== '') popupContent += '<br>'
         popupContent += '<b>Vegobjekt ID:</b> ' + vegobjektId
+        popupContent += '<br>'
+        if (nvdbType !== null) {
+          popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/' + nvdbType + '/' + vegobjektId + '" target="_blank">Uberiket API</a> | '
+        } else {
+          popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekt/' + vegobjektId + '" target="_blank">Uberiket API</a> | '
+        }
+        popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/vegobjekt?id=' + vegobjektId + '" target="_blank">Vegobjekter API Les</a>'
       }
       if (properties.length > 0) {
-        if (popupContent !== '') popupContent += '<br>'
+        if (popupContent !== '') popupContent += '<br><br>'
         popupContent += '<b>Properties:</b><br>'
         properties.forEach((prop) => {
           popupContent += '&nbsp;&nbsp;<b>' + prop.type + ':</b> ' + prop.value + '<br>'
@@ -258,14 +386,20 @@
         popupContent += '<b>Update type:</b> ' + updateType
       }
       if (openLRReferences.length > 0) {
-        if (popupContent !== '') popupContent += '<br>'
+        if (popupContent !== '') popupContent += '<br><br>'
         popupContent += '<b>OpenLR references:</b><br>'
         openLRReferences.forEach((ref, idx) => {
-          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. <span class="popup-reference">' + ref + '</span><br>'
+          const refId = 'openlr-' + i + '-' + idx
+          popupContent += '<div class="openlr-container">'
+          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. '
+          popupContent += '<span class="openlr-text" id="' + refId + '">' + ref + '</span>'
+          popupContent += '<button class="icon-button" onclick="copyToClipboard(\'' + refId + '\')" title="Copy to clipboard">Copy</button>'
+          popupContent += '</div>'
         })
+        popupContent += '<div style="margin-top: 8px; margin-left: 16px;"><a href="https://demo.tomtom.com" target="_blank">Verify on TomTom</a></div>'
       }
       if (nvdbReferences.length > 0) {
-        if (popupContent !== '') popupContent += '<br>'
+        if (popupContent !== '') popupContent += '<br><br>'
         popupContent += '<b>NVDB references:</b><br>'
         nvdbReferences.forEach((ref, idx) => {
           popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. <span class="popup-reference">' + ref + '</span><br>'
@@ -311,6 +445,24 @@
     } else {
       alert('No geometry found in the XML file.')
     }
+
+    // Update metadata display in header
+    const metadataDiv = document.getElementById('metadata')
+    let metadataHtml = ''
+    if (nvdbType !== null) {
+      metadataHtml += '<div><span class="metadata-label">NVDB Type:</span> ' + nvdbType + '</div>'
+    }
+    if (exportType !== null) {
+      metadataHtml += '<div><span class="metadata-label">Export Type:</span> ' + exportType + '</div>'
+    }
+    if (datasetCreationTime !== null) {
+      metadataHtml += '<div><span class="metadata-label">Created:</span> ' + datasetCreationTime + '</div>'
+    }
+    metadataHtml += '<div><span class="metadata-label">Features:</span> ' + roadFeatures.length + '</div>'
+    if (datasetId !== null) {
+      metadataHtml += '<div><span class="metadata-label">Dataset ID:</span> ' + datasetId + '</div>'
+    }
+    metadataDiv.innerHTML = metadataHtml
   }
 </script>
 </body>

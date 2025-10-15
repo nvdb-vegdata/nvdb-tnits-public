@@ -2,7 +2,7 @@
 <RoadFeatureDataset xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://spec.tn-its.eu/schemas/" xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
 	<metadata>
 		<Metadata>
-			<datasetId>NVDB-TNITS-RoadName_Snapshot_2025-09-26T10:30:00Z</datasetId>
+			<datasetId>NVDB-TNITS-538-RoadName_Snapshot_2025-09-26T10:30:00Z</datasetId>
 			<datasetCreationTime>2025-09-26T10:30:00Z</datasetCreationTime>
 		</Metadata>
 	</metadata>
@@ -56,12 +56,12 @@
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@1786245:MED:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@1786245:MED:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 			<locationReference>
 				<LocationByExternalReference>
-					<predefinedLocationReference xlink:href="nvdb.no:0.0-1.0@2605437:MOT:-:-"></predefinedLocationReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2605437:MOT:-:-"></predefinedLocationReference>
 				</LocationByExternalReference>
 			</locationReference>
 		</RoadFeature>

@@ -30,7 +30,7 @@ object TnitsXmlWriter : WithLogger {
             ) {
                 "metadata" {
                     "Metadata" {
-                        "datasetId" { "NVDB-TNITS-${featureType}_${exportType}_${timestamp.truncateToSeconds()}" }
+                        "datasetId" { "NVDB-TNITS-${featureType.typeId}-${featureType}_${exportType}_${timestamp.truncateToSeconds()}" }
                         "datasetCreationTime" { timestamp }
                     }
                 }
