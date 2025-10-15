@@ -1,22 +1,24 @@
 // Git hooks setup
-tasks.register("installGitHooks") {
-    description = "Install git hooks for code formatting"
+tasks.register<Exec>("installGitHooks") {
+    description = "Configure Git to use .hooks folder for hooks"
     group = "build setup"
-    notCompatibleWithConfigurationCache("Task manipulates files outside of project directory")
+    notCompatibleWithConfigurationCache("Task manipulates Git configuration")
 
-    doLast {
-        val hooksDir = File(rootDir, ".git/hooks")
-        val preCommitHook = File(hooksDir, "pre-commit")
-        val preCommitTemplate = File(rootDir, "git-hooks/pre-commit")
+    val gitHooksDir = File(rootDir, ".hooks")
 
-        if (!preCommitTemplate.exists()) {
-            throw GradleException("Pre-commit hook template not found at: ${preCommitTemplate.absolutePath}")
+    doFirst {
+        if (!gitHooksDir.exists()) {
+            throw GradleException("Git hooks directory not found at: ${gitHooksDir.absolutePath}")
         }
 
-        preCommitHook.writeText(preCommitTemplate.readText())
-        preCommitHook.setExecutable(true)
+        // Ensure hooks are executable
+        gitHooksDir.listFiles()?.forEach { it.setExecutable(true) }
+    }
 
-        println("✅ Git pre-commit hook installed successfully")
-        println("The hook will automatically run ktlint formatting on commits")
+    commandLine("git", "config", "core.hooksPath", ".hooks")
+
+    doLast {
+        println("✅ Git configured to use .hooks/ folder")
+        println("All hooks in .hooks/ will be automatically used")
     }
 }
