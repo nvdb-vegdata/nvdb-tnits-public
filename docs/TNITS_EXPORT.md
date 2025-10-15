@@ -82,9 +82,10 @@ s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
 ```
 
 **Implementation:**
+
 - `core/useCases/PerformSmartTnitsExport.kt` - Orchestrates the overall export decision
 - `core/services/tnits/TnitsExportService.kt` - Core export orchestration
-- `core/services/tnits/FeatureTransformer.kt` - Feature generation (formerly TnitsFeatureGenerator)
+- `core/services/tnits/FeatureTransformer.kt` - Feature generation
 - `infrastructure/s3/TnitsFeatureS3Exporter.kt` - S3 upload
 
 ### Detailed Steps
@@ -125,101 +126,39 @@ val scope = dirtyIds + dirtyByVegnett
 
 #### Step 3: Parallel Processing
 
-Uses worker pool for performance:
-
-```kotlin
-val workers = Runtime.getRuntime().availableProcessors()
-val batches = allIds.chunked(1000)
-
-val results = batches.parallelStream()
-  .flatMap { batch ->
-    batch.map { id ->
-      tnitsFeatureGenerator.generateFeature(typeId, id, timestamp)
-    }.stream()
-  }
-  .sorted(compareBy { it.identifier })
-  .collect(Collectors.toList())
-```
+Uses worker pool for performance, processing vegobjekter in parallel batches.
 
 **Worker count:** Matches CPU cores (typically 4-16)
 
-**Batch size:** 100-1000 objects per batch
+**Batch size:** 1000 objects per batch
 
 #### Step 4: Generate TN-ITS Features
 
 For each vegobjekt:
 
-```kotlin
-fun generateFeature(typeId: Int, objektId: Long, timestamp: Instant): TnitsFeature {
-  // 1. Fetch vegobjekt
-  val vegobjekt = vegobjekterRepository.get(typeId, objektId)
+1. Fetch vegobjekt from RocksDB
+2. Extract stedfesting (positioning)
+3. Calculate geometry from veglenker (stored in UTM33, simplified to 1m tolerance)
+4. Encode OpenLR location references
+5. Extract feature-specific properties (e.g., speed limit value, road name)
+6. Build TnitsFeature with all location references
 
-  // 2. Extract stedfesting (positioning)
-  val stedfestinger = vegobjekt.stedfesting.linjer
-
-  // 3. Calculate geometry (stored in UTM33)
-  val geometry = calculateGeometry(stedfestinger)
-    .simplify(distanceTolerance = 1.0)
-    // Note: Conversion to WGS84 happens during XML writing
-
-  // 4. Encode OpenLR
-  val openLrRefs = openLrService.toOpenLr(stedfestinger)
-
-  // 5. Extract properties
-  val speedLimitValue = extractSpeedLimit(vegobjekt)
-  val validFrom = vegobjekt.metadata.startdato
-  val validTo = vegobjekt.metadata.sluttdato
-
-  // 6. Build TN-ITS feature
-  return TnitsFeature(
-    identifier = "NO-105-$objektId",
-    geometry = geometry,
-    openLrLocationReferences = openLrRefs,
-    speedLimitValue = speedLimitValue,
-    validFrom = validFrom,
-    validTo = validTo,
-    updateType = determineUpdateType(vegobjekt)
-  )
-}
-```
+**Note:** Conversion to WGS84 happens during XML writing.
 
 See: `core/services/tnits/FeatureTransformer.kt`
 
 #### Step 5: Stream XML Output
 
-Uses StAX for memory-efficient streaming:
+Uses StAX for memory-efficient streaming. Features are written as a flow to avoid loading all features into memory at once.
 
-```kotlin
-writeXmlDocument(outputStream, "tn-its:SpeedLimitDataset", namespaces) {
-  features.forEach { feature ->
-    "tn-its:speedLimit" {
-      "tn-its:identifier" {
-        +feature.identifier
-      }
-      "tn-its:geometry" {
-        writeGeometry(feature.geometry)
-      }
-      "tn-its:openLRLocationReference" {
-        +feature.openLrRefs.first().base64
-      }
-      "tn-its:speedLimitValue" {
-        attribute("uom", "km/h")
-        +feature.speedLimitValue.toString()
-      }
-      "tn-its:validFrom" {
-        +feature.validFrom.toString()
-      }
-      if (feature.validTo != null) {
-        "tn-its:validTo" {
-          +feature.validTo.toString()
-        }
-      }
-    }
-  }
-}
-```
+**Key characteristics:**
 
-See: `core/presentation/XmlStreamDsl.kt`
+- Streaming output (constant memory usage)
+- Generic `RoadFeature` structure for all feature types
+- Properties stored as key-value pairs with codelist references
+- Multiple location reference formats (geometry, OpenLR, NVDB-specific)
+
+See: `core/presentation/TnitsXmlWriter.kt` and `core/presentation/XmlStreamDsl.kt`
 
 #### Step 6: Upload to S3
 
@@ -230,11 +169,11 @@ val s3Key = generateS3Key(typeId, timestamp, exportType)
 val outputStream = S3OutputStream(minioClient, bucket, s3Key)
 
 if (gzipEnabled) {
-  GZIPOutputStream(outputStream).use { gzipStream ->
-    writeXml(gzipStream)
-  }
+    GZIPOutputStream(outputStream).use { gzipStream ->
+        writeXml(gzipStream)
+    }
 } else {
-  outputStream.use { writeXml(it) }
+    outputStream.use { writeXml(it) }
 }
 ```
 
@@ -256,26 +195,30 @@ See: `infrastructure/s3/S3OutputStream.kt`
 
 ### Speed Limit Mapping
 
-NVDB → TN-ITS field mapping:
+NVDB → XML field mapping:
 
-| NVDB Field                             | TN-ITS Field                    | Notes                                |
-|----------------------------------------|---------------------------------|--------------------------------------|
-| `metadata.startdato` (first version)   | `validFrom`                     | Inception date                       |
-| `metadata.startdato` (current version) | `beginLifespanVersion`          | Current version start                |
-| `metadata.sluttdato`                   | `validTo`, `endLifespanVersion` | For closed/deleted objects           |
-| `egenskaper[2021]`                     | `speedLimitValue`               | Speed limit in km/h                  |
-| `stedfesting` → geometry               | `geometry`                      | Stored in UTM33, output as WGS84     |
-| `stedfesting` → OpenLR                 | `openLRLocationReference`       | Encoded location                     |
-| Vegobjekt type + ID                    | `identifier`                    | Format: `NO-105-{objektId}`          |
+| NVDB Field                             | XML Path                                                    | Notes                               |
+|----------------------------------------|-------------------------------------------------------------|-------------------------------------|
+| `metadata.startdato` (first version)   | `RoadFeature/validFrom`                                     | Inception date                      |
+| `metadata.startdato` (current version) | `RoadFeature/beginLifespanVersion`                          | Current version start (as instant)  |
+| `metadata.sluttdato`                   | `RoadFeature/validTo`, `RoadFeature/endLifespanVersion`     | For closed/deleted objects          |
+| `egenskaper[2021]`                     | `RoadFeature/properties/GenericRoadFeatureProperty/value`   | Speed limit in km/h                 |
+| `stedfesting` → geometry               | `RoadFeature/locationReference/GeometryLocationReference`   | Stored in UTM33, output as WGS84    |
+| `stedfesting` → OpenLR                 | `RoadFeature/locationReference/OpenLRLocationReference`     | Base64-encoded binary location ref  |
+| `stedfesting` → NVDB format            | `RoadFeature/locationReference/LocationByExternalReference` | NVDB-specific positioning reference |
+| Vegobjekt ID                           | `RoadFeature/id/RoadFeatureId/id`                           | NVDB vegobjekt ID                   |
+| Type 105                               | `RoadFeature/type@xlink:href`                               | Codelist reference: `#speedLimit`   |
 
 ### Update Type Rules
 
-| Vegobjekt State                     | Update Type | validTo Behavior        |
-|-------------------------------------|-------------|-------------------------|
-| Active, not in previous export      | `Modify`    | null                    |
-| Active, in previous export, changed | `Modify`    | null                    |
-| Closed                              | `Modify`    | Set to sluttdato        |
-| Deleted                             | `Remove`    | Set to export timestamp |
+| Vegobjekt State              | Update Type | validTo Behavior        |
+|------------------------------|-------------|-------------------------|
+| New (not in previous export) | `Add`       | null                    |
+| Modified                     | `Modify`    | null                    |
+| Closed (has sluttdato)       | `Modify`    | Set to sluttdato        |
+| Deleted                      | `Remove`    | Set to export timestamp |
+
+**Note:** In snapshots, all features use update type `Snapshot` and the `updateInfo` element is omitted.
 
 **Implementation:** `core/model/tnits/UpdateType.kt`, `core/services/tnits/FeatureTransformer.kt`
 
@@ -313,48 +256,100 @@ From `README.md:12`:
 
 ```xml
 
-<tn-its:SpeedLimitDataset
-  xmlns:tn-its="http://inspire.ec.europa.eu/schemas/tn-its/4.0"
-  xmlns:gml="http://www.opengis.net/gml/3.2"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://inspire.ec.europa.eu/schemas/tn-its/4.0
-                        https://inspire.ec.europa.eu/schemas/tn-its/4.0/TrafficRegulationOrder.xsd">
+<RoadFeatureDataset
+    xmlns="http://spec.tn-its.eu/schemas/"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd
+                      http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
+```
+
+### Dataset Structure
+
+```xml
+
+<RoadFeatureDataset>
+    <metadata>
+        <Metadata>
+            <datasetId>NVDB-TNITS-105-SpeedLimit_Snapshot_2025-09-26T10:30:00Z</datasetId>
+            <datasetCreationTime>2025-09-26T10:30:00Z</datasetCreationTime>
+        </Metadata>
+    </metadata>
+    <type>Snapshot</type>
+
+    <!-- Features follow... -->
+    <roadFeatures>
+        <RoadFeature>
+            <!-- See Feature Structure below -->
+        </RoadFeature>
+    </roadFeatures>
+</RoadFeatureDataset>
 ```
 
 ### Feature Structure
 
+Each feature (speed limit, road name, etc.) uses a generic `RoadFeature` element with type-specific properties:
+
 ```xml
 
-<tn-its:member>
-  <tn-its:SpeedLimit gml:id="NO-105-85283590">
-    <tn-its:identifier>NO-105-85283590</tn-its:identifier>
-    <tn-its:updateType>Baseline</tn-its:updateType>
+<roadFeatures>
+    <RoadFeature>
+        <validFrom>2009-01-01</validFrom>
+        <beginLifespanVersion>2008-12-31T23:00:00Z</beginLifespanVersion>
 
-    <tn-its:validFrom>2020-01-15T00:00:00Z</tn-its:validFrom>
-    <tn-its:beginLifespanVersion>2020-01-15T00:00:00Z</tn-its:beginLifespanVersion>
+        <!-- For updates only -->
+        <updateInfo>
+            <UpdateInfo>
+                <type>Add</type> <!-- Add, Modify, or Remove -->
+            </UpdateInfo>
+        </updateInfo>
 
-    <tn-its:geometry>
-      <gml:LineString gml:id="geom-NO-105-85283590" srsName="EPSG:4326">
-        <gml:posList>
-          10.12345 59.98765
-          10.12346 59.98766
-          10.12347 59.98767
-        </gml:posList>
-      </gml:LineString>
-    </tn-its:geometry>
+        <source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation"/>
+        <type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#speedLimit"/>
 
-    <tn-its:openLRLocationReference>
-      CwRbWyNG9RpsCQCb/jsbtAT+Bv8=
-    </tn-its:openLRLocationReference>
+        <properties>
+            <GenericRoadFeatureProperty>
+                <type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#maximumSpeedLimit"/>
+                <value>50</value>
+            </GenericRoadFeatureProperty>
+        </properties>
 
-    <tn-its:speedLimitSource>
-      <tn-its:SpeedLimitSourceValue>measurementDevice</tn-its:SpeedLimitSourceValue>
-    </tn-its:speedLimitSource>
+        <id>
+            <RoadFeatureId>
+                <providerId>nvdb.no</providerId>
+                <id>85283803</id>
+            </RoadFeatureId>
+        </id>
 
-    <tn-its:speedLimitValue uom="km/h">80</tn-its:speedLimitValue>
-  </tn-its:SpeedLimit>
-</tn-its:member>
+        <locationReference>
+            <GeometryLocationReference>
+                <encodedGeometry>
+                    <gml:LineString srsDimension="2" srsName="EPSG:4326">
+                        <gml:posList>63.43004 10.45458 63.42982 10.45447 ...</gml:posList>
+                    </gml:LineString>
+                </encodedGeometry>
+            </GeometryLocationReference>
+        </locationReference>
+
+        <locationReference>
+            <OpenLRLocationReference>
+                <binaryLocationReference>
+                    <BinaryLocationReference>
+                        <base64String>CwdvMy0bFzLQBwIZ/u8zOy0=</base64String>
+                        <openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"/>
+                    </BinaryLocationReference>
+                </binaryLocationReference>
+            </OpenLRLocationReference>
+        </locationReference>
+
+        <locationReference>
+            <LocationByExternalReference>
+                <predefinedLocationReference xlink:href="nvdb.no:0-0.4010989@41423:MED:-:-"/>
+            </LocationByExternalReference>
+        </locationReference>
+    </RoadFeature>
+</roadFeatures>
 ```
 
 ## OpenLR Encoding
@@ -371,77 +366,25 @@ From `README.md:12`:
 
 ### Encoding Process
 
-```
-Stedfesting → Veglenker → OpenLR Lines → Encode → Base64
-```
+OpenLR encoding converts NVDB positioning (stedfesting) to binary OpenLR format:
+
+1. **Build OpenLR Lines** - Convert veglenker to OpenLR line format with FRC and FOW
+2. **Calculate Offsets** - Determine start/end offsets within the first/last veglenk
+3. **Create Path** - Build OpenLR path from lines and offsets
+4. **Encode** - Encode to binary format and Base64
+
+**Output format:** Base64-encoded binary OpenLR location reference (version 2.4)
 
 **Implementation:** `core/services/vegnett/OpenLrService.kt`
-
-#### Step 1: Build OpenLR Lines
-
-For each veglenk:
-
-```kotlin
-val line = OpenLrLine(
-  id = veglenk.id,
-  startNode = OpenLrNode(
-    geometry = veglenk.geometri.startPoint,
-    frc = getFrc(veglenk)
-  ),
-  endNode = OpenLrNode(
-    geometry = veglenk.geometri.endPoint,
-    frc = getFrc(veglenk)
-  ),
-  frc = getFrc(veglenk),
-  fow = FormOfWay.SINGLE_CARRIAGEWAY,
-  length = veglenk.lengde
-)
-```
-
-#### Step 2: Calculate Offsets
-
-```kotlin
-val positiveOffset = findOffsetInMeters(
-  veglenk = firstVeglenk,
-  posisjon = stedfesting.startposisjon,
-  isStart = true
-)
-
-val negativeOffset = findOffsetInMeters(
-  veglenk = lastVeglenk,
-  posisjon = stedfesting.sluttposisjon,
-  isStart = false
-)
-```
-
-#### Step 3: Create Path
-
-```kotlin
-val path = pathFactory.create(
-  lines = openLrLines,
-  positiveOffset = positiveOffset,
-  negativeOffset = negativeOffset
-)
-```
-
-#### Step 4: Encode
-
-```kotlin
-val location = locationFactory.createLineLocation(path)
-val encoded = encoder.encode(location)
-val base64 = Base64.getEncoder().encodeToString(encoded.data)
-```
-
-**Note:** Current implementation uses placeholder encoding. Production requires full OpenLR library integration.
 
 ## Geometry Handling
 
 ### Coordinate Systems
 
-| System    | EPSG Code | Usage                               |
-|-----------|-----------|-------------------------------------|
-| **UTM33** | 25833     | NVDB source, RocksDB storage        |
-| **WGS84** | 4326      | TN-ITS XML output, OpenLR encoding  |
+| System    | EPSG Code | Usage                              |
+|-----------|-----------|------------------------------------|
+| **UTM33** | 25833     | NVDB source, RocksDB storage       |
+| **WGS84** | 4326      | TN-ITS XML output, OpenLR encoding |
 
 ### Transformation Pipeline
 
@@ -488,39 +431,13 @@ val simplified = geometry.simplify(distanceTolerance = 1.0)
 
 ## Hash-Based Change Detection
 
-The export tracks content hashes to detect actual changes vs. metadata-only changes.
+The export tracks content hashes of TnitsFeature objects to detect actual changes vs. metadata-only changes.
 
-### Hash Calculation
+Each TnitsFeature is serialized to binary format (ProtoBuf) and hashed using SipHash. When processing updates, the current hash is compared with the previously exported hash to determine if the feature has truly changed.
 
-```kotlin
-val hash = SipHasher.hash(
-  typeId.toByteArray() +
-    objektId.toByteArray() +
-    speedLimit.toByteArray() +
-    geometry.toByteArray() +
-    validFrom.toByteArray() +
-    validTo?.toByteArray()
-)
-```
+**Benefit:** Avoid exporting objects where only NVDB internal metadata changed without affecting the TN-ITS output.
 
-See: `core/services/hash/SipHasher.kt`
-
-### Change Detection
-
-```kotlin
-val previousHash = vegobjekterHashStore.get(typeId, objektId)
-val currentHash = calculateHash(vegobjekt)
-
-if (previousHash != currentHash) {
-  // Content changed, include in export
-  export(vegobjekt)
-  vegobjekterHashStore.put(typeId, objektId, currentHash)
-} else {
-  // No content change, skip
-}
-```
-
-**Benefit:** Avoid exporting objects where only metadata changed (e.g., internal IDs)
+**Implementation:** `core/services/hash/SipHasher.kt`, `core/model/tnits/TnitsFeature.kt`
 
 ## S3 Export Configuration
 
@@ -530,14 +447,11 @@ if (previousHash != currentHash) {
 bucket/
 └── {typeId-padded}-{typeName}/
     ├── 2025-10-06T10-00-00Z/
-    │   ├── snapshot.xml.gz
-    │   └── timestamp.txt
+    │   └── snapshot.xml.gz
     ├── 2025-10-06T14-00-00Z/
-    │   ├── update.xml.gz
-    │   └── timestamp.txt
+    │   └── update.xml.gz
     └── 2025-10-07T10-00-00Z/
-        ├── snapshot.xml.gz
-        └── timestamp.txt
+        └── snapshot.xml.gz
 ```
 
 ### Type ID Formatting
@@ -564,15 +478,14 @@ ISO 8601 with colons replaced by hyphens:
 
 ```hocon
 exporter {
-  gzip = true                           # Enable GZIP compression
-  target = S3                           # S3 or File
-  bucket = nvdb-tnits-local-data-01    # S3 bucket name
+    gzip = true                           # Enable GZIP compression
+    bucket = nvdb-tnits-local-data-01    # S3 bucket name
 }
 
 s3 {
-  endpoint = "http://localhost:9000"
-  accessKey = user
-  secretKey = password
+    endpoint = "http://localhost:9000"
+    accessKey = user
+    secretKey = password
 }
 ```
 
@@ -621,10 +534,11 @@ The application can run in automatic mode, deciding whether to generate snapshot
 val hasSnapshotThisMonth = lastSnapshot?.isInCurrentMonth() ?: false
 val hasUpdateToday = lastUpdate?.isToday() ?: false
 
+if (!hasUpdateToday) {
+    generateUpdate()
+}
 if (!hasSnapshotThisMonth) {
-  generateSnapshot()
-} else if (!hasUpdateToday) {
-  generateUpdate()
+    generateSnapshot()
 }
 ```
 
@@ -639,22 +553,21 @@ See: `core/useCases/PerformSmartTnitsExport.kt`
 
 ### XSD Validation
 
-The generated XML can be validated against TN-ITS XSD schemas.
+The generated XML can be validated against the TN-ITS XSD schema referenced in the output:
 
-**Test:** `XsdValidationTest.kt`
-
-```kotlin
-val schemaUrl = "https://inspire.ec.europa.eu/schemas/tn-its/4.0/TrafficRegulationOrder.xsd"
-val validator = createValidator(schemaUrl)
-validator.validate(xmlSource)
+```
+http://spec.tn-its.eu/schemas/TNITS.xsd
 ```
 
 ### Manual Validation
 
+Use `xmllint` or similar XML validation tools to check schema compliance:
+
 ```bash
-xmllint --schema https://inspire.ec.europa.eu/schemas/tn-its/4.0/TrafficRegulationOrder.xsd \
-    snapshot.xml
+xmllint --noout snapshot.xml
 ```
+
+For viewing the output structure, see the test resources in `src/test/resources/` for example exports.
 
 ## Troubleshooting
 
