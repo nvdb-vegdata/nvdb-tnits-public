@@ -1,0 +1,22 @@
+# noinspection EditorConfigKeyCorrectness
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_standard_enum-entry-name-case = disabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_property-naming = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+max_line_length = 160
+
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+ij_markdown_wrap_text_if_long = false
+indent_size = 4
+
+[*.xml]
+max_line_length = off
+indent_style = tab
+
+[Jenkinsfile]
+indent_size = 2
