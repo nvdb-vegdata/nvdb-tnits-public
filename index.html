@@ -44,6 +44,10 @@
       width: 100%;
       min-height: 0;
     }
+
+    .popup-reference {
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -72,17 +76,6 @@
   }).addTo(map)
   // Set a default view over Norway (approximate center)
   map.setView([65.0, 15.0], 4)
-
-  // Helper function to choose a color based on speed limit
-  function getColor(speed) {
-    const value = parseFloat(speed)
-    if (isNaN(value)) return '#3388ff'
-    if (value <= 40) return '#d73027' // red
-    if (value <= 60) return '#fc8d59' // orange
-    if (value <= 80) return '#fee08b' // yellow
-    if (value <= 100) return '#91cf60' // green
-    return '#1a9850' // dark green for higher speeds
-  }
 
   // Event listener for file upload
   document
@@ -141,20 +134,41 @@
         }
       }
 
-      // Get the speed limit value
-      let speedValue = null
+      // Get the feature type
+      let featureType = null
+      const typeElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'type')
+      if (typeElems.length > 0) {
+        const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
+        if (typeHref) {
+          // Extract the fragment after the #
+          const hashIndex = typeHref.indexOf('#')
+          if (hashIndex !== -1) {
+            featureType = typeHref.substring(hashIndex + 1)
+          }
+        }
+      }
+
+      // Get all properties
+      const properties = []
       const props = roadFeature.getElementsByTagNameNS(
         tnitsNS,
         'GenericRoadFeatureProperty'
       )
-      if (props.length > 0) {
-        // take the first value element found
-        const valueElem = props[0].getElementsByTagNameNS(
-          tnitsNS,
-          'value'
-        )[0]
-        if (valueElem) {
-          speedValue = valueElem.textContent.trim()
+      for (let j = 0; j < props.length; j++) {
+        const prop = props[j]
+        const typeElems = prop.getElementsByTagNameNS(tnitsNS, 'type')
+        const valueElems = prop.getElementsByTagNameNS(tnitsNS, 'value')
+
+        if (typeElems.length > 0 && valueElems.length > 0) {
+          const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
+          let propertyType = typeHref
+          // Extract the fragment after the # for better readability
+          const hashIndex = typeHref.indexOf('#')
+          if (hashIndex !== -1) {
+            propertyType = typeHref.substring(hashIndex + 1)
+          }
+          const propertyValue = valueElems[0].textContent.trim()
+          properties.push({ type: propertyType, value: propertyValue })
         }
       }
 
@@ -215,12 +229,19 @@
 
       // Build popup content once for this road feature
       let popupContent = ''
+      if (featureType !== null) {
+        popupContent += '<b>Feature type:</b> ' + featureType
+      }
       if (vegobjektId !== null) {
+        if (popupContent !== '') popupContent += '<br>'
         popupContent += '<b>Vegobjekt ID:</b> ' + vegobjektId
       }
-      if (speedValue !== null) {
+      if (properties.length > 0) {
         if (popupContent !== '') popupContent += '<br>'
-        popupContent += '<b>Speed limit:</b> ' + speedValue + ' km/h'
+        popupContent += '<b>Properties:</b><br>'
+        properties.forEach((prop) => {
+          popupContent += '&nbsp;&nbsp;<b>' + prop.type + ':</b> ' + prop.value + '<br>'
+        })
       }
       if (validFrom !== null || validTo !== null) {
         if (popupContent !== '') popupContent += '<br>'
@@ -240,14 +261,14 @@
         if (popupContent !== '') popupContent += '<br>'
         popupContent += '<b>OpenLR references:</b><br>'
         openLRReferences.forEach((ref, idx) => {
-          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. ' + ref + '<br>'
+          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. <span class="popup-reference">' + ref + '</span><br>'
         })
       }
       if (nvdbReferences.length > 0) {
         if (popupContent !== '') popupContent += '<br>'
         popupContent += '<b>NVDB references:</b><br>'
         nvdbReferences.forEach((ref, idx) => {
-          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. ' + ref + '<br>'
+          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. <span class="popup-reference">' + ref + '</span><br>'
         })
       }
 
@@ -272,7 +293,7 @@
         }
         if (latLngs.length > 0) {
           const polyline = L.polyline(latLngs, {
-            color: getColor(speedValue),
+            color: '#3388ff',
             weight: 4,
             opacity: 0.8,
           })
