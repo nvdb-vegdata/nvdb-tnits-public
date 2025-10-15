@@ -5,6 +5,7 @@ import io.minio.MinioClient
 import io.minio.messages.Item
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.common.utils.parseTimestampFromS3Key
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
 import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
@@ -67,26 +68,5 @@ class S3TimestampService(private val minioClient: MinioClient, exporterConfig: E
         }
 
         return results
-    }
-
-    fun parseTimestampFromS3Key(s3Key: String): Instant? {
-        return try {
-            // Expected format: 0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml.gz
-            // Extract timestamp using regex: YYYY-MM-DDTHH-mm-ssZ
-            val timestampRegex = Regex("""(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)""")
-            val matchResult = timestampRegex.find(s3Key)
-                ?: return null.also { log.debug("No timestamp found in S3 key: $s3Key") }
-
-            val timestampStr = matchResult.groupValues[1]
-            // Convert S3-safe format (2025-01-15T10-30-00Z) to ISO format (2025-01-15T10:30:00Z)
-            val isoTimestamp = timestampStr.replace(Regex("""T(\d{2})-(\d{2})-(\d{2})Z"""), "T$1:$2:$3Z")
-
-            val parsed = Instant.parse(isoTimestamp)
-            log.debug("Successfully parsed timestamp '{}' from S3 key: {}", parsed, s3Key)
-            parsed
-        } catch (e: Exception) {
-            log.debug("Failed to parse timestamp from S3 key: $s3Key", e)
-            null
-        }
     }
 }

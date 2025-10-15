@@ -6,6 +6,7 @@ import io.minio.MinioClient
 import io.minio.errors.ErrorResponseException
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.common.model.RoadFeatureTypeCode
+import no.vegvesen.nvdb.tnits.common.utils.parseTimestampFromS3Key
 import no.vegvesen.nvdb.tnits.katalog.config.MinioProperties
 import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
 import no.vegvesen.nvdb.tnits.katalog.core.model.FileDownload
@@ -13,7 +14,7 @@ import no.vegvesen.nvdb.tnits.katalog.core.model.FileObject
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ResponseStatusException
-import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 @Component
 class S3FileService(private val minioClient: MinioClient, private val minioProperties: MinioProperties) : FileService {
@@ -28,11 +29,18 @@ class S3FileService(private val minioClient: MinioClient, private val minioPrope
         )
             .map { it.get().objectName() }
             .filter { it.endsWith(suffix) }
-            .map {
-                FileObject(
-                    objectName = it,
-                    timestamp = it.removePrefix(prefix).removeSuffix(suffix).let { Instant.parse(it) },
-                )
+            .mapNotNull { objectName ->
+                parseTimestampFromS3Key(objectName).let {
+                    if (it == null) {
+                        println("Warning: Could not parse timestamp from S3 key: $objectName")
+                        null
+                    } else {
+                        FileObject(
+                            objectName = objectName,
+                            timestamp = it.toJavaInstant(),
+                        )
+                    }
+                }
             }
     }
 

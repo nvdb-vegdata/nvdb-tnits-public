@@ -1,5 +1,7 @@
 package no.vegvesen.nvdb.tnits.katalog.presentation
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
@@ -16,8 +18,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @Tag(name = "Downloads")
 class DownloadController(private val fileService: FileService) {
 
+    @Operation(description = "Download a TN-ITS data file (snapshot or update).")
     @GetMapping
-    fun download(@RequestParam path: String, response: HttpServletResponse): ResponseEntity<StreamingResponseBody> {
+    fun download(
+        @RequestParam @Parameter(description = "File path obtained from snapshot or update endpoints") path: String,
+        response: HttpServletResponse,
+    ): ResponseEntity<StreamingResponseBody> {
         val fileDownload = fileService.downloadFile(path)
 
         response.setHeader("Content-Disposition", "attachment; filename=\"${fileDownload.fileName}\"")

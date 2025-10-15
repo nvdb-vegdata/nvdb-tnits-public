@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.katalog.core.model
 
-import kotlin.time.Instant
+import java.time.Instant
 
 data class FileObject(
     val objectName: String,

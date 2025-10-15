@@ -1,6 +1,6 @@
 package no.vegvesen.nvdb.tnits.katalog.presentation.model
 
-import kotlin.time.Instant
+import java.time.Instant
 
 data class SnapshotResponse(
     val href: String,
