@@ -3,10 +3,10 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 import jakarta.inject.Singleton
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.*

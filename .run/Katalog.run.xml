@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Katalog" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="nvdb-tnits-public.tnits-katalog.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="no.vegvesen.nvdb.tnits.katalog.Application" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

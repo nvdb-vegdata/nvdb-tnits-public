@@ -1,7 +1,7 @@
 package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import jakarta.inject.Singleton
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext

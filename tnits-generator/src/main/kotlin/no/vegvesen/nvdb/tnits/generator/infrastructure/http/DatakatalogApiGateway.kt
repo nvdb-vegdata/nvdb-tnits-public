@@ -7,9 +7,9 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
 import no.vegvesen.nvdb.apiles.datakatalog.Vegobjekttype
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFartsgrenseTillatteVerdier
 

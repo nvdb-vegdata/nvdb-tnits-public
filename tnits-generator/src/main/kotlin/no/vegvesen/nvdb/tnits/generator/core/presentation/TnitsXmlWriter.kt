@@ -3,6 +3,8 @@ package no.vegvesen.nvdb.tnits.generator.core.presentation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.atStartOfDayIn
 import no.vegvesen.nvdb.apiles.uberiket.Retning
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.WGS84

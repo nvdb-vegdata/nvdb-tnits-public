@@ -2,10 +2,10 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.minio.MinioClient
 import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.extensions.openS3Stream
 import no.vegvesen.nvdb.tnits.generator.core.extensions.truncateToSeconds
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType

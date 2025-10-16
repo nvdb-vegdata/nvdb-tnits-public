@@ -8,12 +8,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.logMemoryUsage
+import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
-import no.vegvesen.nvdb.tnits.generator.core.extensions.logMemoryUsage
-import no.vegvesen.nvdb.tnits.generator.core.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import org.locationtech.jts.geom.Point

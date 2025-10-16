@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.katalog.presentation
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import no.vegvesen.nvdb.tnits.common.extensions.OsloZoneId
 import no.vegvesen.nvdb.tnits.common.model.RoadFeatureTypeCode
 import no.vegvesen.nvdb.tnits.katalog.config.AppConfiguration
 import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
@@ -13,10 +14,14 @@ import no.vegvesen.nvdb.tnits.katalog.presentation.model.UpdatesResponse
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import java.time.Clock
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 private const val snapshotSuffix = "/snapshot.xml.gz"
 private const val updateSuffix = "/update.xml.gz"
+
+private val OsloClock = Clock.system(OsloZoneId)
 
 @RestController
 @RequestMapping("/api/v1/tnits")
@@ -69,7 +74,18 @@ class TnitsController(
     @GetMapping("/{type}/updates")
     fun getUpdatesFrom(
         @PathVariable @Parameter(description = "TN-ITS RoadFeatureTypeCode, see /api/v1/tnits/types") type: RoadFeatureTypeCode,
-        @RequestParam @Parameter(description = "Timestamp to get updates after") from: Instant,
+        @RequestParam @Parameter(
+            description = """
+Timestamp to get updates after. ISO-format, can be date (`2025-01-01`) or UTC timestamp (`2025-01-05T12:00:00Z`).
+If not specified, fetches updates since start of current month.
+        """,
+        ) from: Instant = Instant.now(
+            OsloClock,
+        )
+            .atZone(OsloZoneId)
+            .withDayOfMonth(1)
+            .truncatedTo(ChronoUnit.DAYS)
+            .toInstant(),
     ): UpdatesResponse = fileService.getFileObjects(type, updateSuffix)
         .filter { it.timestamp > from }
         .sortedBy { it.timestamp }

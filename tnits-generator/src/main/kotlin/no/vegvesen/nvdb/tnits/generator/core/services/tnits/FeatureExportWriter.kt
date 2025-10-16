@@ -6,10 +6,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.launch
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.ExportedFeatureRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.extensions.splitBuffered
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsFeature

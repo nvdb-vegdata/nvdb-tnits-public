@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository

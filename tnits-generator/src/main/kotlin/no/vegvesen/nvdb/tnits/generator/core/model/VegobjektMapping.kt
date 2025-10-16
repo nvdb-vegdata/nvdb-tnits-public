@@ -5,8 +5,8 @@ import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import kotlin.time.toKotlinInstant
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 

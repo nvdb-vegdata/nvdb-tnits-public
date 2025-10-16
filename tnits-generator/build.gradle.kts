@@ -53,9 +53,6 @@ dependencies {
     // Key-Value Store
     implementation("org.rocksdb:rocksdbjni:10.2.1")
 
-    // Logging
-    implementation("ch.qos.logback:logback-classic:1.5.18")
-
     // OpenLR and Geometry
     implementation("org.openlr:openlr-encoder:2.0-beta3")
     implementation("org.openlr:openlr-binary:2.0-beta3")

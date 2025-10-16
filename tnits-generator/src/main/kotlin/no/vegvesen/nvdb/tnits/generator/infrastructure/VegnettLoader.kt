@@ -5,10 +5,10 @@ import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.api.*
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.EPSG5973
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
 import no.vegvesen.nvdb.tnits.generator.core.model.Superstedfesting

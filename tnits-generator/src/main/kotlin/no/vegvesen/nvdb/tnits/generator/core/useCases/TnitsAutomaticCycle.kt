@@ -2,12 +2,12 @@ package no.vegvesen.nvdb.tnits.generator.core.useCases
 
 import jakarta.inject.Singleton
 import kotlinx.datetime.toLocalDateTime
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.extensions.getLastUpdateCheck
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbBackfillOrchestrator

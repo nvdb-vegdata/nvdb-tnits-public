@@ -2,10 +2,10 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure
 
 import io.minio.*
 import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
-import no.vegvesen.nvdb.tnits.generator.core.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
 import org.rocksdb.*

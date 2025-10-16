@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke

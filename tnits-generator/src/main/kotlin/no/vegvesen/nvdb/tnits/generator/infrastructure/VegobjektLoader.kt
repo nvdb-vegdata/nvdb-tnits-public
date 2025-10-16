@@ -6,11 +6,11 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
 import kotlinx.serialization.builtins.serializer
 import no.vegvesen.nvdb.apiles.uberiket.InkluderIVegobjekt
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.getValue
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import kotlin.time.Clock

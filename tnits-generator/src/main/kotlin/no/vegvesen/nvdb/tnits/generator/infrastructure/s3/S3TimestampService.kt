@@ -4,11 +4,11 @@ import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.messages.Item
 import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.common.utils.parseTimestampFromS3Key
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
-import no.vegvesen.nvdb.tnits.generator.core.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
 import kotlin.time.Instant
 
