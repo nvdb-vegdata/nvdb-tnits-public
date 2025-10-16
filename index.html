@@ -285,7 +285,7 @@
             propertyType = typeHref.substring(hashIndex + 1)
           }
           const propertyValue = valueElems[0].textContent.trim()
-          properties.push({ type: propertyType, value: propertyValue })
+          properties.push({type: propertyType, value: propertyValue})
         }
       }
 
@@ -360,7 +360,7 @@
         if (nvdbType !== null) {
           popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/' + nvdbType + '/' + vegobjektId + '" target="_blank">Uberiket API</a> | '
         } else {
-          popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekt/' + vegobjektId + '" target="_blank">Uberiket API</a> | '
+          popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekt/id/' + vegobjektId + '" target="_blank">Uberiket API</a> | '
         }
         popupContent += '<a href="https://nvdbapiles.atlas.vegvesen.no/vegobjekt?id=' + vegobjektId + '" target="_blank">Vegobjekter API Les</a>'
       }
