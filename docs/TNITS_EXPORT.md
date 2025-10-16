@@ -247,7 +247,7 @@ From `README.md:12`:
 
 **Direction:**
 
-- Read from veglenk's field overview
+- Read from veglenke's field overview
 - For connection links: from vegobjekt 616 (Feltstrekning)
 
 ## XML Structure
@@ -369,7 +369,7 @@ Each feature (speed limit, road name, etc.) uses a generic `RoadFeature` element
 OpenLR encoding converts NVDB positioning (stedfesting) to binary OpenLR format:
 
 1. **Build OpenLR Lines** - Convert veglenker to OpenLR line format with FRC and FOW
-2. **Calculate Offsets** - Determine start/end offsets within the first/last veglenk
+2. **Calculate Offsets** - Determine start/end offsets within the first/last veglenke
 3. **Create Path** - Build OpenLR path from lines and offsets
 4. **Encode** - Encode to binary format and Base64
 
@@ -388,22 +388,33 @@ OpenLR encoding converts NVDB positioning (stedfesting) to binary OpenLR format:
 
 ### Transformation Pipeline
 
+**Storage (done by sync process):**
+
 ```
-NVDB Geometry (UTM33)
+NVDB full veglenke geometries (UTM33)
     ↓
-Extract segment based on stedfesting
+Store complete veglenke geometries in RocksDB (UTM33)
+```
+
+**Export (done during TN-ITS export):**
+
+```
+Vegobjekt stedfesting (e.g., positions 0.3-0.7 on veglenkesekvens 123)
     ↓
-Merge connected segments
+Fetch full veglenke geometries from RocksDB
     ↓
-Store in RocksDB (UTM33)
+Extract segments based on stedfesting positions (using LengthIndexedLine)
     ↓
-[At export time:]
+Merge extracted segments (if vegobjekt spans multiple veglenker)
+    ↓
 Simplify (Douglas-Peucker, 1m tolerance)
     ↓
 Project to WGS84
     ↓
 TN-ITS XML output
 ```
+
+**Key point:** Full veglenke geometries are stored in RocksDB. Segment extraction and merging happen at export time based on each vegobjekt's stedfesting.
 
 **Implementation:** `core/extensions/GeometryHelpers.kt`
 
