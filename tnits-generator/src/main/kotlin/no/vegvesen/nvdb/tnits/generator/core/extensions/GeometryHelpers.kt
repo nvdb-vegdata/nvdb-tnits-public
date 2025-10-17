@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.core.extensions
 
+import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.WGS84
 import no.vegvesen.nvdb.tnits.generator.core.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.generator.core.model.intersect
 import no.vegvesen.nvdb.tnits.generator.core.model.overlaps
@@ -25,20 +26,20 @@ object SRID {
 val geometryFactories =
     mapOf(
         SRID.UTM33 to GeometryFactory(PrecisionModel(10.0), SRID.UTM33),
-        SRID.WGS84 to GeometryFactory(PrecisionModel(100_000.0), SRID.WGS84),
+        WGS84 to GeometryFactory(PrecisionModel(100_000.0), WGS84),
     )
 
 val wktReaders =
     mapOf(
         SRID.UTM33 to WKTReader(geometryFactories[SRID.UTM33]),
-        SRID.WGS84 to WKTReader(geometryFactories[SRID.WGS84]),
+        WGS84 to WKTReader(geometryFactories[WGS84]),
         SRID.EPSG5973 to WKTReader(geometryFactories[SRID.UTM33]),
     )
 
 fun parseWkt(wkt: String, srid: Int): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
 
-// OpenLR library expects coordinates in longitude/latitude order for WGS84. For other CRSs, it does not matter.
-fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", true)
+// OpenLR library expects coordinates in longitude/latitude order for WGS84.
+fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", srid == WGS84)
 
 fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
     this
