@@ -56,8 +56,7 @@ fun getCrs(srid: Int): CoordinateReferenceSystem = crsCache.getOrPut(srid) {
         if (isLonFirst) {
             factory
         } else {
-            // Fallback to EPSG database if constant has wrong order
-            CRS.decode("EPSG:$srid", true)
+            error("DefaultGeographicCRS.WGS84 does not have longitude-first axis order. This should never happen.")
         }
     } else {
         CRS.decode("EPSG:$srid")
