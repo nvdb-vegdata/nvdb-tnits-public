@@ -9,6 +9,7 @@ import org.geotools.api.referencing.NoSuchAuthorityCodeException
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem
 import org.geotools.geometry.jts.JTS
 import org.geotools.referencing.CRS
+import org.geotools.referencing.crs.DefaultGeographicCRS
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.linearref.LengthIndexedLine
@@ -16,36 +17,6 @@ import org.locationtech.jts.operation.linemerge.LineMerger
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier
 import javax.xml.crypto.dsig.TransformException
-
-internal object GeoToolsInit {
-    init {
-        // Set system properties BEFORE any GeoTools initialization
-        System.setProperty("org.geotools.referencing.forceXY", "true")
-        System.setProperty("org.geotools.referencing.lon.lat.order", "true")
-
-        // Clear any existing hints to force re-initialization
-        org.geotools.util.factory.Hints.scanSystemProperties()
-
-        org.geotools.util.factory.Hints.putSystemDefault(
-            org.geotools.util.factory.Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER,
-            true,
-        )
-        org.geotools.util.factory.Hints.putSystemDefault(
-            org.geotools.util.factory.Hints.FORCE_AXIS_ORDER_HONORING,
-            "http",
-        )
-
-        // Force factory reset by clearing the cache
-        try {
-            org.geotools.referencing.CRS.reset("all")
-        } catch (e: Exception) {
-            // Reset might fail if factory hasn't been initialized yet, which is fine
-        }
-    }
-}
-
-// Force initialization by accessing the object
-private val geoToolsInitialized = GeoToolsInit
 
 object SRID {
     const val UTM33 = 25833
@@ -68,8 +39,30 @@ val wktReaders =
 
 fun parseWkt(wkt: String, srid: Int): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
 
-// OpenLR library expects coordinates in longitude/latitude order for WGS84.
-fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", srid == WGS84)
+private val crsCache = mutableMapOf<Int, CoordinateReferenceSystem>()
+
+fun getCrs(srid: Int): CoordinateReferenceSystem = crsCache.getOrPut(srid) {
+    if (srid == WGS84) {
+        // OpenLR library expects coordinates in longitude/latitude order for WGS84.
+        // Use DefaultGeographicCRS.WGS84 constant which has longitude-first axis order
+        // This is the ONLY way that works reliably in shadow JARs
+        val factory = DefaultGeographicCRS.WGS84
+
+        // Verify it has correct axis order (longitude-first)
+        val firstAxis = factory.coordinateSystem.getAxis(0)
+        val isLonFirst = firstAxis.direction.name().contains("EAST") ||
+            firstAxis.direction.name().contains("WEST")
+
+        if (isLonFirst) {
+            factory
+        } else {
+            // Fallback to EPSG database if constant has wrong order
+            CRS.decode("EPSG:$srid", true)
+        }
+    } else {
+        CRS.decode("EPSG:$srid")
+    }
+}
 
 fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
     this
@@ -80,17 +73,8 @@ fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
         val transform = CRS.findMathTransform(sourceCrs, targetCrs, true)
         val transformedGeometry = JTS.transform(this, transform)
 
-        // Check if we need to swap coordinates for WGS84
-        val needsSwap = srid == WGS84 && isLatitudeLongitudeOrder(targetCrs)
-
-        val finalGeometry = if (needsSwap) {
-            swapCoordinates(transformedGeometry)
-        } else {
-            transformedGeometry
-        }
-
         val factory = geometryFactories[srid] ?: error("Unsupported SRID: $srid")
-        factory.createGeometry(finalGeometry)
+        factory.createGeometry(transformedGeometry)
     } catch (e: NoSuchAuthorityCodeException) {
         error("Invalid SRID: ${e.message}")
     } catch (e: FactoryException) {
@@ -98,22 +82,6 @@ fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
     } catch (e: TransformException) {
         error("Error transforming coordinates: ${e.message}")
     }
-}
-
-private fun isLatitudeLongitudeOrder(crs: CoordinateReferenceSystem): Boolean {
-    val firstAxis = crs.coordinateSystem.getAxis(0)
-    // Check if first axis is latitude (NORTH/SOUTH) instead of longitude (EAST/WEST)
-    return firstAxis.direction.name().contains("NORTH") || firstAxis.direction.name().contains("SOUTH")
-}
-
-private fun swapCoordinates(geometry: Geometry): Geometry {
-    val coordinates = geometry.coordinates
-    coordinates.forEach { coord ->
-        val temp = coord.x
-        coord.x = coord.y
-        coord.y = temp
-    }
-    return geometry
 }
 
 fun Geometry.simplify(distanceTolerance: Double): Geometry = DouglasPeuckerSimplifier
