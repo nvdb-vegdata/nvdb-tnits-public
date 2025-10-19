@@ -82,7 +82,10 @@ dependencies {
 
 application {
     mainClass.set("no.vegvesen.nvdb.tnits.generator.ApplicationKt")
-    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+    applicationDefaultJvmArgs = listOf(
+        "--enable-native-access=ALL-UNNAMED",
+        "-Dorg.geotools.referencing.forceXY=true",
+    )
 }
 
 // Clean only Uberiket API generated sources
