@@ -52,9 +52,12 @@ fun verifyWgs84Mapping() {
     log.info("Verifying WGS84 coordinate transformation...")
 
     val forceXY = System.getProperty("org.geotools.referencing.forceXY")
-    log.info("GeoTools forceXY property: $forceXY")
+    val lonLatOrder = System.getProperty("org.geotools.referencing.lon.lat.order")
+    log.info("GeoTools properties - forceXY: $forceXY, lon.lat.order: $lonLatOrder")
 
     val wgs84Crs = getCrs(WGS84)
+    log.info("WGS84 CRS identifier: ${wgs84Crs.name}")
+
     val axis0 = wgs84Crs.coordinateSystem.getAxis(0)
     val axis1 = wgs84Crs.coordinateSystem.getAxis(1)
 
@@ -71,7 +74,8 @@ fun verifyWgs84Mapping() {
     check(x == 10 && y == 63) {
         "WGS84 mapping is broken! Got ($x, $y) but expected (10, 63). " +
             "Axis order is: ${axis0.name.code}/${axis1.name.code}. " +
-            "This indicates the forceXY property was not applied before CRS initialization."
+            "CRS: ${wgs84Crs.name}. " +
+            "Try using OGC:CRS84 instead of EPSG:4326, or set JVM args: -Dorg.geotools.referencing.forceXY=true"
     }
 
     log.info("✓ WGS84 coordinate transformation verified successfully (longitude-first axis order)")

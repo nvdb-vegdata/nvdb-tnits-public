@@ -17,11 +17,15 @@ import org.locationtech.jts.simplify.DouglasPeuckerSimplifier
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier
 import javax.xml.crypto.dsig.TransformException
 
-// Initialize GeoTools to use longitude-first (X,Y) axis order for WGS84
-// MUST be done before any CRS objects are created or cached
 internal object GeoToolsInit {
     init {
+        // Set system properties BEFORE any GeoTools initialization
         System.setProperty("org.geotools.referencing.forceXY", "true")
+        System.setProperty("org.geotools.referencing.lon.lat.order", "true")
+
+        // Clear any existing hints to force re-initialization
+        org.geotools.util.factory.Hints.scanSystemProperties()
+
         org.geotools.util.factory.Hints.putSystemDefault(
             org.geotools.util.factory.Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER,
             true,
@@ -30,6 +34,13 @@ internal object GeoToolsInit {
             org.geotools.util.factory.Hints.FORCE_AXIS_ORDER_HONORING,
             "http",
         )
+
+        // Force factory reset by clearing the cache
+        try {
+            org.geotools.referencing.CRS.reset("all")
+        } catch (e: Exception) {
+            // Reset might fail if factory hasn't been initialized yet, which is fine
+        }
     }
 }
 
@@ -58,7 +69,24 @@ val wktReaders =
 fun parseWkt(wkt: String, srid: Int): Geometry = wktReaders[srid]?.read(wkt) ?: error("Unsupported SRID: $srid")
 
 // OpenLR library expects coordinates in longitude/latitude order for WGS84.
-fun getCrs(srid: Int): CoordinateReferenceSystem = CRS.decode("EPSG:$srid", srid == WGS84)
+// Cache CRS instances to avoid repeated lookups
+private val crsCache = mutableMapOf<Int, CoordinateReferenceSystem>()
+
+fun getCrs(srid: Int): CoordinateReferenceSystem = crsCache.getOrPut(srid) {
+    if (srid == WGS84) {
+        // Force longitude-first by using the OGC WKT variant which has X,Y order
+        // instead of the official EPSG definition which has Y,X order
+        try {
+            // Try using the OGC definition first
+            CRS.decode("OGC:CRS84") // CRS84 is WGS84 with longitude-first
+        } catch (e: Exception) {
+            // Fallback to forced decode
+            CRS.decode("EPSG:$srid", true)
+        }
+    } else {
+        CRS.decode("EPSG:$srid")
+    }
+}
 
 fun Geometry.projectTo(srid: Int): Geometry = if (this.srid == srid) {
     this
