@@ -41,11 +41,13 @@ suspend fun main(args: Array<String>) {
 }
 
 fun verifyWgs84Mapping() {
-    val coordinate = parseWkt("POINT (246926 6995436)", UTM33).projectTo(WGS84).coordinate
+    val utm33Point = parseWkt("POINT (246926 6995436)", UTM33)
+    val wgs84point = utm33Point.projectTo(WGS84)
+    val coordinate = wgs84point.coordinate
     val x = coordinate.x.roundToInt()
     val y = coordinate.y.roundToInt()
     check(x == 10 && y == 63) {
-        "WGS84 mapping is broken, got ${coordinate.x}, ${coordinate.y}"
+        "WGS84 mapping is broken, got ($x, $y) expected (10, 63). ${utm33Point.coordinate.x} should be 246926 and ${utm33Point.coordinate.y} should be 6995436"
     }
 }
 
