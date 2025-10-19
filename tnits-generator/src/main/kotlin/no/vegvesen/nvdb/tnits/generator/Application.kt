@@ -63,6 +63,13 @@ fun verifyWgs84Mapping() {
 
     log.info("WGS 84 CRS axis order: [0]=${axis0.name.code} (${axis0.direction}), [1]=${axis1.name.code} (${axis1.direction})")
 
+    val isLatLonOrder = axis0.direction.name().contains("NORTH") || axis0.direction.name().contains("SOUTH")
+    if (isLatLonOrder) {
+        log.info("⚠ WGS84 CRS has latitude-first order - will swap coordinates after transformation")
+    } else {
+        log.info("✓ WGS84 CRS has longitude-first order - no coordinate swapping needed")
+    }
+
     val utm33Point = parseWkt("POINT (246926 6995436)", UTM33)
     val wgs84point = utm33Point.projectTo(WGS84)
     val coordinate = wgs84point.coordinate
@@ -74,8 +81,7 @@ fun verifyWgs84Mapping() {
     check(x == 10 && y == 63) {
         "WGS84 mapping is broken! Got ($x, $y) but expected (10, 63). " +
             "Axis order is: ${axis0.name.code}/${axis1.name.code}. " +
-            "CRS: ${wgs84Crs.name}. " +
-            "Try using OGC:CRS84 instead of EPSG:4326, or set JVM args: -Dorg.geotools.referencing.forceXY=true"
+            "CRS: ${wgs84Crs.name}."
     }
 
     log.info("✓ WGS84 coordinate transformation verified successfully (longitude-first axis order)")
