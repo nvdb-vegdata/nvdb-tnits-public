@@ -20,6 +20,8 @@ val log: Logger = LoggerFactory.getLogger("no.vegvesen.nvdb.tnits.generator.Appl
 suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
 
+    System.setProperty("org.geotools.referencing.forceXY", "true")
+
     verifyWgs84Mapping()
 
     val app = ProductionApp.startKoin()
