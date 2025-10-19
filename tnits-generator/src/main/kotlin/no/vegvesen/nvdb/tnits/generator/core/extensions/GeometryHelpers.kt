@@ -17,6 +17,25 @@ import org.locationtech.jts.simplify.DouglasPeuckerSimplifier
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier
 import javax.xml.crypto.dsig.TransformException
 
+// Initialize GeoTools to use longitude-first (X,Y) axis order for WGS84
+// MUST be done before any CRS objects are created or cached
+internal object GeoToolsInit {
+    init {
+        System.setProperty("org.geotools.referencing.forceXY", "true")
+        org.geotools.util.factory.Hints.putSystemDefault(
+            org.geotools.util.factory.Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER,
+            true,
+        )
+        org.geotools.util.factory.Hints.putSystemDefault(
+            org.geotools.util.factory.Hints.FORCE_AXIS_ORDER_HONORING,
+            "http",
+        )
+    }
+}
+
+// Force initialization by accessing the object
+private val geoToolsInitialized = GeoToolsInit
+
 object SRID {
     const val UTM33 = 25833
     const val WGS84 = 4326

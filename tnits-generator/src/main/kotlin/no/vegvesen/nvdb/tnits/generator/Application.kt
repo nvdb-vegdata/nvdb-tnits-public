@@ -22,6 +22,9 @@ val log: Logger = LoggerFactory.getLogger("no.vegvesen.nvdb.tnits.generator.Appl
 suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
 
+    // GeoTools properties are primarily set in GeometryHelpers static initializer
+    // to ensure they're applied before any CRS objects are created.
+    // Setting them here again as a safety measure.
     System.setProperty("org.geotools.referencing.forceXY", "true")
     Hints.putSystemDefault(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, true)
 
@@ -46,16 +49,32 @@ suspend fun main(args: Array<String>) {
 }
 
 fun verifyWgs84Mapping() {
+    log.info("Verifying WGS84 coordinate transformation...")
+
+    val forceXY = System.getProperty("org.geotools.referencing.forceXY")
+    log.info("GeoTools forceXY property: $forceXY")
+
+    val wgs84Crs = getCrs(WGS84)
+    val axis0 = wgs84Crs.coordinateSystem.getAxis(0)
+    val axis1 = wgs84Crs.coordinateSystem.getAxis(1)
+
+    log.info("WGS 84 CRS axis order: [0]=${axis0.name.code} (${axis0.direction}), [1]=${axis1.name.code} (${axis1.direction})")
+
     val utm33Point = parseWkt("POINT (246926 6995436)", UTM33)
     val wgs84point = utm33Point.projectTo(WGS84)
     val coordinate = wgs84point.coordinate
     val x = coordinate.x.roundToInt()
     val y = coordinate.y.roundToInt()
-    val wgs84Crs = getCrs(WGS84)
-    println("WGS 84 CRS has axis: ${wgs84Crs.coordinateSystem.getAxis(0)} and ${wgs84Crs.coordinateSystem.getAxis(1)}")
+
+    log.info("Transformation test: UTM33 (246926, 6995436) -> WGS84 ($x, $y)")
+
     check(x == 10 && y == 63) {
-        "WGS84 mapping is broken, got ($x, $y) expected (10, 63). ${utm33Point.coordinate.x} should be 246926 and ${utm33Point.coordinate.y} should be 6995436"
+        "WGS84 mapping is broken! Got ($x, $y) but expected (10, 63). " +
+            "Axis order is: ${axis0.name.code}/${axis1.name.code}. " +
+            "This indicates the forceXY property was not applied before CRS initialization."
     }
+
+    log.info("✓ WGS84 coordinate transformation verified successfully (longitude-first axis order)")
 }
 
 @KoinApplication
