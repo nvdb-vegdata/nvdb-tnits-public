@@ -12,7 +12,7 @@ group = "no.vegvesen.nvdb.tnits"
 version = properties["version"]?.toString() ?: "1.0.0-SNAPSHOT"
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 ktlint {
@@ -29,7 +29,6 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_24)
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
         freeCompilerArgs.add("-Xcontext-parameters")
         freeCompilerArgs.add("-Xjsr305=strict")

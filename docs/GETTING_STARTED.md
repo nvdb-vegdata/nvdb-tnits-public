@@ -10,7 +10,7 @@ Ensure you have the following installed on your development machine:
 
 | Tool         | Minimum Version | Purpose                    | Download                           |
 |--------------|-----------------|----------------------------|------------------------------------|
-| **Java JDK** | 25+             | Runtime and compilation    | [Adoptium](https://adoptium.net)   |
+| **Java JDK** | 21+             | Runtime and compilation    | [Adoptium](https://adoptium.net)   |
 | **Docker**   | 20.10+          | Running MinIO for local S3 | [docker.com](https://docker.com)   |
 | **Git**      | 2.30+           | Source control             | [git-scm.com](https://git-scm.com) |
 
@@ -57,7 +57,7 @@ You can access the MinIO console to view uploaded files and manage buckets.
 java -version
 ```
 
-Should show Java 25 or higher.
+Should show Java 21 or higher.
 
 ## First Run
 
