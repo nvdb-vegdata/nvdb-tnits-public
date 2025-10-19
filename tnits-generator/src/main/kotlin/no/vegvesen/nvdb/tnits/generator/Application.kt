@@ -3,12 +3,14 @@ package no.vegvesen.nvdb.tnits.generator
 import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.WGS84
+import no.vegvesen.nvdb.tnits.generator.core.extensions.getCrs
 import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
 import no.vegvesen.nvdb.tnits.generator.core.extensions.projectTo
 import no.vegvesen.nvdb.tnits.generator.core.useCases.InspireRoadnetCycle
 import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsAutomaticCycle
 import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsSnapshotCycle
 import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsUpdateCycle
+import org.geotools.util.factory.Hints
 import org.koin.core.annotation.KoinApplication
 import org.koin.ksp.generated.startKoin
 import org.slf4j.Logger
@@ -21,6 +23,7 @@ suspend fun main(args: Array<String>) {
     log.info("Starting NVDB TN-ITS application on process ${ProcessHandle.current().pid()}")
 
     System.setProperty("org.geotools.referencing.forceXY", "true")
+    Hints.putSystemDefault(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, true)
 
     verifyWgs84Mapping()
 
@@ -48,6 +51,8 @@ fun verifyWgs84Mapping() {
     val coordinate = wgs84point.coordinate
     val x = coordinate.x.roundToInt()
     val y = coordinate.y.roundToInt()
+    val wgs84Crs = getCrs(WGS84)
+    println("WGS 84 CRS has axis: ${wgs84Crs.coordinateSystem.getAxis(0)} and ${wgs84Crs.coordinateSystem.getAxis(1)}")
     check(x == 10 && y == 63) {
         "WGS84 mapping is broken, got ($x, $y) expected (10, 63). ${utm33Point.coordinate.x} should be 246926 and ${utm33Point.coordinate.y} should be 6995436"
     }
