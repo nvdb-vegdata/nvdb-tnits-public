@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbUpdateOrchestrato
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Singleton
 class TnitsAutomaticCycle(
@@ -30,6 +31,7 @@ class TnitsAutomaticCycle(
     data class UpdateStatus(
         val pendingSnapshot: Boolean,
         val pendingUpdate: Boolean,
+        val lastUpdate: Instant?,
     )
 
     suspend fun execute() {
@@ -56,7 +58,7 @@ class TnitsAutomaticCycle(
 
             val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
             val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
-            UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate)
+            UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate, lastUpdate)
         }
 
         if (updateStatusByType.values.any { it.pendingSnapshot || it.pendingUpdate }) {
@@ -72,7 +74,7 @@ class TnitsAutomaticCycle(
             // Run update before snapshot, because snapshot will update hashes (thus causing us to miss updates if we did snapshot first)
             for ((exportedFeatureType, updateStatus) in updateStatusByType) {
                 if (updateStatus.pendingUpdate) {
-                    tnitsExportService.exportUpdate(timestamp, exportedFeatureType)
+                    tnitsExportService.exportUpdate(timestamp, exportedFeatureType, updateStatus.lastUpdate)
                 }
                 if (updateStatus.pendingSnapshot) {
                     tnitsExportService.exportSnapshot(timestamp, exportedFeatureType)

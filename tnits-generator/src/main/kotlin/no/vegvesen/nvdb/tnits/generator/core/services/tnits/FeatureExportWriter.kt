@@ -24,7 +24,13 @@ class FeatureExportWriter(
 
     // Export features by simultaneously writing to S3 and the local database (for comparing later updates)
     // Saves a bit of time, but perhaps over-engineering?
-    suspend fun exportFeatures(timestamp: Instant, featureType: ExportedFeatureType, featureFlow: Flow<TnitsFeature>, exportType: TnitsExportType) {
+    suspend fun exportFeatures(
+        timestamp: Instant,
+        featureType: ExportedFeatureType,
+        featureFlow: Flow<TnitsFeature>,
+        exportType: TnitsExportType,
+        lastTimestamp: Instant? = null,
+    ) {
         coroutineScope {
             val (first, second) = featureFlow.splitBuffered(bufferSize = 10000)
 
@@ -40,7 +46,7 @@ class FeatureExportWriter(
             launch(Dispatchers.IO) {
                 try {
                     featureExporter.openExportStream(timestamp, exportType, featureType).use { outputStream ->
-                        TnitsXmlWriter.writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType)
+                        TnitsXmlWriter.writeFeaturesToXml(timestamp, outputStream, featureType, second, exportType, lastTimestamp)
                     }
                 } catch (e: Exception) {
                     log.error("Eksport til S3 feilet", e)

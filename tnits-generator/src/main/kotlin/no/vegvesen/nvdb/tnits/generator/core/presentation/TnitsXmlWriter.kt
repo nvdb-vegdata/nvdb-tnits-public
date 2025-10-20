@@ -23,6 +23,7 @@ object TnitsXmlWriter : WithLogger {
         featureType: ExportedFeatureType,
         featureFlow: Flow<TnitsFeature>,
         exportType: TnitsExportType,
+        lastTimestamp: Instant?,
     ) {
         log.measure("Generating $exportType", logStart = true) {
             writeXmlDocument(
@@ -32,7 +33,12 @@ object TnitsXmlWriter : WithLogger {
             ) {
                 "metadata" {
                     "Metadata" {
-                        "datasetId" { "NVDB-TNITS-${featureType.typeId}-${featureType}_${exportType}_${timestamp.truncateToSeconds()}" }
+                        val time = if (lastTimestamp != null) {
+                            "${lastTimestamp.truncateToSeconds()}-${timestamp.truncateToSeconds()}"
+                        } else {
+                            "${timestamp.truncateToSeconds()}"
+                        }
+                        "datasetId" { "NVDB-TNITS-${featureType.typeId}-${featureType}_${exportType}_$time" }
                         "datasetCreationTime" { timestamp }
                     }
                 }

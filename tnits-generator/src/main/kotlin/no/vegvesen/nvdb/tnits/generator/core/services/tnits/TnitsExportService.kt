@@ -19,7 +19,7 @@ class TnitsExportService(
     private val keyValueStore: KeyValueStore,
 ) : WithLogger {
 
-    suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType) {
+    suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, lastUpdate: Instant? = null) {
         log.info("Genererer delta snapshot av TN-ITS ${featureType.typeCode}...")
         val vegobjektChanges = dirtyCheckingRepository.getDirtyVegobjektChanges(featureType.typeId)
 
@@ -34,7 +34,7 @@ class TnitsExportService(
 
             val changesById = vegobjektChanges.associate { it.id to it.changeType }
             val featureFlow = featureTransformer.generateFeaturesUpdate(featureType, changesById, timestamp)
-            exportWriter.exportFeatures(timestamp, featureType, featureFlow, TnitsExportType.Update)
+            exportWriter.exportFeatures(timestamp, featureType, featureFlow, TnitsExportType.Update, lastUpdate)
 
             dirtyCheckingRepository.clearAllDirtyVegobjektIds(featureType.typeId)
             dirtyCheckingRepository.clearAllDirtyVeglenkesekvenser()
