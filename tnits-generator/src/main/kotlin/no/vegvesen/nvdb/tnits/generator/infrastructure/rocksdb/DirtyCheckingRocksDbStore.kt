@@ -21,11 +21,12 @@ class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : Di
                 ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
             }
             .toSet()
-        val indirectChanges = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toList().let { veglenkesekvensIds ->
-            findStedfestingVegobjektIds(veglenkesekvensIds.toSet(), vegobjektType)
-                .map { vegobjektId -> VegobjektChange(vegobjektId, ChangeType.MODIFIED) }
-                .toSet()
-        }
+        // The mapping from supporting vegobjekter to dirty veglenkesekvenser is done at load time, so it is correct
+        // to fetch indirectly located vegobjekter here
+        val dirtyVeglenkeIds = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toList()
+        val indirectChanges = findStedfestingVegobjektIds(dirtyVeglenkeIds.toSet(), vegobjektType)
+            .map { vegobjektId -> VegobjektChange(vegobjektId, ChangeType.MODIFIED) }
+            .toSet()
         return directChanges + indirectChanges
     }
 

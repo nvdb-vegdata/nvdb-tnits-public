@@ -366,6 +366,49 @@ class DirtyCheckingRocksDbStoreTest :
                 remainingChanges shouldContainExactlyInAnyOrder dirtyVegobjektChanges
             }
         }
+
+        should("return main type vegobjekter only on dirty veglenkesekvenser when checking indirect changes") {
+            withTempDb { dbContext ->
+                // Arrange
+                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+
+                val dirtyVeglenkesekvens = 3001L
+                val cleanVeglenkesekvens = 3003L
+
+                // Create a FARTSGRENSE (main type) on the dirty veglenkesekvens
+                val fartsgrenseOnDirty = createTestVegobjekt(
+                    id = 5001L,
+                    type = VegobjektTyper.FARTSGRENSE,
+                    stedfestinger = listOf(
+                        VegobjektStedfesting(dirtyVeglenkesekvens, 0.0, 1.0),
+                    ),
+                )
+
+                // Create a FARTSGRENSE (main type) on a clean veglenkesekvens
+                val fartsgrenseOnClean = createTestVegobjekt(
+                    id = 5002L,
+                    type = VegobjektTyper.FARTSGRENSE,
+                    stedfestinger = listOf(
+                        VegobjektStedfesting(cleanVeglenkesekvens, 0.0, 1.0),
+                    ),
+                )
+
+                vegobjekterStore.insert(fartsgrenseOnDirty)
+                vegobjekterStore.insert(fartsgrenseOnClean)
+
+                // Mark only one veglenkesekvens as dirty
+                dbContext.writeBatch {
+                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), Clock.System.now())
+                }
+
+                // Act
+                val dirtyChanges = dirtyCheckingStore.getDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
+
+                // Assert
+                dirtyChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(5001L, ChangeType.MODIFIED))
+            }
+        }
     })
 
 private fun createTestVegobjekt(id: Long, type: Int, stedfestinger: List<VegobjektStedfesting>): Vegobjekt = Vegobjekt(
