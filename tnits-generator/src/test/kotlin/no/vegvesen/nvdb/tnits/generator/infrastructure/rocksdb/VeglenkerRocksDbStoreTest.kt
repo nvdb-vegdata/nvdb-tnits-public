@@ -8,6 +8,7 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
@@ -21,7 +22,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-veglenker-test").toString()
-        configuration = RocksDbContext(tempDir, enableCompression = true)
+        configuration = RocksDbContext(RocksDbConfig(tempDir), enableCompression = true)
         store = VeglenkerRocksDbStore(configuration)
     }
 

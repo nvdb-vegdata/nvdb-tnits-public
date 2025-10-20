@@ -9,9 +9,8 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import java.nio.file.Files
 
 class RocksDbContextTest : ShouldSpec() {
@@ -20,7 +19,7 @@ class RocksDbContextTest : ShouldSpec() {
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-config-test").toString()
-        dbContext = RocksDbContext(tempDir, enableCompression = true)
+        dbContext = RocksDbContext(RocksDbConfig(tempDir), enableCompression = true)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {

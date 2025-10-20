@@ -5,10 +5,9 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.getValue
 import no.vegvesen.nvdb.tnits.generator.core.api.putValue
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.KeyValueRocksDbStore
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.time.Instant
@@ -22,7 +21,7 @@ class KeyValueRocksDbStoreTest :
 
         beforeTest {
             tempDir = createTempDirectory("keyvalue-test").toFile()
-            rocksDbConfig = RocksDbContext(tempDir.absolutePath, enableCompression = false)
+            rocksDbConfig = RocksDbContext(RocksDbConfig(tempDir.absolutePath), enableCompression = false)
             store = KeyValueRocksDbStore(rocksDbConfig)
         }
 

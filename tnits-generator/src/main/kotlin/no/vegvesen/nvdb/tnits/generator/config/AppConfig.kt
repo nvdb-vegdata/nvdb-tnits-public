@@ -10,7 +10,10 @@ data class AppConfig(
     val s3: S3Config,
     val exporter: ExporterConfig,
     val backup: BackupConfig,
+    val rocksDb: RocksDbConfig,
 )
+
+data class RocksDbConfig(val path: String)
 
 data class ExporterConfig(val gzip: Boolean, val bucket: String)
 

@@ -40,6 +40,9 @@ class MainModule {
     fun backupConfig(appConfig: AppConfig) = appConfig.backup
 
     @Singleton
+    fun rocksDbConfig(appConfig: AppConfig) = appConfig.rocksDb
+
+    @Singleton
     @Named("uberiketHttpClient")
     fun uberiketHttpClient(config: UberiketApiConfig) = createUberiketHttpClient(config.baseUrl)
 

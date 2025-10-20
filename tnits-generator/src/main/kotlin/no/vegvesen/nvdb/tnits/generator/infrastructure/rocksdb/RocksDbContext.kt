@@ -2,6 +2,7 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
@@ -16,10 +17,10 @@ import kotlin.io.path.Path
  * Provides Unit-of-Work atomic batch operations via [writeBatch] method.
  */
 @Singleton
-open class RocksDbContext(dbPath: String = "veglenker.db", enableCompression: Boolean = true) :
+open class RocksDbContext(config: RocksDbConfig, enableCompression: Boolean = true) :
     AutoCloseable,
     WithLogger {
-    val dbPath = Path(dbPath).toAbsolutePath().toString()
+    val dbPath = Path(config.path).toAbsolutePath().toString()
     private lateinit var db: RocksDB
     private lateinit var options: Options
     private lateinit var dbOptions: DBOptions

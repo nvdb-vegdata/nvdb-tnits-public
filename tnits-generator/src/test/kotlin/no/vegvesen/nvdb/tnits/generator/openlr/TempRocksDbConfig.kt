@@ -1,10 +1,11 @@
 package no.vegvesen.nvdb.tnits.generator.openlr
 
+import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import java.io.File
 import java.nio.file.Files
 
-class TempRocksDbConfig : RocksDbContext(Files.createTempDirectory("rocksdb-test").toString()) {
+class TempRocksDbConfig : RocksDbContext(RocksDbConfig(Files.createTempDirectory("rocksdb-test").toString())) {
     private var preserveOnClose = false
 
     fun setPreserveOnClose(preserve: Boolean) {
