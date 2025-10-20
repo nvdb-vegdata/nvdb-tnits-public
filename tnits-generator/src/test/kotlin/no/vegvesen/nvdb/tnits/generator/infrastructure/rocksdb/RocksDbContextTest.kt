@@ -12,6 +12,7 @@ import io.kotest.matchers.shouldNotBe
 import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import java.nio.file.Files
+import kotlin.time.Clock
 
 class RocksDbContextTest : ShouldSpec() {
     private lateinit var tempDir: String
@@ -41,7 +42,7 @@ class RocksDbContextTest : ShouldSpec() {
         }
 
         should("clear database") {
-            val veglenkerStore = VeglenkerRocksDbStore(dbContext)
+            val veglenkerStore = VeglenkerRocksDbStore(dbContext, Clock.System)
 
             veglenkerStore.upsert(1L, emptyList())
 

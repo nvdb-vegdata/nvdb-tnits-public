@@ -2,6 +2,7 @@ package no.vegvesen.nvdb.tnits.generator.core.useCases
 
 import jakarta.inject.Singleton
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
@@ -9,7 +10,6 @@ import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.extensions.getLastUpdateCheck
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbBackfillOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbUpdateOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
@@ -26,6 +26,7 @@ class TnitsAutomaticCycle(
     private val nvdbUpdateOrchestrator: NvdbUpdateOrchestrator,
     private val cachedVegnett: CachedVegnett,
     private val tnitsExportService: TnitsExportService,
+    private val clock: Clock,
 ) : WithLogger {
 
     data class UpdateStatus(
@@ -36,6 +37,8 @@ class TnitsAutomaticCycle(
 
     suspend fun execute() {
         rocksDbBackupService.restoreIfNeeded()
+
+        val today = clock.todayIn(OsloZone)
 
         val updateStatusByType = ExportedFeatureType.entries.associateWith { exportedFeatureType ->
             val lastSnapshot = timestampService.getLastSnapshotTimestamp(exportedFeatureType)
@@ -65,7 +68,7 @@ class TnitsAutomaticCycle(
             log.info("Starting automatic TN-ITS process. Update status by type: $updateStatusByType")
             val backfillCount = nvdbBackfillOrchestrator.performBackfill()
             val updateCount = nvdbUpdateOrchestrator.performUpdate()
-            val timestamp = Clock.System.now()
+            val timestamp = clock.now()
             if (backfillCount + updateCount > 0) {
                 // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)
                 rocksDbBackupService.createBackup()

@@ -5,10 +5,9 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.generator.core.extensions.toByteArray
 import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore.Companion.getVegobjektKey
-import kotlin.time.Clock
+import kotlin.time.Instant
 
-fun WriteBatchContext.publishChangedVeglenkesekvenser(veglenkesekvensIds: Set<Long>) {
-    val now = Clock.System.now()
+fun WriteBatchContext.publishChangedVeglenkesekvenser(veglenkesekvensIds: Set<Long>, now: Instant) {
     val operations = veglenkesekvensIds.map {
         BatchOperation.Put(it.toByteArray(), now.toEpochMilliseconds().toByteArray())
     }

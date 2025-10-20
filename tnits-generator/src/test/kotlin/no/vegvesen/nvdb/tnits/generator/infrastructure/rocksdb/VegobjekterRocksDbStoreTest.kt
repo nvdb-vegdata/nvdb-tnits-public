@@ -13,18 +13,17 @@ import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.generator.core.model.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.generator.core.model.toDomain
 import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader.Companion.convertToDomainVeglenker
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.objectMapper
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.generator.readJson
+import kotlin.time.Clock
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 class VegobjekterRocksDbStoreTest : ShouldSpec({
 
     should("save and retrieve vegobjekt and stedfestinger") {
         withTempDb { dbContext ->
-            val vegobjekter = VegobjekterRocksDbStore(dbContext)
+            val vegobjekter = VegobjekterRocksDbStore(dbContext, Clock.System)
             val apiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val domainVegobjekt = apiVegobjekt.toDomain()
             vegobjekter.insert(domainVegobjekt)
@@ -39,8 +38,8 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
 
     should("find overlapping vegobjekter") {
         withTempDb { dbContext ->
-            val veglenkesekvenser = VeglenkerRocksDbStore(dbContext)
-            val vegobjekter = VegobjekterRocksDbStore(dbContext)
+            val veglenkesekvenser = VeglenkerRocksDbStore(dbContext, Clock.System)
+            val vegobjekter = VegobjekterRocksDbStore(dbContext, Clock.System)
             val veglenkesekvens = objectMapper.readJson<VeglenkesekvenserSide>("veglenkesekvens-8967.json").veglenkesekvenser.single()
             val feltstrekning = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val funskjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
@@ -61,7 +60,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("group vegobjekter by veglenkesekvensId") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
             val baseApiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val baseDomainVegobjekt = baseApiVegobjekt.toDomain()
 
@@ -139,7 +138,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("filter by vegobjekt type") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
             val feltstrekning = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val funksjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
 
@@ -168,7 +167,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("handle empty results") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
 
             // Act - Get lookup for type with no vegobjekter
             val lookup = vegobjekterStore.getVegobjektStedfestingLookup(105) // FARTSGRENSE type

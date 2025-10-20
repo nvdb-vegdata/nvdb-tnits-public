@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
@@ -21,6 +22,7 @@ import org.locationtech.jts.geom.LineString
 import org.openlr.map.FormOfWay
 import org.openlr.map.FunctionalRoadClass
 import java.io.OutputStream
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 // TODO: Separate logic for generating XML from logic for exporting to S3
@@ -29,6 +31,7 @@ class InspireRoadNetExporter(
     private val cachedVegnett: CachedVegnett,
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
+    private val clock: Clock,
 ) : WithLogger {
 
     suspend fun exportRoadNet(timestamp: Instant) {
@@ -40,6 +43,7 @@ class InspireRoadNetExporter(
     }
 
     private suspend fun generateRoadLinks(): Flow<InspireRoadLink> = withContext(Dispatchers.Default) {
+        val today = clock.todayIn(OsloZone)
         val allVeglenker = cachedVegnett.getAllVeglenker()
         log.info("Genererer INSPIRE RoadLinks fra ${allVeglenker.size} veglenkesekvenser (cached)...")
 
@@ -47,7 +51,7 @@ class InspireRoadNetExporter(
             .asFlow()
             .map { veglenkerInSekvens ->
                 veglenkerInSekvens
-                    .filter { it.isTopLevel && it.isActive() }
+                    .filter { it.isTopLevel && it.isActive(today) }
                     .map { veglenke -> veglenke.toInspireRoadLink() }
             }
             .flatMapConcat { it.asFlow() }

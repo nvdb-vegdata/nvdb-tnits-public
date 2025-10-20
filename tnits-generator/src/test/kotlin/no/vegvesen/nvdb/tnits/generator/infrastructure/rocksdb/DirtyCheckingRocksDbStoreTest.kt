@@ -13,8 +13,6 @@ import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVegobjekter
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.DirtyCheckingRocksDbStore
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import kotlin.time.Clock
 
@@ -82,7 +80,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
 
                 val veglenkesekvens1 = 1001L
                 val veglenkesekvens2 = 1002L
@@ -144,7 +142,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
 
                 val veglenkesekvens1 = 2001L
                 val veglenkesekvens2 = 2002L
@@ -294,7 +292,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
                 val dirtyVeglenkesekvensIds = setOf(1001L, 1002L, 1003L)
 
                 // Create vegobjekt positioned on one of the dirty veglenkesekvenser to test indirect changes
@@ -309,7 +307,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Publish dirty veglenkesekvenser
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, Clock.System.now())
                 }
 
                 // Verify initial state - should include indirect changes
@@ -352,7 +350,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Publish both dirty veglenkesekvenser and direct vegobjekt changes
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, Clock.System.now())
                     publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyVegobjektChanges)
                 }
 

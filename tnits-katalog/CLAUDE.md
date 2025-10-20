@@ -20,6 +20,7 @@ REST API service that exposes TN-ITS and INSPIRE road network data exports from 
 ```
 
 Spring Boot DevTools is enabled for hot reload of:
+
 - Static resources (HTML, CSS, JS)
 - Java/Kotlin classes (requires recompilation)
 
@@ -34,6 +35,7 @@ bunx prettier --write tnits-katalog
 This ensures consistent code formatting across all static assets.
 
 **Static Files Structure:**
+
 - `src/main/resources/static/index.html` - Landing page with links to API docs and viewer
 - `src/main/resources/static/browser.html` - Dataset browser for snapshots and updates
 - `src/main/resources/static/viewer.html` - Interactive map viewer for TN-ITS exports
@@ -42,10 +44,10 @@ This ensures consistent code formatting across all static assets.
 - `src/main/resources/static/common.css` - Shared design system styles
 
 **Frontend Tech Stack:**
+
 - ES Modules with importmap
-- HTMX for declarative AJAX (browser.html)
 - Leaflet for map visualization (viewer.html)
-- Vanilla JavaScript (no build step)
+- Vanilla JavaScript with Fetch API (no build step)
 
 ### Key Files
 
@@ -60,6 +62,7 @@ When testing the web UI, prefer Chrome DevTools MCP over Playwright MCP for bett
 ## Accessibility
 
 All pages follow WCAG 2.1 standards with:
+
 - Proper ARIA labels and live regions
 - Screen reader support
 - Semantic HTML

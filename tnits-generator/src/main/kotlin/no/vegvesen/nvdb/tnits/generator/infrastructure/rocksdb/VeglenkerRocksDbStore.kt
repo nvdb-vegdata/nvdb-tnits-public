@@ -12,10 +12,15 @@ import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVeglenkesekvenser
 import org.rocksdb.RocksDBException
+import kotlin.time.Clock
 
 @Singleton
-class VeglenkerRocksDbStore(private val rocksDbContext: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER) :
-    VeglenkerRepository {
+class VeglenkerRocksDbStore(
+    private val rocksDbContext: RocksDbContext,
+    private val clock: Clock,
+) : VeglenkerRepository {
+    private val columnFamily: ColumnFamily = ColumnFamily.VEGLENKER
+
     override fun get(veglenkesekvensId: Long): List<Veglenke>? {
         val key = veglenkesekvensId.toByteArray()
         val value = rocksDbContext.get(columnFamily, key)
@@ -100,7 +105,7 @@ class VeglenkerRocksDbStore(private val rocksDbContext: RocksDbContext, private 
         // and should not mark anything as dirty
         val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
         if (shouldDirtyMark) {
-            batchContext.publishChangedVeglenkesekvenser(updates.keys)
+            batchContext.publishChangedVeglenkesekvenser(updates.keys, clock.now())
         }
     }
 

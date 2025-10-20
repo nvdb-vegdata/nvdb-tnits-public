@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.generator.config.loadConfig
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
+import kotlin.time.Clock
 
 @Module
 @Configuration
@@ -41,6 +42,9 @@ class MainModule {
 
     @Singleton
     fun rocksDbConfig(appConfig: AppConfig) = appConfig.rocksDb
+
+    @Singleton
+    fun clock(): Clock = Clock.System
 
     @Singleton
     @Named("uberiketHttpClient")

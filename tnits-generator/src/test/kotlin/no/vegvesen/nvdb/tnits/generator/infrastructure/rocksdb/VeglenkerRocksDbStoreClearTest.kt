@@ -10,6 +10,7 @@ import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.locationtech.jts.geom.Coordinate
+import kotlin.time.Clock
 
 class VeglenkerRocksDbStoreClearTest :
     ShouldSpec({
@@ -17,7 +18,7 @@ class VeglenkerRocksDbStoreClearTest :
         should("verify data is gone after clear and store can access empty database") {
             withTempDb { config ->
                 // Arrange - Create store and add data
-                val store = VeglenkerRocksDbStore(config)
+                val store = VeglenkerRocksDbStore(config, Clock.System)
 
                 val geometryFactory = geometryFactories[UTM33]!!
                 val testGeometry =

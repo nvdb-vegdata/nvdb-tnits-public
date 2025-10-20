@@ -2,6 +2,7 @@ package no.vegvesen.nvdb.tnits.generator
 
 import io.minio.MinioClient
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -20,12 +21,15 @@ import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
+import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsAutomaticCycle
 import no.vegvesen.nvdb.tnits.generator.infrastructure.RocksDbS3BackupService
 import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader
 import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.*
+import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3TimestampService
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig
+import kotlin.time.Clock
 
 class TestServices(minioClient: MinioClient) : AutoCloseable {
     val testBucket = "nvdb-tnits-e2e-test"
@@ -34,29 +38,36 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
 
     val uberiketApi = mockk<UberiketApi>()
 
+    val clock = mockk<Clock> {
+        every { now() } answers { Clock.System.now() }
+    }
+
     val keyValueStore = KeyValueRocksDbStore(dbContext)
-    val vegobjekterRepository = VegobjekterRocksDbStore(dbContext)
+    val vegobjekterRepository = VegobjekterRocksDbStore(dbContext, clock)
     val vegobjektLoader: VegobjektLoader = VegobjektLoader(
         keyValueStore = keyValueStore,
         uberiketApi = uberiketApi,
         vegobjekterRepository = vegobjekterRepository,
         rocksDbContext = dbContext,
     )
-    val veglenkerRepository: VeglenkerRepository = VeglenkerRocksDbStore(dbContext)
+    val veglenkerRepository: VeglenkerRepository = VeglenkerRocksDbStore(dbContext, clock)
     val vegnettLoader: VegnettLoader = VegnettLoader(
         keyValueStore = keyValueStore,
         uberiketApi = uberiketApi,
         veglenkerRepository = veglenkerRepository,
         rocksDbContext = dbContext,
+        clock = clock,
     )
-    val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository)
+    val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository, clock)
 
     val datakatalogApi = mockk<DatakatalogApi> { coEvery { getKmhByEgenskapVerdi() } returns hardcodedFartsgrenseTillatteVerdier }
 
     val exportedFeatureStore = ExportedFeatureRocksDbStore(dbContext)
 
+    val exporterConfig = ExporterConfig(gzip = false, bucket = testBucket)
+
     val tnitsFeatureExporter = TnitsFeatureS3Exporter(
-        exporterConfig = ExporterConfig(gzip = false, bucket = testBucket),
+        exporterConfig = exporterConfig,
         minioClient = minioClient,
     )
 
@@ -74,6 +85,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
             openLrService = OpenLrService(cachedVegnett),
             vegobjekterRepository = vegobjekterRepository,
             exportedFeatureStore = exportedFeatureStore,
+            clock = clock,
         ),
         exportWriter,
         dirtyCheckingRepository = dirtyCheckingRepository,
@@ -82,7 +94,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     )
 
     val backfillOrchestrator = NvdbBackfillOrchestrator(vegnettLoader, vegobjektLoader)
-    val performUpdateHandler = NvdbUpdateOrchestrator(vegnettLoader, vegobjektLoader)
+    val updateOrchestrator = NvdbUpdateOrchestrator(vegnettLoader, vegobjektLoader)
 
     val rocksDbBackupService = RocksDbS3BackupService(
         dbContext,
@@ -99,6 +111,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         openLrService = OpenLrService(cachedVegnett),
         vegobjekterRepository = vegobjekterRepository,
         exportedFeatureStore = exportedFeatureStore,
+        clock = clock,
     )
 
     val tnitsExportService = TnitsExportService(
@@ -107,6 +120,22 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         dirtyCheckingRepository = dirtyCheckingRepository,
         vegobjekterRepository = vegobjekterRepository,
         keyValueStore = keyValueStore,
+    )
+
+    val timestampService = S3TimestampService(
+        minioClient = minioClient,
+        exporterConfig = exporterConfig,
+    )
+
+    val automaticCycle = TnitsAutomaticCycle(
+        rocksDbBackupService = rocksDbBackupService,
+        timestampService = timestampService,
+        keyValueStore = keyValueStore,
+        nvdbBackfillOrchestrator = backfillOrchestrator,
+        nvdbUpdateOrchestrator = updateOrchestrator,
+        cachedVegnett = cachedVegnett,
+        tnitsExportService = tnitsExportService,
+        clock = clock,
     )
 
     suspend fun setupBackfill(paths: List<String> = readJsonTestResources()) {

@@ -20,6 +20,7 @@ import java.nio.file.Files
 import kotlin.io.path.Path
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
+import kotlin.time.Clock
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readApiVegobjekt(path).toDomain()!!
@@ -46,18 +47,18 @@ fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVego
 fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedVegnett {
     val (veglenkesekvenser, vegobjekter) = readTestData(*paths)
 
-    val veglenkerStore = VeglenkerRocksDbStore(dbContext)
+    val veglenkerStore = VeglenkerRocksDbStore(dbContext, Clock.System)
     for (veglenkesekvens in veglenkesekvenser) {
         val veglenker = veglenkesekvens.convertToDomainVeglenker()
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
-    val vegobjekterStore = VegobjekterRocksDbStore(dbContext)
+    val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
     for (vegobjekt in vegobjekter) {
-        vegobjekterStore.insert(vegobjekt.toDomain()!!)
+        vegobjekterStore.insert(vegobjekt.toDomain())
     }
 
-    return CachedVegnett(veglenkerStore, vegobjekterStore)
+    return CachedVegnett(veglenkerStore, vegobjekterStore, Clock.System)
 }
 
 fun MinioClient.clear(testBucket: String) {

@@ -6,7 +6,6 @@ import kotlinx.serialization.Transient
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import org.locationtech.jts.geom.Geometry
 import java.util.*
 
@@ -44,7 +43,7 @@ data class Veglenke(
     val isTopLevel: Boolean
         get() = detaljniva in setOf(Detaljniva.VEGTRASE, Detaljniva.VEGTRASE_OG_KJOREBANE)
 
-    fun isActive(date: LocalDate = today): Boolean = startdato <= date && (sluttdato == null || sluttdato > date)
+    fun isActive(date: LocalDate): Boolean = startdato <= date && (sluttdato == null || sluttdato > date)
 
     @Transient
     override val retning: Retning? = null

@@ -7,6 +7,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.logMemoryUsage
@@ -14,14 +16,19 @@ import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
+import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import org.locationtech.jts.geom.Point
 import org.openlr.map.FunctionalRoadClass
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Clock
 
 @Singleton
-class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, private val vegobjekterRepository: VegobjekterRepository) :
+class CachedVegnett(
+    private val veglenkerRepository: VeglenkerRepository,
+    private val vegobjekterRepository: VegobjekterRepository,
+    private val clock: Clock,
+) :
     WithLogger {
     private lateinit var veglenkerLookup: Map<Long, List<Veglenke>>
     private var outgoingVeglenkerForward: MutableMap<Long, MutableSet<VeglenkeId>> = ConcurrentHashMap()
@@ -52,10 +59,12 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         initMutex.withLock {
             if (initialized) return
 
+            val today = clock.todayIn(OsloZone)
+
             log.measure("Bygger vegnett-cache", logStart = true) {
                 coroutineScope {
                     val veglenkerLoad = async {
-                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant() } } }
+                        log.measure("Load veglenker") { veglenkerRepository.getAll().mapValues { (_, v) -> v.filter { it.isRelevant(today) } } }
                     }
 
                     veglenkerLookup = veglenkerLoad.await()
@@ -151,7 +160,7 @@ class CachedVegnett(private val veglenkerRepository: VeglenkerRepository, privat
         return veglenkerLookup
     }
 
-    fun Veglenke.isRelevant(): Boolean = isTopLevel && typeVeg in setOf(
+    fun Veglenke.isRelevant(today: LocalDate): Boolean = isTopLevel && typeVeg in setOf(
         TypeVeg.KANALISERT_VEG,
         TypeVeg.ENKEL_BILVEG,
         TypeVeg.GATETUN,

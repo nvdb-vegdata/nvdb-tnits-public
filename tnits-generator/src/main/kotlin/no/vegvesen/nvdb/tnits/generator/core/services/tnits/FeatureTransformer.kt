@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
@@ -21,6 +22,7 @@ import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.ExportedFeatureRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.marshaller
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 @Singleton
@@ -31,6 +33,7 @@ class FeatureTransformer(
     private val vegobjekterRepository: VegobjekterRepository,
     private val exportedFeatureStore: ExportedFeatureRocksDbStore,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
+    private val clock: Clock,
 ) : WithLogger {
     private val fetchSize = 1000
     private val superBatchSize = workerCount * fetchSize
@@ -62,11 +65,11 @@ class FeatureTransformer(
                             )
                         } else {
                             log.error(
-                                "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
+                                "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
                             )
                         }
                     } else if (vegobjekt == null) {
-                        log.error("Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
+                        log.error("Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
                     } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
                         val previous = previousFeatures[id]
                         if (previous != null) {
@@ -78,7 +81,7 @@ class FeatureTransformer(
                             )
                         } else {
                             log.error(
-                                "Vegobjekt med id $id og type ${featureType.typeCode} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
+                                "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
                             )
                         }
                     } else {
@@ -190,6 +193,8 @@ class FeatureTransformer(
         idRange: IdRange,
         getFeatureProperties: VegobjektPropertyMapper,
     ): List<TnitsFeature> = try {
+        val today = clock.todayIn(OsloZone)
+
         // Each worker fetches and processes its own data range directly
         val vegobjekter = vegobjekterRepository.findVegobjekter(featureType.typeId, idRange)
             .filter { !it.fjernet && (it.sluttdato == null || it.sluttdato > today) }
@@ -225,7 +230,7 @@ class FeatureTransformer(
             } && vegobjekt.stedfestinger.isNotEmpty()
         }
 
-        if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
+        if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= clock.todayIn(OsloZone)) {
             log.warn("Vegobjekt for type ${type.typeCode} med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
             return TnitsFeature(
                 id = vegobjekt.id,

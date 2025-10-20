@@ -23,6 +23,7 @@ class VegnettLoader(
     private val uberiketApi: UberiketApi,
     private val veglenkerRepository: VeglenkerRepository,
     private val rocksDbContext: RocksDbContext,
+    private val clock: Clock,
 ) : WithLogger {
 
     suspend fun backfillVeglenkesekvenser(): Int {
@@ -37,7 +38,7 @@ class VegnettLoader(
 
         if (lastId == null) {
             log.info("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
-            val now = Clock.System.now()
+            val now = clock.now()
             keyValueStore.putValue("veglenkesekvenser_backfill_started", now)
         } else {
             log.info("Veglenkesekvenser backfill pågår. Gjenopptar fra siste ID: $lastId")

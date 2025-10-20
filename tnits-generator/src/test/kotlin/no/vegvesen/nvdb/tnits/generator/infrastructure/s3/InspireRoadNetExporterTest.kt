@@ -1,25 +1,26 @@
-package no.vegvesen.nvdb.tnits.generator.inspire
+package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
 import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
 import no.vegvesen.nvdb.tnits.generator.core.extensions.projectTo
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.core.presentation.writeXmlDocument
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.toFormOfWay
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.InspireRoadLink
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.InspireRoadNetExporter
 import org.locationtech.jts.geom.LineString
 import org.openlr.map.FormOfWay
 import org.openlr.map.FunctionalRoadClass
 import java.io.ByteArrayOutputStream
 import kotlin.time.Clock
+
+private val today = Clock.System.todayIn(OsloZone)
 
 class InspireRoadNetExporterTest : ShouldSpec({
 

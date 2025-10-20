@@ -1,19 +1,21 @@
 package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import jakarta.inject.Singleton
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
+import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.*
 import java.nio.ByteBuffer
+import kotlin.time.Clock
 
 @Singleton
-class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : VegobjekterRepository, WithLogger {
+class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext, private val clock: Clock) : VegobjekterRepository, WithLogger {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 
     override fun findVegobjektIds(vegobjektType: Int): Sequence<Long> {
@@ -54,6 +56,7 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
     }
 
     override fun cleanOldVersions() {
+        val today = clock.todayIn(OsloZone)
         val keysToDelete = mutableListOf<ByteArray>()
 
         var count = 0
@@ -194,13 +197,14 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext) : Vego
         // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
         // and should not mark anything as dirty
         val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
+        val now = clock.now()
         if (shouldDirtyMark) {
             if (vegobjektType in mainVegobjektTyper) {
                 context.publishChangedVegobjekter(vegobjektType, updates.map { VegobjektChange(it.key, it.value.changeType) })
             }
 
             if (vegobjektType in supportingVegobjektTyper) {
-                context.publishChangedVeglenkesekvenser(dirtyVeglenkesekvenser)
+                context.publishChangedVeglenkesekvenser(dirtyVeglenkesekvenser, now)
             }
         }
     }

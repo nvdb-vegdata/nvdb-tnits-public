@@ -1,24 +1,15 @@
-import { formatFileSize, formatTimestamp } from './utils.js'
+import {formatFileSize, formatTimestamp} from './utils.js'
 
 let selectedType = null
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadFeatureTypes()
-
-  document.body.addEventListener('htmx:afterSwap', (event) => {
-    if (
-      event.detail.target.id === 'snapshots-table' ||
-      event.detail.target.id === 'updates-table'
-    ) {
-      formatTableData(event.detail.target)
-    }
-  })
+document.addEventListener('DOMContentLoaded', () => {
+  void loadFeatureTypes()
 
   document
     .getElementById('updates-from')
     ?.addEventListener('change', (event) => {
       if (selectedType) {
-        loadUpdates(selectedType, event.target.value)
+        void loadUpdates(selectedType, event.target.value)
       }
     })
 })
@@ -55,8 +46,8 @@ window.selectFeatureType = function (type) {
 
   document.getElementById('dataset-details').classList.remove('hidden')
 
-  loadSnapshots(type)
-  loadUpdates(type)
+  void loadSnapshots(type)
+  void loadUpdates(type)
 }
 
 async function loadSnapshots(type) {
@@ -71,7 +62,9 @@ async function loadSnapshots(type) {
     }
 
     const data = await response.json()
-    renderSnapshots(data.snapshots, container)
+    if (data.snapshots) {
+      renderSnapshots(data.snapshots, container)
+    }
   } catch (error) {
     console.error('Failed to load snapshots:', error)
     container.innerHTML =

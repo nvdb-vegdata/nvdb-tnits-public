@@ -11,8 +11,8 @@ import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import org.rocksdb.RocksDBException
 
 @Singleton
-class KeyValueRocksDbStore(private val rocksDbContext: RocksDbContext, private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE) :
-    KeyValueStore {
+class KeyValueRocksDbStore(private val rocksDbContext: RocksDbContext) : KeyValueStore {
+    private val columnFamily: ColumnFamily = ColumnFamily.KEY_VALUE
 
     override fun <T : Any> get(key: String, serializer: KSerializer<T>): T? {
         val keyBytes = key.toByteArray()

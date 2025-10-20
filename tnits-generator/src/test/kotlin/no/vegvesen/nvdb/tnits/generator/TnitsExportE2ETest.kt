@@ -1,11 +1,13 @@
 package no.vegvesen.nvdb.tnits.generator
 
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.minio.GetObjectArgs
 import io.minio.GetObjectResponse
 import io.minio.MinioClient
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon
@@ -113,7 +115,7 @@ class TnitsExportE2ETest : ShouldSpec() {
                             gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
                         },
                     )
-                    performUpdateHandler.performUpdate()
+                    updateOrchestrator.performUpdate()
 
                     tnitsExportService.exportUpdate(updateTimestamp, ExportedFeatureType.SpeedLimit)
 
@@ -134,6 +136,65 @@ class TnitsExportE2ETest : ShouldSpec() {
 
                     val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.RoadName)
                     xml shouldBe expectedXml
+                }
+            }
+        }
+
+        context("automatic mode") {
+            should("handle full cycle of snapshot and update exports") {
+                withTestServices(minioClient) {
+                    dbContext.setPreserveOnClose(true)
+                    coEvery { uberiketApi.getLatestVeglenkesekvensHendelseId(any()) } returns 1
+                    coEvery { uberiketApi.streamVeglenkesekvensHendelser(any()) } returns emptyFlow()
+                    coEvery { uberiketApi.getLatestVegobjektHendelseId(any(), any()) } returns 1
+                    coEvery { uberiketApi.streamVegobjektHendelser(any(), any()) } returns emptyFlow()
+                    setupBackfill()
+
+                    // Initial export
+                    val firstDay = Instant.parse("2025-09-26T10:30:00Z")
+                    every { clock.now() } returns firstDay
+                    automaticCycle.execute()
+
+                    timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit) shouldBe firstDay
+                    timestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit).shouldBeNull()
+
+                    // Simulate some changes
+                    coEvery { uberiketApi.streamVegobjektHendelser(any(), any()) } answers {
+                        val typeId = firstArg<Int>()
+                        val start = secondArg<Long?>()
+                        when (start) {
+                            1L -> {
+                                when (typeId) {
+                                    105 -> flowOf(
+                                        VegobjektNotifikasjon().apply {
+                                            hendelseId = 2
+                                            vegobjektTypeId = 105
+                                            vegobjektId = 78712521
+                                            vegobjektVersjon = 1
+                                            hendelseType = "VegobjektVersjonEndret"
+                                        },
+                                    )
+
+                                    else -> emptyFlow()
+                                }
+                            }
+
+                            else -> emptyFlow()
+                        }
+                    }
+                    coEvery { uberiketApi.getVegobjekterPaginated(105, setOf(78712521)) } returns flowOf(
+                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json").apply {
+                            gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
+                        },
+                    )
+
+                    val secondDay = firstDay.plus(1.days)
+                    every { clock.now() } returns secondDay
+                    automaticCycle.execute()
+                    timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit) shouldBe firstDay
+                    timestampService.getLastUpdateTimestamp(ExportedFeatureType.SpeedLimit) shouldBe secondDay
+
+                    dbContext.setPreserveOnClose(false)
                 }
             }
         }
