@@ -5,4 +5,5 @@ import java.time.Instant
 data class FileObject(
     val objectName: String,
     val timestamp: Instant,
+    val size: Long,
 )

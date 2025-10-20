@@ -14,4 +14,5 @@ data class SnapshotsResponse(
 data class Snapshot(
     val href: String,
     val timestamp: Instant,
+    val size: Long,
 )

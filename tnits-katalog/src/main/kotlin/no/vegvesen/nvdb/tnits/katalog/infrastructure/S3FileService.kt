@@ -27,17 +27,18 @@ class S3FileService(private val minioClient: MinioClient, private val minioPrope
                 .recursive(true)
                 .build(),
         )
-            .map { it.get().objectName() }
-            .filter { it.endsWith(suffix) }
-            .mapNotNull { objectName ->
-                parseTimestampFromS3Key(objectName).let {
+            .map { it.get() }
+            .filter { it.objectName().endsWith(suffix) }
+            .mapNotNull { item ->
+                parseTimestampFromS3Key(item.objectName()).let {
                     if (it == null) {
-                        println("Warning: Could not parse timestamp from S3 key: $objectName")
+                        println("Warning: Could not parse timestamp from S3 key: ${item.objectName()}")
                         null
                     } else {
                         FileObject(
-                            objectName = objectName,
+                            objectName = item.objectName(),
                             timestamp = it.toJavaInstant(),
+                            size = item.size(),
                         )
                     }
                 }

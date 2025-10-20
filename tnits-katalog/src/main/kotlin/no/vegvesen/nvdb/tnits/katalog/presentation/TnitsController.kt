@@ -10,6 +10,7 @@ import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.Snapshot
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.SnapshotResponse
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.SnapshotsResponse
+import no.vegvesen.nvdb.tnits.katalog.presentation.model.Update
 import no.vegvesen.nvdb.tnits.katalog.presentation.model.UpdatesResponse
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
@@ -44,10 +45,11 @@ class TnitsController(
         @PathVariable @Parameter(description = "TN-ITS RoadFeatureTypeCode to list snapshots for, see /api/v1/tnits/types") type: RoadFeatureTypeCode,
     ): SnapshotsResponse = fileService.getFileObjects(type, snapshotSuffix)
         .sortedByDescending { it.timestamp }
-        .map { (objectName, timestamp) ->
+        .map { (objectName, timestamp, size) ->
             Snapshot(
                 href = getDownloadUrl(objectName),
                 timestamp = timestamp,
+                size = size,
             )
         }
         .ifEmpty { throw ResponseStatusException(HttpStatus.NOT_FOUND) }
@@ -91,7 +93,13 @@ If not specified, fetches updates since start of current month.
         .sortedBy { it.timestamp }
         .let { updates ->
             UpdatesResponse(
-                hrefs = updates.map { getDownloadUrl(it.objectName) },
+                updates = updates.map { (objectName, timestamp, size) ->
+                    Update(
+                        href = getDownloadUrl(objectName),
+                        timestamp = timestamp,
+                        size = size,
+                    )
+                },
                 newUpdates = getUpdatesUrl(type, updates.lastOrNull()?.timestamp ?: from),
             )
         }

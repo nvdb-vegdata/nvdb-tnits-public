@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TN-ITS Dataset Browser</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "./utils.js": "/utils.js"
+      }
+    }
+  </script>
+  <script type="module" src="/browser.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f7fafc;
+      min-height: 100vh;
+      color: #4a5568;
+    }
+
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .logo img {
+      height: 40px;
+      width: auto;
+    }
+
+    h1 {
+      color: #2d3748;
+      font-size: 1.75rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 30px;
+    }
+
+    .sidebar {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .sidebar h2 {
+      color: #2d3748;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #ff6900;
+    }
+
+    .feature-types-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feature-type-btn {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-size: 0.95rem;
+      color: #4a5568;
+    }
+
+    .feature-type-btn:hover {
+      background: #edf2f7;
+      border-color: #cbd5e0;
+    }
+
+    .feature-type-btn.active {
+      background: #fff5f0;
+      border-color: #ff6900;
+      color: #2d3748;
+      font-weight: 600;
+    }
+
+    .type-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+
+    .main-content {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 32px;
+      min-height: 500px;
+    }
+
+    .dataset-details {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .dataset-details.hidden {
+      display: none;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #a0aec0;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section h3 {
+      color: #2d3748;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .date-filter {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .date-filter label {
+      font-size: 0.9rem;
+      color: #718096;
+    }
+
+    .date-filter input {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #4a5568;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    thead {
+      background: #f7fafc;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #4a5568;
+    }
+
+    tbody tr:hover {
+      background: #f7fafc;
+    }
+
+    .download-btn {
+      display: inline-block;
+      padding: 6px 16px;
+      background: #ff6900;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    .download-btn:hover {
+      background: #e65c00;
+    }
+
+    .loading,
+    .empty,
+    .error {
+      text-align: center;
+      padding: 40px;
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    .error {
+      color: #e53e3e;
+    }
+
+    .htmx-indicator {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ff6900;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 16px 20px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+      }
+
+      .main-content {
+        padding: 20px;
+      }
+
+      table {
+        font-size: 0.85rem;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="/" class="logo">
+      <img src="/nvdb_logo.svg" alt="NVDB - Nasjonal vegdatabank">
+    </a>
+    <h1>TN-ITS Dataset Browser</h1>
+  </div>
+
+  <div class="container">
+    <aside class="sidebar">
+      <h2>Feature Types</h2>
+      <div id="feature-types-list" class="feature-types-list">
+        <div class="loading">Loading...</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div id="dataset-details" class="dataset-details hidden">
+        <section class="section">
+          <div class="section-header">
+            <h3>Snapshots</h3>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Size</th>
+                <th>Download</th>
+              </tr>
+            </thead>
+            <tbody id="snapshots-table">
+              <tr>
+                <td colspan="3" class="loading">Select a feature type</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h3>Updates</h3>
+            <div class="date-filter">
+              <label for="updates-from">From:</label>
+              <input type="date" id="updates-from" />
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Size</th>
+                <th>Download</th>
+              </tr>
+            </thead>
+            <tbody id="updates-table">
+              <tr>
+                <td colspan="3" class="loading">Select a feature type</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div id="empty-state" class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3>Select a feature type to browse datasets</h3>
+        <p>Choose a TN-ITS feature type from the sidebar to view available snapshots and updates</p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
