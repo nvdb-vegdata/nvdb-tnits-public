@@ -2,20 +2,25 @@ import { formatFileSize, formatTimestamp } from './utils.js'
 
 let selectedType = null
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadFeatureTypes()
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadFeatureTypes()
 
   document.body.addEventListener('htmx:afterSwap', (event) => {
-    if (event.detail.target.id === 'snapshots-table' || event.detail.target.id === 'updates-table') {
+    if (
+      event.detail.target.id === 'snapshots-table' ||
+      event.detail.target.id === 'updates-table'
+    ) {
       formatTableData(event.detail.target)
     }
   })
 
-  document.getElementById('updates-from')?.addEventListener('change', (event) => {
-    if (selectedType) {
-      loadUpdates(selectedType, event.target.value)
-    }
-  })
+  document
+    .getElementById('updates-from')
+    ?.addEventListener('change', (event) => {
+      if (selectedType) {
+        loadUpdates(selectedType, event.target.value)
+      }
+    })
 })
 
 async function loadFeatureTypes() {
@@ -30,7 +35,7 @@ async function loadFeatureTypes() {
       <button class="feature-type-btn" data-type="${type}" onclick="selectFeatureType('${type}')">
         <span class="type-code">${type}</span>
       </button>
-    `
+    `,
       )
       .join('')
   } catch (error) {
@@ -56,7 +61,8 @@ window.selectFeatureType = function (type) {
 
 async function loadSnapshots(type) {
   const container = document.getElementById('snapshots-table')
-  container.innerHTML = '<tr><td colspan="3" class="loading">Loading snapshots...</td></tr>'
+  container.innerHTML =
+    '<tr><td colspan="3" class="loading">Loading snapshots...</td></tr>'
 
   try {
     const response = await fetch(`/api/v1/tnits/${type}/snapshots`)
@@ -68,13 +74,15 @@ async function loadSnapshots(type) {
     renderSnapshots(data.snapshots, container)
   } catch (error) {
     console.error('Failed to load snapshots:', error)
-    container.innerHTML = '<tr><td colspan="3" class="empty">No snapshots available</td></tr>'
+    container.innerHTML =
+      '<tr><td colspan="3" class="empty">No snapshots available</td></tr>'
   }
 }
 
 async function loadUpdates(type, from = null) {
   const container = document.getElementById('updates-table')
-  container.innerHTML = '<tr><td colspan="3" class="loading">Loading updates...</td></tr>'
+  container.innerHTML =
+    '<tr><td colspan="3" class="loading">Loading updates...</td></tr>'
 
   const fromParam = from || document.getElementById('updates-from')?.value || ''
   const url = `/api/v1/tnits/${type}/updates${fromParam ? `?from=${fromParam}` : ''}`
@@ -86,11 +94,13 @@ async function loadUpdates(type, from = null) {
     if (data.updates && data.updates.length > 0) {
       renderUpdates(data.updates, container)
     } else {
-      container.innerHTML = '<tr><td colspan="3" class="empty">No updates available for this period</td></tr>'
+      container.innerHTML =
+        '<tr><td colspan="3" class="empty">No updates available for this period</td></tr>'
     }
   } catch (error) {
     console.error('Failed to load updates:', error)
-    container.innerHTML = '<tr><td colspan="3" class="error">Failed to load updates</td></tr>'
+    container.innerHTML =
+      '<tr><td colspan="3" class="error">Failed to load updates</td></tr>'
   }
 }
 
@@ -103,7 +113,7 @@ function renderSnapshots(snapshots, container) {
       <td data-size="${snapshot.size}">${snapshot.size}</td>
       <td><a href="${snapshot.href}" class="download-btn" download>Download</a></td>
     </tr>
-  `
+  `,
     )
     .join('')
   formatTableData(container)
@@ -118,7 +128,7 @@ function renderUpdates(updates, container) {
       <td data-size="${update.size}">${update.size}</td>
       <td><a href="${update.href}" class="download-btn" download>Download</a></td>
     </tr>
-  `
+  `,
     )
     .join('')
   formatTableData(container)
