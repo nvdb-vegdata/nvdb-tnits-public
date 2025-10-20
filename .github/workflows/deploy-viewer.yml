@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'viewer.html'
+      - 'tnits-katalog/src/main/resources/static/viewer.html'
 
 permissions:
   contents: write
@@ -28,7 +28,7 @@ jobs:
       - name: Deploy to gh-pages
         run: |
           # Save the viewer.html content
-          cp viewer.html /tmp/viewer.html
+          cp tnits-katalog/src/main/resources/static/viewer.html /tmp/viewer.html
 
           # Switch to gh-pages branch
           git checkout gh-pages
