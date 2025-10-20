@@ -84,3 +84,5 @@ nvdb-api.json.bak
 *.kryo
 
 **/.kotlin/
+
+.playwright-mcp

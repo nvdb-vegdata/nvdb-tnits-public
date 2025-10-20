@@ -20,7 +20,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     disable-swagger-default-url: 'true'
-    path: /
+    path: /swagger-ui
 minio:
   endpoint: ${S3_ENDPOINT:}
   accessKey: ${S3_ACCESS_KEY:}
