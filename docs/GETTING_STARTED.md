@@ -77,7 +77,7 @@ The application has three main commands:
 - Checks if an update has been taken today
 - Runs the appropriate operation automatically
 
-See: `core/useCases/PerformSmartTnitsExport.kt` for auto mode logic
+See: `core/useCases/TnitsAutomaticCycle.kt` for auto mode logic
 
 ### Run the Application
 

@@ -48,7 +48,7 @@ tnits-generator/
     └── s3/                   # S3/MinIO implementations
 ```
 
-**Dependency Rule:** Dependencies flow inward - `infrastructure` → `core/services` → `core/api`. The core never depends on infrastructure.
+**Dependency Rule:** Dependencies flow inward - `infrastructure` → `core/services` → `core/api`. The core never depends on infrastructure. This rule is automatically enforced by Konsist architecture tests (see `ArchitectureTest.kt`).
 
 ## MainModule Configuration
 
@@ -88,8 +88,6 @@ class MainModule {
 - `@Configuration` - Indicates this module contains configuration
 - `@ComponentScan` - Automatically scans the package for annotated classes
 
-**Location:** `MainModule.kt`
-
 ## Declaring Dependencies
 
 ### Using @Singleton Annotation
@@ -98,7 +96,7 @@ The most common pattern is to annotate classes with `@Singleton` for constructor
 
 ```kotlin
 @Singleton
-class PerformTnitsSnapshotExport(
+class TnitsSnapshotCycle(
     private val rocksDbBackupService: RocksDbS3BackupService,
     private val nvdbBackfillOrchestrator: NvdbBackfillOrchestrator,
     private val nvdbUpdateOrchestrator: NvdbUpdateOrchestrator,
@@ -120,8 +118,6 @@ class PerformTnitsSnapshotExport(
 - No need to manually declare in a module
 - Type-safe dependency resolution
 - Compile-time validation with KSP
-
-**Location:** `core/useCases/PerformTnitsSnapshotExport.kt`
 
 ### Named Dependencies
 
@@ -209,7 +205,7 @@ suspend fun main(args: Array<String>) {
     val app = ProductionApp.startKoin()
 
     when (args.firstOrNull()) {
-        "snapshot" -> app.koin.get<PerformTnitsSnapshotExport>().execute()
+        "snapshot" -> app.koin.get<TnitsSnapshotCycle>().execute()
         "update" -> app.koin.get<TnitsUpdateCycle>().execute()
         "inspire-roadnet" -> app.koin.get<PerformInspireRoadnetExport>().execute()
         "auto", null -> app.koin.get<PerformSmartTnitsExport>().execute()
@@ -230,15 +226,13 @@ suspend fun main(args: Array<String>) {
 3. `app.koin.get<T>()` - Resolve dependencies from the Koin container
 4. No manual module registration needed - KSP discovers all `@Module` annotated classes
 
-**Location:** `Application.kt`
-
 ### Dependency Resolution
 
 Dependencies are resolved using the `koin` property from the application:
 
 ```kotlin
 // Get instance from Koin container
-val useCase = app.koin.get<PerformTnitsSnapshotExport>()
+val useCase = app.koin.get<TnitsSnapshotCycle>()
 useCase.execute()
 ```
 

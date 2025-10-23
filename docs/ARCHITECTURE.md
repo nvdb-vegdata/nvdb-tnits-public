@@ -84,23 +84,22 @@ The core CLI application responsible for data synchronization and export, follow
 
 #### Core Layer (Business Logic)
 
-- `core/api/` - Interfaces/ports defining contracts
-- `core/useCases/` - Use case orchestration (e.g., PerformSmartTnitsExport, TnitsUpdateCycle)
+- `core/api/` - Interfaces/ports defining contracts for repositories, services, and storage
+- `core/useCases/` - Use case orchestration for snapshots, updates, and exports
 - `core/services/` - Business logic services
-    - `core/services/nvdb/` - NVDB synchronization (NvdbBackfillOrchestrator, NvdbUpdateOrchestrator)
-    - `core/services/tnits/` - TN-ITS export logic (TnitsExportService, FeatureTransformer)
-    - `core/services/vegnett/` - Road network logic (CachedVegnett, OpenLrService)
-    - `core/services/storage/` - Storage abstractions (ColumnFamily, BatchOperation)
-- `core/presentation/` - Output formatting (TnitsXmlWriter, XmlStreamDsl)
-- `core/extensions/` - Utility extensions (GeometryHelpers, FlowExtensions)
-- `core/model/` - Domain models
+    - `core/services/tnits/` - TN-ITS export logic and feature transformation
+    - `core/services/vegnett/` - Road network logic and OpenLR encoding
+    - `core/services/storage/` - Storage abstractions and batch operations
+- `core/presentation/` - XML output formatting with streaming support
+- `core/extensions/` - Utility extensions for geometry, flows, and data manipulation
+- `core/model/` - Domain models representing road network concepts
 
 #### Infrastructure Layer (Adapters)
 
-- `infrastructure/http/` - API clients (UberiketApiGateway, DatakatalogApiGateway)
-- `infrastructure/rocksdb/` - Storage implementations (VeglenkerRocksDbStore, VegobjekterRocksDbStore, RocksDbContext)
-- `infrastructure/s3/` - S3/MinIO implementations (TnitsFeatureS3Exporter, S3TimestampService)
-- `infrastructure/` - Data loaders (VegnettLoader, VegobjektLoader)
+- `infrastructure/http/` - HTTP clients for NVDB APIs (Uberiket and Datakatalog)
+- `infrastructure/rocksdb/` - RocksDB storage implementations for repositories
+- `infrastructure/s3/` - S3/MinIO implementations for exports and backups
+- `infrastructure/ingest/` - NVDB data ingestion orchestrators and loaders
 
 #### Configuration
 
@@ -134,6 +133,7 @@ Spring Boot REST service that serves exported TN-ITS files from MinIO/S3.
 | **Testcontainers**   | Integration testing            | [testcontainers.org](https://testcontainers.org)                         |
 | **Spring Boot**      | katalog REST service           | [spring.io/projects/spring-boot](https://spring.io/projects/spring-boot) |
 | **Koin**             | Dependency Injection           | [insert-koin.io](https://insert-koin.io)                                 |
+| **Konsist**          | Architecture testing           | [konsist.lemonappdev.com](https://docs.konsist.lemonappdev.com)          |
 
 ## Data Flow
 
@@ -141,36 +141,29 @@ The system operates in three main phases:
 
 ### 1. Initial Backfill
 
+Downloads all road network data and road objects from NVDB when starting from an empty database.
+
 ```
 NVDB API → Fetch all road network → Store in RocksDB
           ↓
        Fetch all road objects → Store in RocksDB
 ```
 
-Implemented in: `core/services/nvdb/NvdbBackfillOrchestrator.kt`
-
 ### 2. Incremental Updates
+
+Processes change events from NVDB to keep data current.
 
 ```
 NVDB API → Fetch change events → Update RocksDB → Mark dirty
 ```
 
-Implemented in: `core/services/nvdb/NvdbUpdateOrchestrator.kt`
-
 ### 3. TN-ITS Export
+
+Generates TN-ITS XML files from stored data, either as full snapshots or delta updates.
 
 ```
 RocksDB → Process dirty items → Generate XML → Upload to S3
 ```
-
-Implemented in:
-
-- `core/useCases/PerformSmartTnitsExport.kt` - Smart decision-making
-- `core/useCases/PerformTnitsSnapshotExport.kt` - Snapshot export
-- `core/useCases/TnitsUpdateCycle.kt` - Update cycle
-- `core/services/tnits/TnitsExportService.kt` - Export orchestration
-- `core/services/tnits/FeatureTransformer.kt` - Feature generation
-- `infrastructure/s3/TnitsFeatureS3Exporter.kt` - S3 upload
 
 ## Key Design Patterns
 
@@ -233,19 +226,43 @@ class VegobjekterRocksDbStore(
 
 For comprehensive documentation on Koin usage, see [Koin Dependency Injection Guide](KOIN_DEPENDENCY_INJECTION.md).
 
+### Architecture Testing with Konsist
+
+The project uses **Konsist** to enforce clean architecture boundaries at compile time through unit tests. This ensures that the dependency rule (infrastructure → core, never core → infrastructure) is automatically validated in CI/CD.
+
+**Test location:** `tnits-generator/src/test/kotlin/no/vegvesen/nvdb/tnits/generator/ArchitectureTest.kt`
+
+**What it validates:**
+
+- Core layer (`core.*`) must NOT depend on infrastructure layer (`infrastructure.*`)
+- Infrastructure layer MAY depend on core layer (via interfaces in `core/api/`)
+
+**How it works:**
+
+```kotlin
+@Test
+fun `core layer does not depend on infrastructure`() {
+    Konsist.scopeFromProduction()
+        .assertArchitecture {
+            val core = Layer("Core", "no.vegvesen.nvdb.tnits.generator.core..")
+            val infrastructure = Layer("Infrastructure", "no.vegvesen.nvdb.tnits.generator.infrastructure..")
+
+            core.doesNotDependOn(infrastructure)
+        }
+}
+```
+
+The test runs as part of the standard test suite and **fails the build** if any core class imports infrastructure classes, catching architecture violations early.
+
 ### Repository Pattern
 
-Storage operations are abstracted through repository interfaces (ports in clean architecture):
+Storage operations are abstracted through repository interfaces defined in the core layer:
 
-- `VeglenkerRepository` (interface in `core/api/`) - Road network data
-- `VegobjekterRepository` (interface in `core/api/`) - Road objects data
-- `DirtyCheckingRepository` (interface in `core/api/`) - Change tracking
+- Road network repository - Manages veglenkesekvenser and veglenker
+- Road objects repository - Manages vegobjekter with their properties
+- Dirty checking repository - Tracks changed items for delta processing
 
-Implementations (adapters) in `infrastructure/rocksdb/`:
-
-- `VeglenkerRocksDbStore` implements `VeglenkerRepository`
-- `VegobjekterRocksDbStore` implements `VegobjekterRepository`
-- `DirtyCheckingRocksDbStore` implements `DirtyCheckingRepository`
+The infrastructure layer provides concrete implementations using RocksDB for persistence.
 
 ### Unit-of-Work for Atomicity
 
@@ -258,15 +275,13 @@ rocksDbContext.writeBatch {
 }
 ```
 
-See: `core/services/storage/WriteBatchContext.kt`
-
 ### Streaming Processing
 
 Large XML exports use streaming to avoid memory issues:
 
-- XML streaming via StAX (`core/presentation/XmlStreamDsl.kt`)
+- XML streaming via StAX for constant memory usage
 - Parallel processing with worker pools
-- Direct streaming to S3 via `infrastructure/s3/S3OutputStream.kt`
+- Direct streaming to S3 without buffering entire file in memory
 
 ## Configuration
 
@@ -298,8 +313,6 @@ backup {
 }
 ```
 
-See: `config/AppConfig.kt:12`
-
 ## Performance Considerations
 
 ### RocksDB Optimization
@@ -314,8 +327,6 @@ See: `config/AppConfig.kt:12`
 - Multithreaded speed limit processing
 - Worker pool architecture with step-lock orchestration
 - Ordered output via post-processing sort
-
-See: `core/services/tnits/TnitsExportService.kt` for parallel processing implementation
 
 ### Memory Management
 

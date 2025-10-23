@@ -1,15 +1,12 @@
 package no.vegvesen.nvdb.tnits.generator.core.useCases
 
 import jakarta.inject.Singleton
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
-import no.vegvesen.nvdb.tnits.generator.core.api.BackfillOrchestrator
-import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
-import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
-import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
-import no.vegvesen.nvdb.tnits.generator.core.api.UpdateOrchestrator
+import no.vegvesen.nvdb.tnits.generator.core.api.*
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.extensions.getLastUpdateCheck
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
@@ -41,27 +38,7 @@ class TnitsAutomaticCycle(
         val today = clock.todayIn(OsloZone)
 
         val updateStatusByType = ExportedFeatureType.entries.associateWith { exportedFeatureType ->
-            val lastSnapshot = timestampService.getLastSnapshotTimestamp(exportedFeatureType)
-            val lastUpdate = timestampService.getLastUpdateTimestamp(exportedFeatureType)
-
-            val hasSnapshotBeenTakenThisMonth = lastSnapshot?.let {
-                val snapshotDate = it.toLocalDateTime(OsloZone).date
-                today.year == snapshotDate.year && today.month == snapshotDate.month
-            } ?: false
-
-            val hasUpdateBeenTakenToday = lastUpdate?.let {
-                val updateDate = it.toLocalDateTime(OsloZone).date
-                today == updateDate
-            } ?: false
-
-            val hasUpdateBeenCheckedToday = keyValueStore.getLastUpdateCheck(exportedFeatureType)?.let {
-                val updateCheckDate = it.toLocalDateTime(OsloZone).date
-                today == updateCheckDate
-            } ?: false
-
-            val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
-            val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
-            UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate, lastUpdate)
+            findUpdateStatus(exportedFeatureType, today)
         }
 
         if (updateStatusByType.values.any { it.pendingSnapshot || it.pendingUpdate }) {
@@ -92,5 +69,29 @@ class TnitsAutomaticCycle(
                 "Skipping automatic TN-ITS process, already performed today or this month",
             )
         }
+    }
+
+    private fun findUpdateStatus(exportedFeatureType: ExportedFeatureType, today: LocalDate): UpdateStatus {
+        val lastSnapshot = timestampService.getLastSnapshotTimestamp(exportedFeatureType)
+        val lastUpdate = timestampService.getLastUpdateTimestamp(exportedFeatureType)
+
+        val hasSnapshotBeenTakenThisMonth = lastSnapshot?.let {
+            val snapshotDate = it.toLocalDateTime(OsloZone).date
+            today.year == snapshotDate.year && today.month == snapshotDate.month
+        } ?: false
+
+        val hasUpdateBeenTakenToday = lastUpdate?.let {
+            val updateDate = it.toLocalDateTime(OsloZone).date
+            today == updateDate
+        } ?: false
+
+        val hasUpdateBeenCheckedToday = keyValueStore.getLastUpdateCheck(exportedFeatureType)?.let {
+            val updateCheckDate = it.toLocalDateTime(OsloZone).date
+            today == updateCheckDate
+        } ?: false
+
+        val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
+        val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
+        return UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate, lastUpdate)
     }
 }

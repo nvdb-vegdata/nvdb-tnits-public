@@ -37,8 +37,6 @@ RocksDB uses **column families** to logically separate different types of data. 
 
 ### Column Family Schema
 
-Defined in: `core/services/storage/ColumnFamily.kt`
-
 | Column Family               | Purpose              | Key Format                    | Value Format                    |
 |-----------------------------|----------------------|-------------------------------|---------------------------------|
 | **DEFAULT**                 | RocksDB default      | -                             | -                               |
@@ -208,8 +206,6 @@ val veglenker = ProtoBuf.decodeFromByteArray(
 )
 ```
 
-See: `model/Veglenke.kt`, `VeglenkerRocksDbStore.kt:108`
-
 ## Batch Operations
 
 Batch operations are crucial for performance when dealing with large datasets.
@@ -286,7 +282,7 @@ Application state is tracked in the `KEY_VALUE` column family.
 | `last_update_check_{typeId}` | Instant    | Last update check timestamp       |
 | `backfill_complete_{typeId}` | Boolean    | Backfill status                   |
 
-**Access via:** `KeyValueRocksDbStore` (infrastructure/rocksdb/) and extension functions in `core/extensions/KeyValueStoreExtensions.kt`
+**Access via:** Key-value store implementation with extension functions for typed access
 
 ## Dirty Checking System
 
@@ -337,8 +333,6 @@ val dirtyObjects = dirtyCheckingStore.findVegobjekterOnDirtyVeglenkesekvenser(
 
 This enables cascade updates: when a road segment changes, find all speed limits on that segment.
 
-See: `infrastructure/rocksdb/DirtyCheckingRocksDbStore.kt`
-
 ## Backup and Restore
 
 The application uses RocksDB's native backup engine for consistent snapshots.
@@ -374,8 +368,6 @@ rocksDbBackupService.restoreIfNeeded()
 2. Extract to temporary directory
 3. Restore using RocksDB BackupEngine
 4. Clean up temporary files
-
-See: `infrastructure/RocksDbS3BackupService.kt`
 
 ## Performance Characteristics
 
@@ -430,8 +422,6 @@ fun clear() {
     initialize()
 }
 ```
-
-See: `infrastructure/rocksdb/RocksDbContext.kt`
 
 ## Common Patterns
 

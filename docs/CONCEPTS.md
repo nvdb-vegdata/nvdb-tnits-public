@@ -774,9 +774,9 @@ class VeglenkerRocksDbStore(
 }
 
 @Singleton
-class PerformSmartTnitsExport(
-    private val tnitsExportService: TnitsExportService,
-    private val rocksDbBackupService: RocksDbS3BackupService,
+class TnitsAutomaticCycle(
+    private val rocksDbBackupService: LocalBackupService,
+    private val timestampService: TimestampService,
     // Dependencies automatically resolved by Koin
 ) {
     suspend fun execute() { /* ... */

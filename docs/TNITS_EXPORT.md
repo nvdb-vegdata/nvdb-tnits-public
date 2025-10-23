@@ -81,13 +81,6 @@ s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
 8. Clear dirty state (for updates)
 ```
 
-**Implementation:**
-
-- `core/useCases/PerformSmartTnitsExport.kt` - Orchestrates the overall export decision
-- `core/services/tnits/TnitsExportService.kt` - Core export orchestration
-- `core/services/tnits/FeatureTransformer.kt` - Feature generation
-- `infrastructure/s3/TnitsFeatureS3Exporter.kt` - S3 upload
-
 ### Detailed Steps
 
 #### Step 1: Initialize Cached Road Network
@@ -558,7 +551,7 @@ if (!hasSnapshotThisMonth) {
 - Snapshot: Once per month
 - Update: Once per day
 
-See: `core/useCases/PerformSmartTnitsExport.kt`
+See: `core/useCases/TnitsAutomaticCycle.kt`
 
 ## Validation
 

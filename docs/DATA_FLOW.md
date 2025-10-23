@@ -50,8 +50,6 @@ All operations launch concurrently in a `coroutineScope` and run in parallel. On
 
 ### Backfill Process Details
 
-**Implementation:** `core/services/nvdb/NvdbBackfillOrchestrator.kt`
-
 #### Step 1: Veglenkesekvenser Backfill
 
 ```
@@ -141,8 +139,6 @@ Both update processes run independently and can execute in parallel.
 
 ### Update Process Details
 
-**Implementation:** `core/services/nvdb/NvdbUpdateOrchestrator.kt`
-
 #### Event Types
 
 **Veglenkesekvens Events:**
@@ -164,10 +160,6 @@ Both update processes run independently and can execute in parallel.
 
 #### Veglenkesekvens Events
 
-**API Endpoint:** `GET /hendelser/veglenkesekvenser`
-
-**Event Types:** `VeglenkesekvensOpprettet`, `VeglenkesekvensEndret`, `VeglenkesekvensFjernet`
-
 **Process:**
 
 ```
@@ -183,10 +175,6 @@ Both update processes run independently and can execute in parallel.
 **Note:** All event types are handled the same way - fetch full current data and upsert. Deleted sequences return null and are removed from storage.
 
 #### Vegobjekt Events
-
-**API Endpoint:** `GET /hendelser/vegobjekter/{typeId}`
-
-**Event Types:** `VegobjektImportert`, `VegobjektVersjonOpprettet`, `VegobjektVersjonEndret`, `VegobjektVersjonFjernet`
 
 **Process:**
 
@@ -325,8 +313,6 @@ flowchart TD
 
 **Output:** JTS LineString in UTM33 projection
 
-See: `core/extensions/GeometryHelpers.kt`
-
 #### 2. OpenLR Encoding
 
 **Input:** List of veglenker with geometry
@@ -340,8 +326,6 @@ See: `core/extensions/GeometryHelpers.kt`
 5. Encode to binary OpenLR
 
 **Output:** Base64-encoded OpenLR string
-
-See: `core/services/vegnett/OpenLrService.kt`
 
 **Note:** Current implementation uses placeholder encoding. Real OpenLR encoding requires an OpenLR library.
 
@@ -358,8 +342,6 @@ See: `core/services/vegnett/OpenLrService.kt`
 
 **Output:** WGS84 coordinates (EPSG:4326) for TN-ITS XML
 
-See: `core/extensions/GeometryHelpers.kt`
-
 #### 4. Geometry Simplification
 
 **Input:** High-resolution linestring
@@ -372,8 +354,6 @@ See: `core/extensions/GeometryHelpers.kt`
 
 **Output:** Simplified linestring (tolerance: ~1 meter)
 
-See: `core/extensions/GeometryHelpers.kt`
-
 ## Data Dependencies
 
 ### Required Vegobjekt Types
@@ -384,15 +364,10 @@ See: `core/extensions/GeometryHelpers.kt`
 | **821** | Funksjonell vegklasse | FRC for OpenLR                 |
 | **616** | Feltstrekning         | Direction for connection links |
 
-Defined in: `tnits-common/src/main/kotlin/no/vegvesen/nvdb/tnits/common/model/VegobjektTyper.kt`
+**Type Configuration:**
 
-### Type Configuration
-
-**Main types:** Speed limits (105)
-
-**Supporting types:** Feltstrekning (616), Funksjonell vegklasse (821)
-
-See: `Application.kt` and `MainModule.kt`
+- Main types: Speed limits (105)
+- Supporting types: Feltstrekning (616), Funksjonell vegklasse (821)
 
 ## State Tracking
 
@@ -434,8 +409,6 @@ NVDB API calls use exponential backoff retry:
 - Retry on server errors and timeouts
 - Exponential delay up to 30 seconds
 
-See: `infrastructure/http/UberiketApiGateway.kt`
-
 ### Transaction Rollback
 
 RocksDB batch operations are atomic - all operations succeed or all fail together.
@@ -457,8 +430,6 @@ Progress is persisted after each batch, enabling resumable operations on restart
 
 **Memory usage:** ~2-3 GB for Norwegian road network
 
-See: `core/services/vegnett/CachedVegnett.kt`
-
 ### Batch Sizing
 
 | Operation         | Batch Size | Reason                     |
@@ -475,8 +446,6 @@ Use StAX (Streaming API for XML) instead of DOM:
 
 - DOM: O(n) - entire document in memory
 - StAX: O(1) - constant memory
-
-See: `core/presentation/XmlStreamDsl.kt`
 
 ## Monitoring Progress
 
