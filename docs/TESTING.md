@@ -7,6 +7,7 @@ This document describes the testing framework, conventions, and best practices f
 The project uses **Kotest** as its primary testing framework.
 
 **Why Kotest?**
+
 - Expressive test names with natural language
 - Multiple testing styles (ShouldSpec, FunSpec, etc.)
 - Powerful matchers and assertions
@@ -51,12 +52,14 @@ src/test/resources/
 ```
 
 **Naming conventions:**
+
 - Speed limits: `vegobjekt-105-{id}.json`
 - Other vegobjekter: `vegobjekt-{typeId}-{id}.json`
 - Single veglenkesekvens: `veglenkesekvens-{id}.json`
 - Multiple veglenkesekvenser: `veglenkesekvenser-{id1}-{idX}.json`
 
 **Saving test data:**
+
 ```bash
 # Fetch and save a vegobjekt
 curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283590?inkluder=alle" | \
@@ -105,6 +108,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec({
 ```
 
 **Characteristics:**
+
 - Test names are strings (natural language)
 - Tests organized with `should("description")`
 - Supports nested contexts
@@ -163,6 +167,7 @@ should("calculate intersecting geometry correctly") {
 ```
 
 **Important:** Use exact class name, not wildcards:
+
 ```bash
 # Good
 ./gradlew test --tests='VeglenkerRocksDbStoreTest'
@@ -181,11 +186,13 @@ kotest_filter_tests="*should format with padded vegobjekttype*" \
 ```
 
 **Pattern:**
+
 ```bash
 kotest_filter_tests="*pattern*" ./gradlew test --tests="ExactClassName"
 ```
 
 **Important rules from `CLAUDE.md`:**
+
 - NEVER use asterisks (*) in `--tests` parameter
 - ALWAYS use exact class names in `--tests`
 - For wildcards, use `kotest_filter_tests` environment variable
@@ -295,6 +302,7 @@ class MyTest : ShouldSpec({
 **Implementation:** `openlr/TempRocksDbConfig.kt`
 
 **Features:**
+
 - Creates temporary RocksDB instance
 - Automatically cleans up after test
 - Isolated from production database
@@ -375,7 +383,7 @@ class TnitsExportE2ETest : ShouldSpec({
 
                 // 2. Run export
                 val exporter = TnitsFeatureExporter(...)
-                exporter.exportSnapshot(Clock.System.now(), ExportedFeatureType.SpeedLimit)
+                exporter.exportSnapshot(clock.now(), ExportedFeatureType.SpeedLimit)
 
                 // 3. Verify output
                 val exportedFiles = minioClient.listObjects(...)
@@ -570,6 +578,7 @@ class MyTest : ShouldSpec({
 ```
 
 **Lifecycle hooks:**
+
 - `beforeSpec` / `afterSpec` - Before/after all tests
 - `beforeEach` / `afterEach` - Before/after each test
 - `beforeContainer` / `afterContainer` - Before/after nested contexts
@@ -621,6 +630,7 @@ should("debug geometry calculation") {
 ```
 
 **Tip:** Use `--info` flag to see println output:
+
 ```bash
 ./gradlew test --info --tests="GeometryTest"
 ```
@@ -630,12 +640,14 @@ should("debug geometry calculation") {
 ### Run Tests with Coverage
 
 IntelliJ IDEA:
+
 1. Right-click on `src/test/kotlin`
 2. Select "Run 'Tests in tnits-generator' with Coverage"
 
 ### Gradle (JaCoCo)
 
 Add to `build.gradle.kts`:
+
 ```kotlin
 plugins {
     jacoco
@@ -655,6 +667,7 @@ tasks.jacocoTestReport {
 ```
 
 Run:
+
 ```bash
 ./gradlew test jacocoTestReport
 ```
@@ -730,6 +743,7 @@ listOf(
 **Problem:** Kotest tests not discovered
 
 **Solution:** Ensure `kotest-runner-junit5` is in dependencies:
+
 ```kotlin
 testImplementation("io.kotest:kotest-runner-junit5:6.0.0")
 ```
@@ -739,6 +753,7 @@ testImplementation("io.kotest:kotest-runner-junit5:6.0.0")
 **Problem:** Database locked by another test
 
 **Solution:** Use unique database paths per test:
+
 ```kotlin
 val dbPath = "test-db-${UUID.randomUUID()}"
 ```
@@ -748,6 +763,7 @@ val dbPath = "test-db-${UUID.randomUUID()}"
 **Problem:** Port already in use
 
 **Solution:** Stop conflicting containers:
+
 ```bash
 docker stop $(docker ps -aq)
 ```
@@ -757,6 +773,7 @@ docker stop $(docker ps -aq)
 **Problem:** `kotest_filter_tests` doesn't work
 
 **Solution:** Check syntax:
+
 ```bash
 # Correct
 kotest_filter_tests="*pattern*" ./gradlew test --tests="ClassName"

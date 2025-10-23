@@ -5,12 +5,12 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.clock
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.locationtech.jts.geom.Coordinate
-import kotlin.time.Clock
 
 class VeglenkerRocksDbStoreClearTest :
     ShouldSpec({
@@ -18,7 +18,7 @@ class VeglenkerRocksDbStoreClearTest :
         should("verify data is gone after clear and store can access empty database") {
             withTempDb { config ->
                 // Arrange - Create store and add data
-                val store = VeglenkerRocksDbStore(config, Clock.System)
+                val store = VeglenkerRocksDbStore(config, clock)
 
                 val geometryFactory = geometryFactories[UTM33]!!
                 val testGeometry =

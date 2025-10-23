@@ -1,18 +1,14 @@
-package no.vegvesen.nvdb.tnits.generator.infrastructure
+package no.vegvesen.nvdb.tnits.generator.infrastructure.ingest
 
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.toKotlinLocalDate
-import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.api.*
-import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.EPSG5973
-import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
-import no.vegvesen.nvdb.tnits.generator.core.model.Superstedfesting
+import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
+import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -47,16 +43,18 @@ class VegnettLoader(
         var totalCount = 0
         var batchCount = 0
 
+        val today = clock.today()
+
         do {
             val veglenkesekvenser = uberiketApi.streamVeglenkesekvenser(start = lastId).toList()
             lastId = veglenkesekvenser.lastOrNull()?.id
 
             if (veglenkesekvenser.isEmpty()) {
                 log.info("Ingen veglenkesekvenser å sette inn, backfill fullført.")
-                keyValueStore.putValue("veglenkesekvenser_backfill_completed", Clock.System.now())
+                keyValueStore.putValue("veglenkesekvenser_backfill_completed", clock.now())
             } else {
                 val updates = veglenkesekvenser.associate {
-                    val domainVeglenker = it.convertToDomainVeglenker()
+                    val domainVeglenker = it.convertToDomainVeglenker(today)
                     it.id to domainVeglenker
                 }
 
@@ -108,6 +106,8 @@ class VegnettLoader(
     private suspend fun fetchUpdates(changedIds: Set<Long>): MutableMap<Long, List<Veglenke>?> {
         val updates = mutableMapOf<Long, List<Veglenke>?>()
 
+        val today = clock.today()
+
         // Process changed veglenkesekvenser in chunks
         changedIds.forEachChunked(100) { chunk ->
             var start: Long? = null
@@ -119,7 +119,7 @@ class VegnettLoader(
 
                 if (batch.isNotEmpty()) {
                     batch.forEach { veglenkesekvens ->
-                        val domainVeglenker = veglenkesekvens.convertToDomainVeglenker()
+                        val domainVeglenker = veglenkesekvens.convertToDomainVeglenker(today)
                         updates[veglenkesekvens.id] = domainVeglenker
                     }
                     start = batch.maxOf { it.id }
@@ -134,61 +134,5 @@ class VegnettLoader(
             updates[deletedId] = null // Mark for deletion
         }
         return updates
-    }
-
-    companion object {
-
-        /**
-         * Konverterer en [no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens] fra Uberiket API til en liste av domenemodellen [Veglenke].
-         * - Filtrer til bare aktive veglenker.
-         * - Mapper start- og sluttporter til posisjoner og noder.
-         * - Sorterer veglenkene etter startposisjon.
-         */
-        fun Veglenkesekvens.convertToDomainVeglenker(): List<Veglenke> {
-            val portLookup = this.porter.associateBy { it.nummer }
-
-            return this.veglenker
-                .map { veglenke ->
-
-                    val startport =
-                        portLookup[veglenke.startport]
-                            ?: error("Startport ${veglenke.startport} not found in veglenkesekvens ${this.id}")
-                    val sluttport =
-                        portLookup[veglenke.sluttport]
-                            ?: error("Sluttport ${veglenke.sluttport} not found in veglenkesekvens ${this.id}")
-
-                    val srid = veglenke.geometri.srid.value.toInt()
-
-                    check(srid == EPSG5973)
-
-                    Veglenke(
-                        veglenkesekvensId = this.id,
-                        veglenkenummer = veglenke.nummer,
-                        startposisjon = startport.posisjon,
-                        sluttposisjon = sluttport.posisjon,
-                        startnode = startport.nodeId,
-                        sluttnode = sluttport.nodeId,
-                        startdato = veglenke.gyldighetsperiode.startdato.toKotlinLocalDate(),
-                        sluttdato = veglenke.gyldighetsperiode.sluttdato?.toKotlinLocalDate(),
-                        // 3D -> 2D
-                        geometri = parseWkt(veglenke.geometri.wkt, UTM33),
-                        typeVeg = veglenke.typeVeg,
-                        detaljniva = veglenke.detaljniva,
-                        feltoversikt = veglenke.feltoversikt,
-                        lengde = veglenke.geometri.lengde ?: 0.0,
-                        konnektering = veglenke.konnektering,
-                        superstedfesting = veglenke.superstedfesting?.let { stedfesting ->
-                            Superstedfesting(
-                                veglenksekvensId = stedfesting.id,
-                                startposisjon = stedfesting.startposisjon,
-                                sluttposisjon = stedfesting.sluttposisjon,
-                                kjorefelt = stedfesting.kjorefelt,
-                            )
-                        },
-                    )
-                    // NOTE: We assume that no veglenker have sluttdato that are non-null but in the future
-                }.filter { it.sluttdato == null }
-                .sortedBy { it.startposisjon }
-        }
     }
 }

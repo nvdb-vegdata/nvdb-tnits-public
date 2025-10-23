@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.core.services.nvdb
+package no.vegvesen.nvdb.tnits.generator.infrastructure.ingest
 
 import jakarta.inject.Singleton
 import kotlinx.coroutines.async
@@ -6,8 +6,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
+import no.vegvesen.nvdb.tnits.generator.core.api.BackfillOrchestrator
 import no.vegvesen.nvdb.tnits.generator.log
 
 /**
@@ -18,8 +17,8 @@ import no.vegvesen.nvdb.tnits.generator.log
 class NvdbBackfillOrchestrator(
     private val vegnettLoader: VegnettLoader,
     private val vegobjektLoader: VegobjektLoader,
-) {
-    suspend fun performBackfill(): Int = coroutineScope {
+) : BackfillOrchestrator {
+    override suspend fun performBackfill(): Int = coroutineScope {
         val veglenkesekvensBackfill = async {
             log.info("Oppdaterer veglenkesekvenser...")
             vegnettLoader.backfillVeglenkesekvenser()

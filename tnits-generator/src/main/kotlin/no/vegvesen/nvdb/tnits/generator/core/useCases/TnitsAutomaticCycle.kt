@@ -5,13 +5,13 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.generator.core.api.BackfillOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
+import no.vegvesen.nvdb.tnits.generator.core.api.UpdateOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.extensions.getLastUpdateCheck
-import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbBackfillOrchestrator
-import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbUpdateOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import kotlin.time.Clock
@@ -22,8 +22,8 @@ class TnitsAutomaticCycle(
     private val rocksDbBackupService: LocalBackupService,
     private val timestampService: TimestampService,
     private val keyValueStore: KeyValueStore,
-    private val nvdbBackfillOrchestrator: NvdbBackfillOrchestrator,
-    private val nvdbUpdateOrchestrator: NvdbUpdateOrchestrator,
+    private val backfillOrchestrator: BackfillOrchestrator,
+    private val updateOrchestrator: UpdateOrchestrator,
     private val cachedVegnett: CachedVegnett,
     private val tnitsExportService: TnitsExportService,
     private val clock: Clock,
@@ -66,8 +66,8 @@ class TnitsAutomaticCycle(
 
         if (updateStatusByType.values.any { it.pendingSnapshot || it.pendingUpdate }) {
             log.info("Starting automatic TN-ITS process. Update status by type: $updateStatusByType")
-            val backfillCount = nvdbBackfillOrchestrator.performBackfill()
-            val updateCount = nvdbUpdateOrchestrator.performUpdate()
+            val backfillCount = backfillOrchestrator.performBackfill()
+            val updateCount = updateOrchestrator.performUpdate()
             val timestamp = clock.now()
             if (backfillCount + updateCount > 0) {
                 // First backup before cache, in case of OOM (remove when OOM is not a concern anymore)

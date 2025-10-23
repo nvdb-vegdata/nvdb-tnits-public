@@ -7,7 +7,7 @@ import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
-import no.vegvesen.nvdb.tnits.generator.infrastructure.RocksDbS3BackupService
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbS3BackupService
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.testcontainers.containers.MinIOContainer
 

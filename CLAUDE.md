@@ -115,3 +115,4 @@ curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekve
 - Always format JSON with `jq`
 
 See [Concepts Glossary](docs/CONCEPTS.md) for NVDB domain terminology.
+- When writing test with ShouldSpec, 'should' will automatically be inserted as the first part of the test name

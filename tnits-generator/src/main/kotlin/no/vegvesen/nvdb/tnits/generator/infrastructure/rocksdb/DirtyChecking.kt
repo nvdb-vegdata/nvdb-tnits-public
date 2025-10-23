@@ -1,9 +1,11 @@
-package no.vegvesen.nvdb.tnits.generator.core.services.storage
+package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.generator.core.extensions.toByteArray
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore.Companion.getVegobjektKey
 import kotlin.time.Instant
 
@@ -21,6 +23,3 @@ fun WriteBatchContext.publishChangedVegobjekter(vegobjektType: Int, changes: Col
     }
     write(ColumnFamily.DIRTY_VEGOBJEKTER, operations)
 }
-
-@Serializable
-data class VegobjektChange(val id: Long, val changeType: ChangeType)

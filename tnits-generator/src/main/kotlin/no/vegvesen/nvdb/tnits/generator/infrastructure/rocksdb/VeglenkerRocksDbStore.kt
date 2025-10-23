@@ -10,7 +10,6 @@ import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVeglenkesekvenser
 import org.rocksdb.RocksDBException
 import kotlin.time.Clock
 

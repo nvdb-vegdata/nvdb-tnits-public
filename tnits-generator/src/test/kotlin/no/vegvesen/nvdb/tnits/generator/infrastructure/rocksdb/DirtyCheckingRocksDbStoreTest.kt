@@ -7,14 +7,12 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.generator.clock
 import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
 import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVeglenkesekvenser
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.publishChangedVegobjekter
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
-import kotlin.time.Clock
 
 class DirtyCheckingRocksDbStoreTest :
     ShouldSpec({
@@ -80,7 +78,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
 
                 val veglenkesekvens1 = 1001L
                 val veglenkesekvens2 = 1002L
@@ -142,7 +140,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
 
                 val veglenkesekvens1 = 2001L
                 val veglenkesekvens2 = 2002L
@@ -292,7 +290,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
                 val dirtyVeglenkesekvensIds = setOf(1001L, 1002L, 1003L)
 
                 // Create vegobjekt positioned on one of the dirty veglenkesekvenser to test indirect changes
@@ -307,7 +305,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Publish dirty veglenkesekvenser
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, Clock.System.now())
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, clock.now())
                 }
 
                 // Verify initial state - should include indirect changes
@@ -350,7 +348,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Publish both dirty veglenkesekvenser and direct vegobjekt changes
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, Clock.System.now())
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, clock.now())
                     publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyVegobjektChanges)
                 }
 
@@ -371,7 +369,7 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
 
                 val dirtyVeglenkesekvens = 3001L
                 val cleanVeglenkesekvens = 3003L
@@ -399,7 +397,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Mark only one veglenkesekvens as dirty
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), Clock.System.now())
+                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), clock.now())
                 }
 
                 // Act
@@ -416,7 +414,7 @@ private fun createTestVegobjekt(id: Long, type: Int, stedfestinger: List<Vegobje
     type = type,
     startdato = LocalDate(2023, 1, 1),
     sluttdato = null,
-    sistEndret = Clock.System.now(),
+    sistEndret = clock.now(),
     stedfestinger = stedfestinger,
     egenskaper = emptyMap(),
     originalStartdato = null,

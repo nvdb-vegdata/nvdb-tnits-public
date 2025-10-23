@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator.infrastructure
+package no.vegvesen.nvdb.tnits.generator.infrastructure.ingest
 
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.toList
@@ -23,6 +23,7 @@ class VegobjektLoader(
     private val uberiketApi: UberiketApi,
     private val vegobjekterRepository: VegobjekterRepository,
     private val rocksDbContext: RocksDbContext,
+    private val clock: Clock,
 ) : WithLogger {
     suspend fun backfillVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
         val backfillCompleted = keyValueStore.getValue<Instant>("vegobjekter_${typeId}_backfill_completed")
@@ -36,7 +37,7 @@ class VegobjektLoader(
 
         if (lastId == null) {
             log.info("Ingen backfill har blitt startet ennå for type $typeId. Starter backfill...")
-            val now = Clock.System.now()
+            val now = clock.now()
             keyValueStore.put("vegobjekter_${typeId}_backfill_started", now, Instant.serializer())
         } else {
             log.info("Backfill pågår for type $typeId. Gjenopptar fra siste ID: $lastId")
@@ -51,7 +52,7 @@ class VegobjektLoader(
 
             if (vegobjekter.isEmpty()) {
                 log.info("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
-                keyValueStore.put("vegobjekter_${typeId}_backfill_completed", Clock.System.now(), Instant.serializer())
+                keyValueStore.put("vegobjekter_${typeId}_backfill_completed", clock.now(), Instant.serializer())
             } else {
                 val validFromById = if (fetchOriginalStartDate) getOriginalStartdatoWhereDifferent(typeId, vegobjekter) else emptyMap()
 

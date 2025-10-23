@@ -14,17 +14,16 @@ import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFartsgrenseTillatteVerdier
-import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbBackfillOrchestrator
-import no.vegvesen.nvdb.tnits.generator.core.services.nvdb.NvdbUpdateOrchestrator
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureExportWriter
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
 import no.vegvesen.nvdb.tnits.generator.core.useCases.TnitsAutomaticCycle
-import no.vegvesen.nvdb.tnits.generator.infrastructure.RocksDbS3BackupService
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
+import no.vegvesen.nvdb.tnits.generator.infrastructure.ingest.NvdbBackfillOrchestrator
+import no.vegvesen.nvdb.tnits.generator.infrastructure.ingest.NvdbUpdateOrchestrator
+import no.vegvesen.nvdb.tnits.generator.infrastructure.ingest.VegnettLoader
+import no.vegvesen.nvdb.tnits.generator.infrastructure.ingest.VegobjektLoader
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.*
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3TimestampService
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter
@@ -49,6 +48,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         uberiketApi = uberiketApi,
         vegobjekterRepository = vegobjekterRepository,
         rocksDbContext = dbContext,
+        clock = clock,
     )
     val veglenkerRepository: VeglenkerRepository = VeglenkerRocksDbStore(dbContext, clock)
     val vegnettLoader: VegnettLoader = VegnettLoader(
@@ -131,8 +131,8 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         rocksDbBackupService = rocksDbBackupService,
         timestampService = timestampService,
         keyValueStore = keyValueStore,
-        nvdbBackfillOrchestrator = backfillOrchestrator,
-        nvdbUpdateOrchestrator = updateOrchestrator,
+        backfillOrchestrator = backfillOrchestrator,
+        updateOrchestrator = updateOrchestrator,
         cachedVegnett = cachedVegnett,
         tnitsExportService = tnitsExportService,
         clock = clock,

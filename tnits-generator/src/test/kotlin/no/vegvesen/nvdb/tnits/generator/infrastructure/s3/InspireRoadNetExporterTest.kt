@@ -7,6 +7,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.clock
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
 import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
@@ -18,9 +19,8 @@ import org.locationtech.jts.geom.LineString
 import org.openlr.map.FormOfWay
 import org.openlr.map.FunctionalRoadClass
 import java.io.ByteArrayOutputStream
-import kotlin.time.Clock
 
-private val today = Clock.System.todayIn(OsloZone)
+private val today = clock.todayIn(OsloZone)
 
 class InspireRoadNetExporterTest : ShouldSpec({
 
@@ -168,9 +168,9 @@ private fun generateTestXml(veglenke: Veglenke): String {
     writeXmlDocument(
         output,
         rootQName = "wfs:FeatureCollection",
-        namespaces = InspireRoadNetExporter.INSPIRE_NAMESPACES,
+        namespaces = InspireRoadNetS3Exporter.INSPIRE_NAMESPACES,
     ) {
-        attribute("timeStamp", Clock.System.now().toString())
+        attribute("timeStamp", clock.now().toString())
         "wfs:member" {
             "tn-ro:RoadLink" {
                 attribute("gml:id", "RoadLink.${roadLink.id}")

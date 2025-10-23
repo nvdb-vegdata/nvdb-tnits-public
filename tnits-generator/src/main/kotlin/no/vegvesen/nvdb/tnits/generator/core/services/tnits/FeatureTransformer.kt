@@ -14,13 +14,13 @@ import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
+import no.vegvesen.nvdb.tnits.generator.core.api.ExportedFeatureRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.*
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.OpenLrService
-import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.ExportedFeatureRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.marshaller
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -31,7 +31,7 @@ class FeatureTransformer(
     private val datakatalogApi: DatakatalogApi,
     private val openLrService: OpenLrService,
     private val vegobjekterRepository: VegobjekterRepository,
-    private val exportedFeatureStore: ExportedFeatureRocksDbStore,
+    private val exportedFeatureStore: ExportedFeatureRepository,
     private val workerCount: Int = Runtime.getRuntime().availableProcessors(),
     private val clock: Clock,
 ) : WithLogger {

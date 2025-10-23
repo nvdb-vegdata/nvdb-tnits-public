@@ -9,21 +9,22 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
+import no.vegvesen.nvdb.tnits.generator.clock
+import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
+import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.core.model.getStedfestingLinjer
 import no.vegvesen.nvdb.tnits.generator.core.model.toDomain
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.objectMapper
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import no.vegvesen.nvdb.tnits.generator.readJson
-import kotlin.time.Clock
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 class VegobjekterRocksDbStoreTest : ShouldSpec({
 
     should("save and retrieve vegobjekt and stedfestinger") {
         withTempDb { dbContext ->
-            val vegobjekter = VegobjekterRocksDbStore(dbContext, Clock.System)
+            val vegobjekter = VegobjekterRocksDbStore(dbContext, clock)
             val apiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val domainVegobjekt = apiVegobjekt.toDomain()
             vegobjekter.insert(domainVegobjekt)
@@ -38,12 +39,12 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
 
     should("find overlapping vegobjekter") {
         withTempDb { dbContext ->
-            val veglenkesekvenser = VeglenkerRocksDbStore(dbContext, Clock.System)
-            val vegobjekter = VegobjekterRocksDbStore(dbContext, Clock.System)
+            val veglenkesekvenser = VeglenkerRocksDbStore(dbContext, clock)
+            val vegobjekter = VegobjekterRocksDbStore(dbContext, clock)
             val veglenkesekvens = objectMapper.readJson<VeglenkesekvenserSide>("veglenkesekvens-8967.json").veglenkesekvenser.single()
             val feltstrekning = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val funskjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
-            val veglenker = veglenkesekvens.convertToDomainVeglenker()
+            val veglenker = veglenkesekvens.convertToDomainVeglenker(clock.today())
             veglenkesekvenser.upsert(veglenkesekvens.id, veglenker)
             vegobjekter.insert(feltstrekning.toDomain())
             vegobjekter.insert(funskjonellVegklasse.toDomain())
@@ -60,7 +61,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("group vegobjekter by veglenkesekvensId") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
             val baseApiVegobjekt = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val baseDomainVegobjekt = baseApiVegobjekt.toDomain()
 
@@ -138,7 +139,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("filter by vegobjekt type") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
             val feltstrekning = objectMapper.readJson<ApiVegobjekt>("vegobjekt-616-1020953586.json")
             val funksjonellVegklasse = objectMapper.readJson<ApiVegobjekt>("vegobjekt-821-642414069.json")
 
@@ -167,7 +168,7 @@ class VegobjekterRocksDbStoreTest : ShouldSpec({
     should("handle empty results") {
         withTempDb { dbContext ->
             // Arrange
-            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+            val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
 
             // Act - Get lookup for type with no vegobjekter
             val lookup = vegobjekterStore.getVegobjektStedfestingLookup(105) // FARTSGRENSE type

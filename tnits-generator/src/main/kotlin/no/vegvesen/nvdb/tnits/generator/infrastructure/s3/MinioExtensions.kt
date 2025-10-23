@@ -1,7 +1,6 @@
-package no.vegvesen.nvdb.tnits.generator.core.extensions
+package no.vegvesen.nvdb.tnits.generator.infrastructure.s3
 
 import io.minio.MinioClient
-import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.util.zip.GZIPOutputStream

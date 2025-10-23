@@ -8,13 +8,13 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.apiles.uberiket.Detaljniva
 import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
+import no.vegvesen.nvdb.tnits.generator.clock
 import no.vegvesen.nvdb.tnits.generator.config.RocksDbConfig
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID.UTM33
 import no.vegvesen.nvdb.tnits.generator.core.extensions.geometryFactories
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import org.locationtech.jts.geom.Coordinate
 import java.nio.file.Files
-import kotlin.time.Clock
 
 class VeglenkerRocksDbStoreTest : ShouldSpec() {
     private lateinit var tempDir: String
@@ -24,13 +24,13 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-veglenker-test").toString()
         configuration = RocksDbContext(RocksDbConfig(tempDir), enableCompression = true)
-        store = VeglenkerRocksDbStore(configuration, Clock.System)
+        store = VeglenkerRocksDbStore(configuration, clock)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {
         configuration.clear()
         // Recreate the store with fresh references after clearing
-        store = VeglenkerRocksDbStore(configuration, Clock.System)
+        store = VeglenkerRocksDbStore(configuration, clock)
     }
 
     override suspend fun afterSpec(spec: Spec) {

@@ -8,10 +8,10 @@ import io.minio.RemoveObjectsArgs
 import io.minio.messages.DeleteObject
 import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
-import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.generator.core.extensions.today
+import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.core.model.toDomain
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader.Companion.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
@@ -23,7 +23,7 @@ import kotlin.io.path.name
 import kotlin.time.Clock
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
-fun ObjectMapper.readVegobjekt(path: String): Vegobjekt = readApiVegobjekt(path).toDomain()!!
+val clock = Clock.System
 
 fun ObjectMapper.readApiVegobjekt(path: String): ApiVegobjekt = readJson<ApiVegobjekt>(path)
 
@@ -47,18 +47,18 @@ fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVego
 fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedVegnett {
     val (veglenkesekvenser, vegobjekter) = readTestData(*paths)
 
-    val veglenkerStore = VeglenkerRocksDbStore(dbContext, Clock.System)
+    val veglenkerStore = VeglenkerRocksDbStore(dbContext, clock)
     for (veglenkesekvens in veglenkesekvenser) {
-        val veglenker = veglenkesekvens.convertToDomainVeglenker()
+        val veglenker = veglenkesekvens.convertToDomainVeglenker(clock.today())
         veglenkerStore.upsert(veglenkesekvens.id, veglenker)
     }
 
-    val vegobjekterStore = VegobjekterRocksDbStore(dbContext, Clock.System)
+    val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
     for (vegobjekt in vegobjekter) {
         vegobjekterStore.insert(vegobjekt.toDomain())
     }
 
-    return CachedVegnett(veglenkerStore, vegobjekterStore, Clock.System)
+    return CachedVegnett(veglenkerStore, vegobjekterStore, clock)
 }
 
 fun MinioClient.clear(testBucket: String) {

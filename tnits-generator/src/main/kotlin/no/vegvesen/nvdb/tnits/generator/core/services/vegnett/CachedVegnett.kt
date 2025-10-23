@@ -170,7 +170,7 @@ class CachedVegnett(
         TypeVeg.GAGATE,
         TypeVeg.GANG_OG_SYKKELVEG,
         TypeVeg.GANGVEG,
-    ) && startdato <= today && (sluttdato == null || sluttdato > today)
+    ) && isActive(today)
 
     fun getOutgoingVeglenker(nodeId: Long, retning: TillattRetning): Set<Veglenke> {
         require(veglenkerInitialized)

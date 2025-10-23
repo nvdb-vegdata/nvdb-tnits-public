@@ -1,12 +1,11 @@
-package no.vegvesen.nvdb.tnits.generator.core.services.nvdb
+package no.vegvesen.nvdb.tnits.generator.infrastructure.ingest
 
 import jakarta.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegnettLoader
-import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
+import no.vegvesen.nvdb.tnits.generator.core.api.UpdateOrchestrator
 
 /**
  * Utfører inkrementelle oppdateringer av veglenkesekvenser og vegobjekter fra NVDB (Uberiket API), basert på hendelser.
@@ -15,8 +14,8 @@ import no.vegvesen.nvdb.tnits.generator.infrastructure.VegobjektLoader
 class NvdbUpdateOrchestrator(
     private val vegnettLoader: VegnettLoader,
     private val vegobjektLoader: VegobjektLoader,
-) {
-    suspend fun performUpdate(): Int = coroutineScope {
+) : UpdateOrchestrator {
+    override suspend fun performUpdate(): Int = coroutineScope {
         var totalCount = 0
         do {
             val veglenkesekvensHendelseCount =
