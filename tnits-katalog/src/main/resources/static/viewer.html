@@ -1,720 +1,928 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
-  <meta charset="UTF-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>TN-ITS Map Viewer</title>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TN-ITS Map Viewer</title>
 
-  <!-- Common styles -->
-  <link href="/common.css" rel="stylesheet"/>
+    <!-- Common styles -->
+    <link href="/common.css" rel="stylesheet" />
 
-  <!-- Leaflet CSS -->
-  <link
-    crossorigin=""
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    rel="stylesheet"
-  />
+    <!-- Leaflet CSS -->
+    <link
+      crossorigin=""
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      rel="stylesheet"
+    />
 
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: #ffffff;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px 40px;
-      width: 100%;
-      flex-shrink: 0;
-      background: #ffffff;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .viewer-controls {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 40px;
-      align-items: start;
-    }
-
-    .file-upload-section,
-    .metadata-section {
-      padding: 0;
-    }
-
-    .file-upload-section {
-      min-width: 280px;
-    }
-
-    .file-upload-section h2,
-    .metadata-section h2 {
-      color: #2d3748;
-      font-size: 1rem;
-      font-weight: 600;
-      line-height: 1.2;
-      margin: 0 0 12px 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #ff6900;
-    }
-
-    .file-upload-section p {
-      color: #718096;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-      line-height: 1.5;
-    }
-
-    input[type='file'] {
-      width: 100%;
-      font-size: 0.95rem;
-    }
-
-    .file-size-hint {
-      color: #a0aec0;
-      font-size: 0.8rem;
-      margin-top: 8px;
-      font-style: italic;
-    }
-
-    .metadata-section {
-      font-size: 0.9rem;
-      color: #4a5568;
-      line-height: 1.7;
-    }
-
-    .error-message {
-      background: #fff5f5;
-      border-left: 4px solid #e53e3e;
-      color: #c53030;
-      padding: 12px 16px;
-      margin-top: 12px;
-      font-size: 0.9rem;
-      display: none;
-    }
-
-    .error-message.show {
-      display: block;
-    }
-
-    .metadata-label {
-      font-weight: 600;
-      color: #2d3748;
-      display: inline-block;
-      min-width: 140px;
-    }
-
-    .metadata-value {
-      color: #4a5568;
-    }
-
-    .metadata-empty {
-      color: #a0aec0;
-      font-style: italic;
-      padding: 8px 0;
-    }
-
-    #map {
-      flex: 1;
-      width: 100%;
-      min-height: 0;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .popup-reference {
-      white-space: nowrap;
-    }
-
-    .openlr-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0;
-    }
-
-    .openlr-text {
-      font-family: monospace;
-      word-break: break-all;
-      flex: 1;
-      font-size: 0.85rem;
-      background: #f7fafc;
-      padding: 4px 8px;
-      border-radius: 4px;
-    }
-
-    .icon-button {
-      cursor: pointer;
-      padding: 4px 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      background: #ffffff;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-      text-decoration: none;
-      display: inline-block;
-      color: #4a5568;
-      font-weight: 500;
-    }
-
-    .icon-button:hover {
-      background: #ff6900;
-      color: #ffffff;
-      border-color: #ff6900;
-    }
-
-    .copy-feedback {
-      color: #48bb78;
-      font-size: 0.85rem;
-      margin-left: 8px;
-      font-weight: 600;
-    }
-
-    .leaflet-popup-content {
-      font-size: 0.9rem;
-    }
-
-    .leaflet-popup-content a {
-      color: #ff6900;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .leaflet-popup-content a:hover {
-      color: #e65c00;
-      text-decoration: underline;
-    }
-
-    @media (max-width: 1024px) {
-      .viewer-controls {
-        grid-template-columns: 1fr;
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background: #ffffff;
       }
-    }
 
-    @media (max-width: 1024px) {
-      .viewer-controls {
-        grid-template-columns: 1fr;
-        gap: 24px;
-      }
-    }
-
-    @media (max-width: 768px) {
       .container {
-        padding: 16px 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px 40px;
+        width: 100%;
+        flex-shrink: 0;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
       }
 
       .viewer-controls {
-        gap: 20px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 40px;
+        align-items: start;
       }
-    }
 
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    }
-  </style>
-</head>
-<body>
-<div class="header">
-  <a class="logo" href="/">
-    <img alt="NVDB - Nasjonal vegdatabank" src="/nvdb_logo.svg"/>
-  </a>
-  <h1>TN-ITS Map Viewer</h1>
-</div>
+      .file-upload-section,
+      .metadata-section {
+        padding: 0;
+      }
 
-<div class="container">
-  <div class="viewer-controls">
-    <div class="file-upload-section">
-      <h2>Load TN-ITS File</h2>
-      <p>
-        Select a TN-ITS XML file to visualize road segments on the map
-        below.
-      </p>
-      <label class="sr-only" for="fileInput">Select TN-ITS XML file</label>
-      <input
-        accept=".xml"
-        aria-describedby="file-size-hint"
-        id="fileInput"
-        type="file"
-      />
-      <div class="file-size-hint" id="file-size-hint">
-        Maximum file size: 20 MB
+      .file-upload-section {
+        min-width: 280px;
+      }
+
+      .file-upload-section h2,
+      .metadata-section h2 {
+        color: #2d3748;
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.2;
+        margin: 0 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #ff6900;
+      }
+
+      .file-upload-section p {
+        color: #718096;
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+
+      input[type='file'] {
+        width: 100%;
+        font-size: 0.95rem;
+      }
+
+      .file-size-hint {
+        color: #a0aec0;
+        font-size: 0.8rem;
+        margin-top: 8px;
+        font-style: italic;
+      }
+
+      .metadata-section {
+        font-size: 0.9rem;
+        color: #4a5568;
+        line-height: 1.7;
+      }
+
+      .error-message {
+        background: #fff5f5;
+        border-left: 4px solid #e53e3e;
+        color: #c53030;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 0.9rem;
+        display: none;
+      }
+
+      .error-message.show {
+        display: block;
+      }
+
+      .metadata-label {
+        font-weight: 600;
+        color: #2d3748;
+        display: inline-block;
+        min-width: 140px;
+      }
+
+      .metadata-value {
+        color: #4a5568;
+      }
+
+      .metadata-empty {
+        color: #a0aec0;
+        font-style: italic;
+        padding: 8px 0;
+      }
+
+      .map-container {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+        position: relative;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .popup-reference {
+        white-space: nowrap;
+      }
+
+      .openlr-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0;
+      }
+
+      .openlr-text {
+        font-family: monospace;
+        word-break: break-all;
+        flex: 1;
+        font-size: 0.85rem;
+        background: #f7fafc;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .icon-button {
+        cursor: pointer;
+        padding: 4px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        background: #ffffff;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        color: #4a5568;
+        font-weight: 500;
+      }
+
+      .icon-button:hover {
+        background: #ff6900;
+        color: #ffffff;
+        border-color: #ff6900;
+      }
+
+      .copy-feedback {
+        color: #48bb78;
+        font-size: 0.85rem;
+        margin-left: 8px;
+        font-weight: 600;
+      }
+
+      .leaflet-popup-content {
+        font-size: 0.9rem;
+      }
+
+      .leaflet-popup-content a {
+        color: #ff6900;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .leaflet-popup-content a:hover {
+        color: #e65c00;
+        text-decoration: underline;
+      }
+
+      @media (max-width: 1024px) {
+        .viewer-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .viewer-controls {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 16px 20px;
+        }
+
+        .viewer-controls {
+          gap: 20px;
+        }
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+
+      /* Search Overlay */
+      .search-overlay {
+        position: absolute;
+        top: 10px;
+        left: 60px;
+        z-index: 1000;
+        pointer-events: none;
+      }
+
+      .search-container {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px 20px;
+        min-width: 360px;
+        pointer-events: auto;
+      }
+
+      .search-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 10px;
+      }
+
+      .search-input-group {
+        display: flex;
+        gap: 8px;
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        color: #2d3748;
+        transition: border-color 0.2s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #ff6900;
+        box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.1);
+      }
+
+      .search-button {
+        padding: 10px 20px;
+        background: #ff6900;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+
+      .search-button:hover {
+        background: #e65c00;
+      }
+
+      .search-button:active {
+        background: #cc5200;
+      }
+
+      .search-error {
+        background: #fff5f5;
+        border-left: 4px solid #e53e3e;
+        color: #c53030;
+        padding: 10px 12px;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        border-radius: 4px;
+      }
+
+      @media (max-width: 768px) {
+        .search-overlay {
+          left: 10px;
+          right: 10px;
+          top: 60px;
+        }
+
+        .search-container {
+          min-width: 0;
+          width: auto;
+          max-width: calc(100vw - 20px);
+        }
+
+        .search-input-group {
+          flex-direction: column;
+        }
+
+        .search-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <a class="logo" href="/">
+        <img alt="NVDB - Nasjonal vegdatabank" src="/nvdb_logo.svg" />
+      </a>
+      <h1>TN-ITS Map Viewer</h1>
+    </div>
+
+    <div class="container">
+      <div class="viewer-controls">
+        <div class="file-upload-section">
+          <h2>Load TN-ITS File</h2>
+          <p>
+            Select a TN-ITS XML file to visualize road segments on the map
+            below.
+          </p>
+          <label class="sr-only" for="fileInput">Select TN-ITS XML file</label>
+          <input
+            accept=".xml"
+            aria-describedby="file-size-hint"
+            id="fileInput"
+            type="file"
+          />
+          <div class="file-size-hint" id="file-size-hint">
+            Maximum file size: 20 MB
+          </div>
+          <div
+            aria-live="assertive"
+            class="error-message"
+            id="errorMessage"
+            role="alert"
+          ></div>
+        </div>
+
+        <div class="metadata-section">
+          <h2>Dataset Information</h2>
+          <div aria-live="polite" id="metadata">
+            <div class="metadata-empty">No file loaded</div>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <div class="map-container">
       <div
-        aria-live="assertive"
-        class="error-message"
-        id="errorMessage"
-        role="alert"
+        aria-label="Interactive road network map"
+        id="map"
+        role="application"
       ></div>
-    </div>
 
-    <div class="metadata-section">
-      <h2>Dataset Information</h2>
-      <div aria-live="polite" id="metadata">
-        <div class="metadata-empty">No file loaded</div>
+      <!-- Search Box Overlay -->
+      <div class="search-overlay" id="searchOverlay" style="display: none">
+        <div class="search-container">
+          <label for="searchInput" class="search-label"
+            >Find vegobjekt by ID</label
+          >
+          <div class="search-input-group">
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="Enter vegobjekt ID"
+              aria-describedby="searchError"
+            />
+            <button id="searchButton" class="search-button">Search</button>
+          </div>
+          <div
+            id="searchError"
+            class="search-error"
+            role="alert"
+            aria-live="polite"
+            style="display: none"
+          ></div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div
-  aria-label="Interactive road network map"
-  id="map"
-  role="application"
-></div>
+    <!-- Leaflet JS -->
+    <script
+      crossorigin=""
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    ></script>
 
-<!-- Leaflet JS -->
-<script
-  crossorigin=""
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+    <script>
+      // Initialize the Leaflet map
+      const map = L.map('map')
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map)
+      // Set a default view over Norway (approximate center)
+      map.setView([65.0, 15.0], 4)
 
-<script>
-  // Initialize the Leaflet map
-  const map = L.map('map')
-  // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
-  // Set a default view over Norway (approximate center)
-  map.setView([65.0, 15.0], 4)
+      // Global index to map vegobjekt IDs to their polylines
+      let featureIndex = new Map()
 
-  // Event listener for file upload
-  document
-    .getElementById('fileInput')
-    .addEventListener('change', function (event) {
-      const file = event.target.files[0]
-      const errorMessage = document.getElementById('errorMessage')
+      // Event listener for file upload
+      document
+        .getElementById('fileInput')
+        .addEventListener('change', function (event) {
+          const file = event.target.files[0]
+          const errorMessage = document.getElementById('errorMessage')
 
-      // Hide previous error
-      errorMessage.classList.remove('show')
+          // Hide previous error
+          errorMessage.classList.remove('show')
 
-      if (!file) {
-        return
+          if (!file) {
+            return
+          }
+
+          // Check file size (20 MB limit)
+          const maxSize = 20 * 1024 * 1024 // 20 MB in bytes
+          if (file.size > maxSize) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            errorMessage.textContent = `File too large (${sizeMB} MB). Maximum allowed size is 20 MB.`
+            errorMessage.classList.add('show')
+            event.target.value = '' // Clear the file input
+            return
+          }
+
+          const reader = new FileReader()
+          reader.onload = function (e) {
+            const text = e.target.result
+            parseAndDisplay(text)
+          }
+          reader.onerror = function () {
+            errorMessage.textContent = 'Failed to read file. Please try again.'
+            errorMessage.classList.add('show')
+          }
+          reader.readAsText(file)
+        })
+
+      // Copy text to clipboard with visual feedback
+      function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId)
+        if (!element) return
+
+        const text = element.textContent
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            // Create temporary feedback message
+            const feedback = document.createElement('span')
+            feedback.className = 'copy-feedback'
+            feedback.textContent = '✓ Copied!'
+            element.parentElement.appendChild(feedback)
+
+            // Remove feedback after 2 seconds
+            setTimeout(() => {
+              feedback.remove()
+            }, 2000)
+          })
+          .catch((err) => {
+            console.error('Failed to copy text: ', err)
+            alert('Failed to copy to clipboard')
+          })
       }
 
-      // Check file size (20 MB limit)
-      const maxSize = 20 * 1024 * 1024 // 20 MB in bytes
-      if (file.size > maxSize) {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
-        errorMessage.textContent = `File too large (${sizeMB} MB). Maximum allowed size is 20 MB.`
-        errorMessage.classList.add('show')
-        event.target.value = '' // Clear the file input
-        return
-      }
+      // Parse the XML string and draw polylines on the map
+      function parseAndDisplay(xmlText) {
+        // Clear existing layers (except the tile layer)
+        map.eachLayer((layer) => {
+          if (!(layer instanceof L.TileLayer)) {
+            map.removeLayer(layer)
+          }
+        })
 
-      const reader = new FileReader()
-      reader.onload = function (e) {
-        const text = e.target.result
-        parseAndDisplay(text)
-      }
-      reader.onerror = function () {
-        errorMessage.textContent = 'Failed to read file. Please try again.'
-        errorMessage.classList.add('show')
-      }
-      reader.readAsText(file)
-    })
+        // Clear the feature index
+        featureIndex.clear()
 
-  // Copy text to clipboard with visual feedback
-  function copyToClipboard(elementId) {
-    const element = document.getElementById(elementId)
-    if (!element) return
+        const parser = new DOMParser()
+        const xmlDoc = parser.parseFromString(xmlText, 'application/xml')
+        const gmlNS = 'http://www.opengis.net/gml/3.2'
+        const tnitsNS = 'http://spec.tn-its.eu/schemas/'
+        const xlinkNS = 'http://www.w3.org/1999/xlink'
 
-    const text = element.textContent
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        // Create temporary feedback message
-        const feedback = document.createElement('span')
-        feedback.className = 'copy-feedback'
-        feedback.textContent = '✓ Copied!'
-        element.parentElement.appendChild(feedback)
+        // Extract metadata from document
+        let nvdbType = null
+        let datasetId = null
+        let datasetCreationTime = null
+        let exportType = null
 
-        // Remove feedback after 2 seconds
-        setTimeout(() => {
-          feedback.remove()
-        }, 2000)
-      })
-      .catch((err) => {
-        console.error('Failed to copy text: ', err)
-        alert('Failed to copy to clipboard')
-      })
-  }
-
-  // Parse the XML string and draw polylines on the map
-  function parseAndDisplay(xmlText) {
-    // Clear existing layers (except the tile layer)
-    map.eachLayer((layer) => {
-      if (!(layer instanceof L.TileLayer)) {
-        map.removeLayer(layer)
-      }
-    })
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(xmlText, 'application/xml')
-    const gmlNS = 'http://www.opengis.net/gml/3.2'
-    const tnitsNS = 'http://spec.tn-its.eu/schemas/'
-    const xlinkNS = 'http://www.w3.org/1999/xlink'
-
-    // Extract metadata from document
-    let nvdbType = null
-    let datasetId = null
-    let datasetCreationTime = null
-    let exportType = null
-
-    const datasetIdElems = xmlDoc.getElementsByTagNameNS(
-      tnitsNS,
-      'datasetId',
-    )
-    if (datasetIdElems.length > 0) {
-      datasetId = datasetIdElems[0].textContent.trim()
-      // Format: NVDB-TNITS-105-SpeedLimit_Snapshot_2025-09-26T10:30:00Z
-      const match = datasetId.match(/NVDB-TNITS-(\d+)-/)
-      if (match) {
-        nvdbType = match[1]
-      }
-    }
-
-    const creationTimeElems = xmlDoc.getElementsByTagNameNS(
-      tnitsNS,
-      'datasetCreationTime',
-    )
-    if (creationTimeElems.length > 0) {
-      datasetCreationTime = creationTimeElems[0].textContent.trim()
-    }
-
-    const typeElems = xmlDoc.getElementsByTagNameNS(tnitsNS, 'type')
-    if (typeElems.length > 0) {
-      // The first 'type' element at document level is the export type
-      const firstType = typeElems[0]
-      if (firstType.parentNode.nodeName.includes('RoadFeatureDataset')) {
-        exportType = firstType.textContent.trim()
-      }
-    }
-
-    // Get all RoadFeature elements within the dataset
-    const roadFeatures = xmlDoc.getElementsByTagNameNS(
-      tnitsNS,
-      'RoadFeature',
-    )
-    const polylines = []
-    for (let i = 0; i < roadFeatures.length; i++) {
-      const roadFeature = roadFeatures[i]
-
-      // Get the vegobjekt ID
-      let vegobjektId = null
-      const idElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'id')
-      if (idElems.length > 0) {
-        const roadFeatureId = idElems[0].getElementsByTagNameNS(
+        const datasetIdElems = xmlDoc.getElementsByTagNameNS(
           tnitsNS,
-          'RoadFeatureId',
-        )[0]
-        if (roadFeatureId) {
-          const idValueElem = roadFeatureId.getElementsByTagNameNS(
-            tnitsNS,
-            'id',
-          )[0]
-          if (idValueElem) {
-            vegobjektId = idValueElem.textContent.trim()
-          }
-        }
-      }
-
-      // Get the feature type
-      let featureType = null
-      const typeElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'type')
-      if (typeElems.length > 0) {
-        const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
-        if (typeHref) {
-          // Extract the fragment after the #
-          const hashIndex = typeHref.indexOf('#')
-          if (hashIndex !== -1) {
-            featureType = typeHref.substring(hashIndex + 1)
-          }
-        }
-      }
-
-      // Get all properties
-      const properties = []
-      const props = roadFeature.getElementsByTagNameNS(
-        tnitsNS,
-        'GenericRoadFeatureProperty',
-      )
-      for (let j = 0; j < props.length; j++) {
-        const prop = props[j]
-        const typeElems = prop.getElementsByTagNameNS(tnitsNS, 'type')
-        const valueElems = prop.getElementsByTagNameNS(tnitsNS, 'value')
-
-        if (typeElems.length > 0 && valueElems.length > 0) {
-          const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
-          let propertyType = typeHref
-          // Extract the fragment after the # for better readability
-          const hashIndex = typeHref.indexOf('#')
-          if (hashIndex !== -1) {
-            propertyType = typeHref.substring(hashIndex + 1)
-          }
-          const propertyValue = valueElems[0].textContent.trim()
-          properties.push({type: propertyType, value: propertyValue})
-        }
-      }
-
-      // Get validity dates
-      let validFrom = null
-      let validTo = null
-      const validFromElems = roadFeature.getElementsByTagNameNS(
-        tnitsNS,
-        'validFrom',
-      )
-      if (validFromElems.length > 0) {
-        validFrom = validFromElems[0].textContent.trim()
-      }
-      const validToElems = roadFeature.getElementsByTagNameNS(
-        tnitsNS,
-        'validTo',
-      )
-      if (validToElems.length > 0) {
-        validTo = validToElems[0].textContent.trim()
-      }
-
-      // Get update type
-      let updateType = null
-      const updateInfoElems = roadFeature.getElementsByTagNameNS(
-        tnitsNS,
-        'updateInfo',
-      )
-      if (updateInfoElems.length > 0) {
-        const updateInfoTypeElems =
-          updateInfoElems[0].getElementsByTagNameNS(tnitsNS, 'UpdateInfo')
-        if (updateInfoTypeElems.length > 0) {
-          const typeElems = updateInfoTypeElems[0].getElementsByTagNameNS(
-            tnitsNS,
-            'type',
-          )
-          if (typeElems.length > 0) {
-            updateType = typeElems[0].textContent.trim()
-          }
-        }
-      }
-
-      // Extract all location references
-      const openLRReferences = []
-      const nvdbReferences = []
-
-      const locationRefs = roadFeature.getElementsByTagNameNS(
-        tnitsNS,
-        'locationReference',
-      )
-      for (let j = 0; j < locationRefs.length; j++) {
-        const locRef = locationRefs[j]
-
-        // Check for OpenLR binary references
-        const openLRElems = locRef.getElementsByTagNameNS(
-          tnitsNS,
-          'OpenLRLocationReference',
+          'datasetId',
         )
-        if (openLRElems.length > 0) {
-          const base64Elems = openLRElems[0].getElementsByTagNameNS(
-            tnitsNS,
-            'base64String',
-          )
-          if (base64Elems.length > 0) {
-            openLRReferences.push(base64Elems[0].textContent.trim())
+        if (datasetIdElems.length > 0) {
+          datasetId = datasetIdElems[0].textContent.trim()
+          // Format: NVDB-TNITS-105-SpeedLimit_Snapshot_2025-09-26T10:30:00Z
+          const match = datasetId.match(/NVDB-TNITS-(\d+)-/)
+          if (match) {
+            nvdbType = match[1]
           }
         }
 
-        // Check for NVDB external references
-        const externalRefElems = locRef.getElementsByTagNameNS(
+        const creationTimeElems = xmlDoc.getElementsByTagNameNS(
           tnitsNS,
-          'LocationByExternalReference',
+          'datasetCreationTime',
         )
-        if (externalRefElems.length > 0) {
-          const predefinedElems =
-            externalRefElems[0].getElementsByTagNameNS(
+        if (creationTimeElems.length > 0) {
+          datasetCreationTime = creationTimeElems[0].textContent.trim()
+        }
+
+        const typeElems = xmlDoc.getElementsByTagNameNS(tnitsNS, 'type')
+        if (typeElems.length > 0) {
+          // The first 'type' element at document level is the export type
+          const firstType = typeElems[0]
+          if (firstType.parentNode.nodeName.includes('RoadFeatureDataset')) {
+            exportType = firstType.textContent.trim()
+          }
+        }
+
+        // Get all RoadFeature elements within the dataset
+        const roadFeatures = xmlDoc.getElementsByTagNameNS(
+          tnitsNS,
+          'RoadFeature',
+        )
+        const polylines = []
+        for (let i = 0; i < roadFeatures.length; i++) {
+          const roadFeature = roadFeatures[i]
+
+          // Get the vegobjekt ID
+          let vegobjektId = null
+          const idElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'id')
+          if (idElems.length > 0) {
+            const roadFeatureId = idElems[0].getElementsByTagNameNS(
               tnitsNS,
-              'predefinedLocationReference',
+              'RoadFeatureId',
+            )[0]
+            if (roadFeatureId) {
+              const idValueElem = roadFeatureId.getElementsByTagNameNS(
+                tnitsNS,
+                'id',
+              )[0]
+              if (idValueElem) {
+                vegobjektId = idValueElem.textContent.trim()
+              }
+            }
+          }
+
+          // Get the feature type
+          let featureType = null
+          const typeElems = roadFeature.getElementsByTagNameNS(tnitsNS, 'type')
+          if (typeElems.length > 0) {
+            const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
+            if (typeHref) {
+              // Extract the fragment after the #
+              const hashIndex = typeHref.indexOf('#')
+              if (hashIndex !== -1) {
+                featureType = typeHref.substring(hashIndex + 1)
+              }
+            }
+          }
+
+          // Get all properties
+          const properties = []
+          const props = roadFeature.getElementsByTagNameNS(
+            tnitsNS,
+            'GenericRoadFeatureProperty',
+          )
+          for (let j = 0; j < props.length; j++) {
+            const prop = props[j]
+            const typeElems = prop.getElementsByTagNameNS(tnitsNS, 'type')
+            const valueElems = prop.getElementsByTagNameNS(tnitsNS, 'value')
+
+            if (typeElems.length > 0 && valueElems.length > 0) {
+              const typeHref = typeElems[0].getAttributeNS(xlinkNS, 'href')
+              let propertyType = typeHref
+              // Extract the fragment after the # for better readability
+              const hashIndex = typeHref.indexOf('#')
+              if (hashIndex !== -1) {
+                propertyType = typeHref.substring(hashIndex + 1)
+              }
+              const propertyValue = valueElems[0].textContent.trim()
+              properties.push({ type: propertyType, value: propertyValue })
+            }
+          }
+
+          // Get validity dates
+          let validFrom = null
+          let validTo = null
+          const validFromElems = roadFeature.getElementsByTagNameNS(
+            tnitsNS,
+            'validFrom',
+          )
+          if (validFromElems.length > 0) {
+            validFrom = validFromElems[0].textContent.trim()
+          }
+          const validToElems = roadFeature.getElementsByTagNameNS(
+            tnitsNS,
+            'validTo',
+          )
+          if (validToElems.length > 0) {
+            validTo = validToElems[0].textContent.trim()
+          }
+
+          // Get update type
+          let updateType = null
+          const updateInfoElems = roadFeature.getElementsByTagNameNS(
+            tnitsNS,
+            'updateInfo',
+          )
+          if (updateInfoElems.length > 0) {
+            const updateInfoTypeElems =
+              updateInfoElems[0].getElementsByTagNameNS(tnitsNS, 'UpdateInfo')
+            if (updateInfoTypeElems.length > 0) {
+              const typeElems = updateInfoTypeElems[0].getElementsByTagNameNS(
+                tnitsNS,
+                'type',
+              )
+              if (typeElems.length > 0) {
+                updateType = typeElems[0].textContent.trim()
+              }
+            }
+          }
+
+          // Extract all location references
+          const openLRReferences = []
+          const nvdbReferences = []
+
+          const locationRefs = roadFeature.getElementsByTagNameNS(
+            tnitsNS,
+            'locationReference',
+          )
+          for (let j = 0; j < locationRefs.length; j++) {
+            const locRef = locationRefs[j]
+
+            // Check for OpenLR binary references
+            const openLRElems = locRef.getElementsByTagNameNS(
+              tnitsNS,
+              'OpenLRLocationReference',
             )
-          if (predefinedElems.length > 0) {
-            const href = predefinedElems[0].getAttributeNS(xlinkNS, 'href')
-            if (href) {
-              nvdbReferences.push(href)
+            if (openLRElems.length > 0) {
+              const base64Elems = openLRElems[0].getElementsByTagNameNS(
+                tnitsNS,
+                'base64String',
+              )
+              if (base64Elems.length > 0) {
+                openLRReferences.push(base64Elems[0].textContent.trim())
+              }
+            }
+
+            // Check for NVDB external references
+            const externalRefElems = locRef.getElementsByTagNameNS(
+              tnitsNS,
+              'LocationByExternalReference',
+            )
+            if (externalRefElems.length > 0) {
+              const predefinedElems =
+                externalRefElems[0].getElementsByTagNameNS(
+                  tnitsNS,
+                  'predefinedLocationReference',
+                )
+              if (predefinedElems.length > 0) {
+                const href = predefinedElems[0].getAttributeNS(xlinkNS, 'href')
+                if (href) {
+                  nvdbReferences.push(href)
+                }
+              }
+            }
+          }
+
+          // Build popup content once for this road feature
+          let popupContent = ''
+          if (nvdbType !== null) {
+            popupContent += '<b>NVDB Type:</b> ' + nvdbType
+          }
+          if (featureType !== null) {
+            if (popupContent !== '') popupContent += '<br>'
+            popupContent += '<b>Feature type:</b> ' + featureType
+          }
+          if (vegobjektId !== null) {
+            if (popupContent !== '') popupContent += '<br>'
+            popupContent += '<b>Vegobjekt ID:</b> ' + vegobjektId
+            popupContent += '<br>'
+            if (nvdbType !== null) {
+              popupContent +=
+                '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/' +
+                nvdbType +
+                '/' +
+                vegobjektId +
+                '" target="_blank" rel="noopener noreferrer">Uberiket API</a> | '
+            } else {
+              popupContent +=
+                '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekt/id/' +
+                vegobjektId +
+                '" target="_blank" rel="noopener noreferrer">Uberiket API</a> | '
+            }
+            popupContent +=
+              '<a href="https://nvdbapiles.atlas.vegvesen.no/vegobjekt?id=' +
+              vegobjektId +
+              '" target="_blank" rel="noopener noreferrer">Vegobjekter API Les</a>'
+          }
+          if (properties.length > 0) {
+            if (popupContent !== '') popupContent += '<br><br>'
+            popupContent += '<b>Properties:</b><br>'
+            properties.forEach((prop) => {
+              popupContent +=
+                '&nbsp;&nbsp;<b>' + prop.type + ':</b> ' + prop.value + '<br>'
+            })
+          }
+          if (validFrom !== null || validTo !== null) {
+            if (popupContent !== '') popupContent += '<br>'
+            popupContent += '<b>Valid:</b> '
+            if (validFrom !== null) {
+              popupContent += validFrom
+            }
+            if (validTo !== null) {
+              popupContent += ' → ' + validTo
+            }
+          }
+          if (updateType !== null) {
+            if (popupContent !== '') popupContent += '<br>'
+            popupContent += '<b>Update type:</b> ' + updateType
+          }
+          if (openLRReferences.length > 0) {
+            if (popupContent !== '') popupContent += '<br><br>'
+            popupContent += '<b>OpenLR references:</b><br>'
+            openLRReferences.forEach((ref, idx) => {
+              const refId = 'openlr-' + i + '-' + idx
+              popupContent += '<div class="openlr-container">'
+              popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. '
+              popupContent +=
+                '<span class="openlr-text" id="' +
+                refId +
+                '">' +
+                ref +
+                '</span>'
+              popupContent +=
+                '<button class="icon-button" onclick="copyToClipboard(\'' +
+                refId +
+                '\')" title="Copy to clipboard">Copy</button>'
+              popupContent += '</div>'
+            })
+            popupContent +=
+              '<div style="margin-top: 8px; margin-left: 16px;"><a href="https://demo.tomtom.com" target="_blank" rel="noopener noreferrer">Verify on TomTom</a></div>'
+          }
+          if (nvdbReferences.length > 0) {
+            if (popupContent !== '') popupContent += '<br><br>'
+            popupContent += '<b>NVDB references:</b><br>'
+            nvdbReferences.forEach((ref, idx) => {
+              popupContent +=
+                '&nbsp;&nbsp;' +
+                (idx + 1) +
+                '. <span class="popup-reference">' +
+                ref +
+                '</span><br>'
+            })
+          }
+
+          // Get all gml:posList elements (may be multiple per RoadFeature)
+          const posListElems = roadFeature.getElementsByTagNameNS(
+            gmlNS,
+            'posList',
+          )
+          if (posListElems.length === 0) continue
+
+          // Create a polyline for each LineString geometry
+          for (let j = 0; j < posListElems.length; j++) {
+            const coordsString = posListElems[j].textContent.trim()
+            const coordsArray = coordsString.split(/\s+/).map(parseFloat)
+            const latLngs = []
+            for (let k = 0; k < coordsArray.length; k += 2) {
+              const lat = coordsArray[k]
+              const lon = coordsArray[k + 1]
+              if (!isNaN(lat) && !isNaN(lon)) {
+                latLngs.push([lat, lon])
+              }
+            }
+            if (latLngs.length > 0) {
+              const polyline = L.polyline(latLngs, {
+                color: '#3b82f6',
+                weight: 4,
+                opacity: 0.8,
+              })
+              if (popupContent !== '') {
+                polyline.bindPopup(popupContent, {
+                  maxWidth: 400,
+                })
+              }
+              polylines.push(polyline)
+
+              // Store in feature index if we have a vegobjekt ID
+              if (vegobjektId !== null) {
+                if (!featureIndex.has(vegobjektId)) {
+                  featureIndex.set(vegobjektId, [])
+                }
+                featureIndex.get(vegobjektId).push(polyline)
+              }
             }
           }
         }
-      }
-
-      // Build popup content once for this road feature
-      let popupContent = ''
-      if (nvdbType !== null) {
-        popupContent += '<b>NVDB Type:</b> ' + nvdbType
-      }
-      if (featureType !== null) {
-        if (popupContent !== '') popupContent += '<br>'
-        popupContent += '<b>Feature type:</b> ' + featureType
-      }
-      if (vegobjektId !== null) {
-        if (popupContent !== '') popupContent += '<br>'
-        popupContent += '<b>Vegobjekt ID:</b> ' + vegobjektId
-        popupContent += '<br>'
-        if (nvdbType !== null) {
-          popupContent +=
-            '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/' +
-            nvdbType +
-            '/' +
-            vegobjektId +
-            '" target="_blank" rel="noopener noreferrer">Uberiket API</a> | '
+        // Add all polylines to map and fit bounds
+        if (polylines.length > 0) {
+          const group = L.featureGroup(polylines).addTo(map)
+          map.fitBounds(group.getBounds())
         } else {
-          popupContent +=
-            '<a href="https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekt/id/' +
-            vegobjektId +
-            '" target="_blank" rel="noopener noreferrer">Uberiket API</a> | '
+          alert('No geometry found in the XML file.')
         }
-        popupContent +=
-          '<a href="https://nvdbapiles.atlas.vegvesen.no/vegobjekt?id=' +
-          vegobjektId +
-          '" target="_blank" rel="noopener noreferrer">Vegobjekter API Les</a>'
-      }
-      if (properties.length > 0) {
-        if (popupContent !== '') popupContent += '<br><br>'
-        popupContent += '<b>Properties:</b><br>'
-        properties.forEach((prop) => {
-          popupContent +=
-            '&nbsp;&nbsp;<b>' + prop.type + ':</b> ' + prop.value + '<br>'
-        })
-      }
-      if (validFrom !== null || validTo !== null) {
-        if (popupContent !== '') popupContent += '<br>'
-        popupContent += '<b>Valid:</b> '
-        if (validFrom !== null) {
-          popupContent += validFrom
+
+        // Update metadata display in header
+        const metadataDiv = document.getElementById('metadata')
+        let metadataHtml = ''
+        if (nvdbType !== null) {
+          metadataHtml +=
+            '<div><span class="metadata-label">NVDB Type:</span> <span class="metadata-value">' +
+            nvdbType +
+            '</span></div>'
         }
-        if (validTo !== null) {
-          popupContent += ' → ' + validTo
+        if (exportType !== null) {
+          metadataHtml +=
+            '<div><span class="metadata-label">Export Type:</span> <span class="metadata-value">' +
+            exportType +
+            '</span></div>'
         }
-      }
-      if (updateType !== null) {
-        if (popupContent !== '') popupContent += '<br>'
-        popupContent += '<b>Update type:</b> ' + updateType
-      }
-      if (openLRReferences.length > 0) {
-        if (popupContent !== '') popupContent += '<br><br>'
-        popupContent += '<b>OpenLR references:</b><br>'
-        openLRReferences.forEach((ref, idx) => {
-          const refId = 'openlr-' + i + '-' + idx
-          popupContent += '<div class="openlr-container">'
-          popupContent += '&nbsp;&nbsp;' + (idx + 1) + '. '
-          popupContent +=
-            '<span class="openlr-text" id="' +
-            refId +
-            '">' +
-            ref +
-            '</span>'
-          popupContent +=
-            '<button class="icon-button" onclick="copyToClipboard(\'' +
-            refId +
-            '\')" title="Copy to clipboard">Copy</button>'
-          popupContent += '</div>'
-        })
-        popupContent +=
-          '<div style="margin-top: 8px; margin-left: 16px;"><a href="https://demo.tomtom.com" target="_blank" rel="noopener noreferrer">Verify on TomTom</a></div>'
-      }
-      if (nvdbReferences.length > 0) {
-        if (popupContent !== '') popupContent += '<br><br>'
-        popupContent += '<b>NVDB references:</b><br>'
-        nvdbReferences.forEach((ref, idx) => {
-          popupContent +=
-            '&nbsp;&nbsp;' +
-            (idx + 1) +
-            '. <span class="popup-reference">' +
-            ref +
-            '</span><br>'
-        })
+        if (datasetCreationTime !== null) {
+          metadataHtml +=
+            '<div><span class="metadata-label">Created:</span> <span class="metadata-value">' +
+            datasetCreationTime +
+            '</span></div>'
+        }
+        metadataHtml +=
+          '<div><span class="metadata-label">Features:</span> <span class="metadata-value">' +
+          roadFeatures.length +
+          '</span></div>'
+        if (datasetId !== null) {
+          metadataHtml +=
+            '<div><span class="metadata-label">Dataset ID:</span> <span class="metadata-value">' +
+            datasetId +
+            '</span></div>'
+        }
+        metadataDiv.innerHTML = metadataHtml
+
+        // Show the search overlay
+        document.getElementById('searchOverlay').style.display = 'block'
       }
 
-      // Get all gml:posList elements (may be multiple per RoadFeature)
-      const posListElems = roadFeature.getElementsByTagNameNS(
-        gmlNS,
-        'posList',
-      )
-      if (posListElems.length === 0) continue
+      // Search for a vegobjekt by ID
+      function searchVegobjekt() {
+        const searchInput = document.getElementById('searchInput')
+        const searchError = document.getElementById('searchError')
+        const searchId = searchInput.value.trim()
 
-      // Create a polyline for each LineString geometry
-      for (let j = 0; j < posListElems.length; j++) {
-        const coordsString = posListElems[j].textContent.trim()
-        const coordsArray = coordsString.split(/\s+/).map(parseFloat)
-        const latLngs = []
-        for (let k = 0; k < coordsArray.length; k += 2) {
-          const lat = coordsArray[k]
-          const lon = coordsArray[k + 1]
-          if (!isNaN(lat) && !isNaN(lon)) {
-            latLngs.push([lat, lon])
-          }
+        // Hide previous error
+        searchError.style.display = 'none'
+
+        if (!searchId) {
+          searchError.textContent = 'Please enter a vegobjekt ID'
+          searchError.style.display = 'block'
+          return
         }
-        if (latLngs.length > 0) {
-          const polyline = L.polyline(latLngs, {
-            color: '#3b82f6',
-            weight: 4,
-            opacity: 0.8,
+
+        // Look up the feature in the index
+        if (featureIndex.has(searchId)) {
+          const polylines = featureIndex.get(searchId)
+
+          // Create a feature group to get bounds
+          const group = L.featureGroup(polylines)
+          map.fitBounds(group.getBounds(), {
+            padding: [50, 50],
+            maxZoom: 16,
           })
-          if (popupContent !== '') {
-            polyline.bindPopup(popupContent, {
-              maxWidth: 400,
-            })
+
+          // Open the popup on the first polyline
+          if (polylines[0].getPopup()) {
+            polylines[0].openPopup()
           }
-          polylines.push(polyline)
+        } else {
+          searchError.textContent = `No feature found with ID: ${searchId}`
+          searchError.style.display = 'block'
         }
       }
-    }
-    // Add all polylines to map and fit bounds
-    if (polylines.length > 0) {
-      const group = L.featureGroup(polylines).addTo(map)
-      map.fitBounds(group.getBounds())
-    } else {
-      alert('No geometry found in the XML file.')
-    }
 
-    // Update metadata display in header
-    const metadataDiv = document.getElementById('metadata')
-    let metadataHtml = ''
-    if (nvdbType !== null) {
-      metadataHtml +=
-        '<div><span class="metadata-label">NVDB Type:</span> <span class="metadata-value">' +
-        nvdbType +
-        '</span></div>'
-    }
-    if (exportType !== null) {
-      metadataHtml +=
-        '<div><span class="metadata-label">Export Type:</span> <span class="metadata-value">' +
-        exportType +
-        '</span></div>'
-    }
-    if (datasetCreationTime !== null) {
-      metadataHtml +=
-        '<div><span class="metadata-label">Created:</span> <span class="metadata-value">' +
-        datasetCreationTime +
-        '</span></div>'
-    }
-    metadataHtml +=
-      '<div><span class="metadata-label">Features:</span> <span class="metadata-value">' +
-      roadFeatures.length +
-      '</span></div>'
-    if (datasetId !== null) {
-      metadataHtml +=
-        '<div><span class="metadata-label">Dataset ID:</span> <span class="metadata-value">' +
-        datasetId +
-        '</span></div>'
-    }
-    metadataDiv.innerHTML = metadataHtml
-  }
-</script>
-</body>
+      // Event listeners for search functionality
+      document
+        .getElementById('searchButton')
+        .addEventListener('click', searchVegobjekt)
+
+      document
+        .getElementById('searchInput')
+        .addEventListener('keypress', function (e) {
+          if (e.key === 'Enter') {
+            searchVegobjekt()
+          }
+        })
+
+      document
+        .getElementById('searchInput')
+        .addEventListener('input', function () {
+          // Clear error message when input changes
+          document.getElementById('searchError').style.display = 'none'
+        })
+    </script>
+  </body>
 </html>
