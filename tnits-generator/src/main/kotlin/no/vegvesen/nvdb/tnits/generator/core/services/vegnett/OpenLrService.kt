@@ -164,15 +164,55 @@ class OpenLrService(private val cachedVegnett: CachedVegnett) {
         return groups
     }
 
+    private fun sortPathsByConnectivity(paths: List<Path<OpenLrLine>>): List<Path<OpenLrLine>> {
+        if (paths.size <= 1) return paths
+
+        // Build lookup map: start geometry -> path (for finding what comes next)
+        val pathsByStartGeometry = paths.associateBy { it.start.geometry }
+
+        // Find all end geometries (to identify which paths have predecessors)
+        val endGeometries = paths.map { it.end.geometry }.toSet()
+
+        val visited = mutableSetOf<Path<OpenLrLine>>()
+        val sorted = mutableListOf<Path<OpenLrLine>>()
+
+        // Function to follow a chain starting from a given path
+        fun followChain(startPath: Path<OpenLrLine>) {
+            var current: Path<OpenLrLine>? = startPath
+            while (current != null && current !in visited) {
+                visited.add(current)
+                sorted.add(current)
+                // Find the next path in the chain (one that starts where current ends)
+                current = pathsByStartGeometry[current.end.geometry]
+            }
+        }
+
+        // First, process all starting paths (those with no predecessor)
+        for (path in paths) {
+            if (path.start.geometry !in endGeometries && path !in visited) {
+                followChain(path)
+            }
+        }
+
+        // Then handle any remaining paths (in case of cycles or disconnected components)
+        for (path in paths) {
+            if (path !in visited) {
+                followChain(path)
+            }
+        }
+
+        return sorted
+    }
+
     private fun mergeConnectedPaths(paths: List<Path<OpenLrLine>>): MutableList<Path<OpenLrLine>> {
-        // Antagelse: Stedfestinger ligger i rekkefølge??
+        val sortedPaths = sortPathsByConnectivity(paths)
         val mergedPaths = mutableListOf<Path<OpenLrLine>>()
 
         val connectedPaths = mutableListOf<Path<OpenLrLine>>()
 
         fun <L : Line<L>> Path<L>.isConnected(other: Path<L>): Boolean = this.end.geometry == other.start.geometry
 
-        for (path in paths) {
+        for (path in sortedPaths) {
             if (connectedPaths.isEmpty() || connectedPaths.last().isConnected(path)) {
                 connectedPaths.add(path)
             } else {

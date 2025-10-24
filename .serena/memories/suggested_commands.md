@@ -51,14 +51,45 @@ docker compose up -d    # Start MinIO and other services
 docker compose down     # Stop services
 ```
 
-## NVDB API Testing
-```bash
-# Fetch a vegobjekt
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803?inkluder=alle" | jq > vegobjekt-105-85283803.json
+## NVDB API Testing and Test Resources
 
-# Fetch multiple veglenkesekvenser
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424" | jq > veglenkesekvenser-41423-42424.json
+**IMPORTANT:** All fetched NVDB data must be saved to `tnits-generator/src/test/resources/`
+
+### Fetch and Save Test Data
+
+```bash
+# Fetch a vegobjekt and save to test resources
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/323113504?inkluder=alle" | jq . > tnits-generator/src/test/resources/vegobjekt-105-323113504.json
+
+# Extract veglenkesekvens IDs from vegobjekt response
+# IMPORTANT: Veglenkesekvens IDs are in stedfesting.linjer[].id, NOT lokasjon.veglenkesekvenser
+jq -r '.stedfesting.linjer[].id' tnits-generator/src/test/resources/vegobjekt-105-323113504.json | paste -sd, -
+
+# Fetch related veglenkesekvenser and save to test resources
+IDS=$(jq -r '.stedfesting.linjer[].id' tnits-generator/src/test/resources/vegobjekt-105-323113504.json | paste -sd, -)
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=$IDS" | jq . > tnits-generator/src/test/resources/veglenkesekvenser-$(echo $IDS | cut -d, -f1)-$(echo $IDS | rev | cut -d, -f1 | rev).json
 ```
+
+### Complete Workflow Example
+
+```bash
+# Fetch speed limit vegobjekt
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/323113504?inkluder=alle" | jq . > tnits-generator/src/test/resources/vegobjekt-105-323113504.json
+
+# Extract and fetch related veglenkesekvenser
+IDS=$(jq -r '.stedfesting.linjer[].id' tnits-generator/src/test/resources/vegobjekt-105-323113504.json | paste -sd, -)
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=$IDS" | jq . > tnits-generator/src/test/resources/veglenkesekvenser-$(echo $IDS | cut -d, -f1)-$(echo $IDS | rev | cut -d, -f1 | rev).json
+
+# Verify files
+ls -lh tnits-generator/src/test/resources/vegobjekt-105-323113504.json tnits-generator/src/test/resources/veglenkesekvenser-*-*.json
+```
+
+### Naming Conventions
+- Vegobjekter: `vegobjekt-<type>-<id>.json`
+- Single veglenkesekvens: `veglenkesekvens-<id>.json`
+- Multiple veglenkesekvenser: `veglenkesekvenser-<firstId>-<lastId>.json`
+- Always format JSON with `jq`
+- Always save to `tnits-generator/src/test/resources/`
 
 ## Git Hooks
 ```bash

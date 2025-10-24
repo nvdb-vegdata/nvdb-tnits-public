@@ -97,22 +97,28 @@ See [Testing Guide](docs/TESTING.md) for comprehensive testing documentation.
 
 ## NVDB API Usage
 
-### Fetching Data
+### Fetching Data for Tests
+
+**IMPORTANT:** All fetched NVDB data must be saved to `tnits-generator/src/test/resources/`
 
 ```bash
 # Fetch a vegobjekt by type and ID
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/85283803?inkluder=alle" | jq > vegobjekt-105-85283803.json
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/323113504?inkluder=alle" | jq > tnits-generator/src/test/resources/vegobjekt-105-323113504.json
 
-# Fetch multiple veglenkesekvenser
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=41423,42424" | jq > veglenkesekvenser-41423-42424.json
+# Extract veglenkesekvens IDs from vegobjekt (IMPORTANT: IDs are in stedfesting.linjer, NOT lokasjon)
+IDS=$(jq -r '.stedfesting.linjer[].id' tnits-generator/src/test/resources/vegobjekt-105-323113504.json | paste -sd, -)
+
+# Fetch related veglenkesekvenser
+curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=$IDS" | jq > tnits-generator/src/test/resources/veglenkesekvenser-$(echo $IDS | cut -d, -f1)-$(echo $IDS | rev | cut -d, -f1 | rev).json
 ```
 
 ### Test Resource Naming
 
 - Vegobjekter: `vegobjekt-<type>-<id>.json`
-- Multiple veglenkesekvenser: `veglenkesekvenser-<id1>-<idX>.json`
+- Multiple veglenkesekvenser: `veglenkesekvenser-<firstId>-<lastId>.json`
 - Single veglenkesekvens: `veglenkesekvens-<id>.json`
 - Always format JSON with `jq`
+- Always save to `tnits-generator/src/test/resources/`
 
 See [Concepts Glossary](docs/CONCEPTS.md) for NVDB domain terminology.
 - When writing test with ShouldSpec, 'should' will automatically be inserted as the first part of the test name

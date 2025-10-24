@@ -195,6 +195,26 @@ class OpenLrServiceTest : ShouldSpec({
             binary shouldBe listOf("Cwge3C1iYjvwAf/V/8E7Ag==", "CwgeyC1iRTviAQArAD87EA==")
         }
     }
+
+    should("handle case where stedfesting is out of order") {
+        withTempDb { config ->
+            // Arrange
+            val openLrService =
+                setupOpenLrService(
+                    config,
+                    "veglenkesekvenser-2098186-2098120.json",
+                )
+            val stedfestinger = loadStedfestinger("vegobjekt-105-323113504.json")
+
+            // Act
+            val openLrReferences = openLrService.toOpenLr(stedfestinger)
+            val binary = openLrReferences.map(marshaller::marshallToBase64String)
+
+            // Assert
+            openLrReferences shouldHaveSize 2
+            binary shouldBe listOf("CwhtZy640Dv9Av9vAFU7EQ==", "CwhtJC649zvxAgCR/6s7HQ==")
+        }
+    }
 })
 
 private suspend fun setupOpenLrService(dbContext: RocksDbContext, vararg paths: String): OpenLrService {

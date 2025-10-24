@@ -1,0 +1,45 @@
+{
+  "id": 323113504,
+  "versjon": 1,
+  "typeId": 105,
+  "gyldighetsperiode": {
+    "startdato": "2012-02-01"
+  },
+  "egenskaper": {
+    "2021": {
+      "type": "EnumEgenskap",
+      "verdi": 2730
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 2098186,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      },
+      {
+        "id": 2098119,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      },
+      {
+        "id": 2098004,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      },
+      {
+        "id": 2098120,
+        "startposisjon": 0.0,
+        "sluttposisjon": 1.0,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-01T18:46:46.998137Z"
+}

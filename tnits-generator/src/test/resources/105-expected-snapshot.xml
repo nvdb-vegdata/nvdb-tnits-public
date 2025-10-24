@@ -382,6 +382,75 @@
 	</roadFeatures>
 	<roadFeatures>
 		<RoadFeature>
+			<validFrom>2012-02-01</validFrom>
+			<beginLifespanVersion>2012-01-31T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#speedLimit"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#maximumSpeedLimit"></type>
+					<value>50</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>323113504</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>65.70269 11.85096 65.70291 11.85062 65.703 11.85045 65.70306 11.85026 65.70309 11.85001 65.70307 11.84955 65.70309 11.84941 65.70315 11.84932 65.70324 11.84929 65.70339 11.84944 65.70354 11.84951</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwhtZy640Dv9Av9vAFU7EQ==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwhtJC649zvxAgCR/6s7HQ==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2098186:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2098119:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2098004:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2098120:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
 			<validFrom>2024-11-14</validFrom>
 			<beginLifespanVersion>2024-11-13T23:00:00Z</beginLifespanVersion>
 			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#regulation"></source>
