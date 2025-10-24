@@ -1,4 +1,4 @@
-import {formatFileSize, formatTimestamp} from './utils.js'
+import { formatFileSize, formatTimestamp } from './utils.js'
 
 let selectedType = null
 

@@ -28,3 +28,4 @@ minio:
   bucket: ${S3_BUCKET:}
 app:
   baseUrl: ${BASE_URL:}
+  vegkartBaseUrl: ${VEGKART_BASE_URL:https://vegkart.atlas.vegvesen.no}

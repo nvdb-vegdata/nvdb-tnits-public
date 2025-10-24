@@ -61,7 +61,7 @@ Deployment details for SVV Atlas hosting are found in a [separate, private repo]
 We set the following TN-ITS fields where there may be ambiguity:
 
 - `validFrom`: Set to the start date of the road feature's first version
-- `validTo`, `endLivespanVersion`: Set to the end date of the road feature's last version when closed. For deleted road features, it is set to the date of the export itself.
+- `validTo`, `endLifespanVersion`: Set to the end date of the road feature's last version when closed. For deleted road features, it is set to the date of the export itself.
 - `beginLifespanVersion`: Set to the start date of the road feature's current version
 
 For OpenLR, we make the following choices:

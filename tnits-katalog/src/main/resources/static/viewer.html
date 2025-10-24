@@ -336,6 +336,12 @@
         <img alt="NVDB - Nasjonal vegdatabank" src="/nvdb_logo.svg" />
       </a>
       <h1>TN-ITS Map Viewer</h1>
+      <nav aria-label="Main navigation" class="main-nav">
+        <a href="/">Home</a>
+        <a href="/api-docs.html">API Docs</a>
+        <a href="/browser.html">Browser</a>
+        <a href="/viewer.html" aria-current="page">Viewer</a>
+      </nav>
     </div>
 
     <div class="container">
@@ -423,6 +429,19 @@
       }).addTo(map)
       // Set a default view over Norway (approximate center)
       map.setView([65.0, 15.0], 4)
+
+      // Global configuration
+      let appConfig = null
+
+      // Fetch config on page load
+      fetch('/config')
+        .then((response) => response.json())
+        .then((config) => {
+          appConfig = config
+        })
+        .catch((error) => {
+          console.error('Failed to load config:', error)
+        })
 
       // Global index to map vegobjekt IDs to their polylines
       let featureIndex = new Map()
@@ -723,6 +742,14 @@
               '<a href="https://nvdbapiles.atlas.vegvesen.no/vegobjekt?id=' +
               vegobjektId +
               '" target="_blank" rel="noopener noreferrer">Vegobjekter API Les</a>'
+            if (appConfig?.vegkartBaseUrl) {
+              popupContent +=
+                ' | <a href="' +
+                appConfig.vegkartBaseUrl +
+                '#valgt:' +
+                vegobjektId +
+                '" target="_blank" rel="noopener noreferrer">Vegkart</a>'
+            }
           }
           if (properties.length > 0) {
             if (popupContent !== '') popupContent += '<br><br>'
