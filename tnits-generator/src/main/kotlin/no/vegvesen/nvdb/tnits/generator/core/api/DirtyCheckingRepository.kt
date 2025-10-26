@@ -1,5 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.core.api
 
+import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 
 interface DirtyCheckingRepository {
@@ -11,6 +12,25 @@ interface DirtyCheckingRepository {
      * @return Set of VegobjektChange objects containing ID and change type information
      */
     fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
+
+    /**
+     * Retrieves dirty vegobjekt changes as a map, with deduplication logic that prioritizes
+     * NEW changes over other change types when the same feature ID has multiple changes.
+     *
+     * @param vegobjektType The vegobjekt type ID to check for dirty objects
+     * @return Map of vegobjekt ID to ChangeType, with NEW prioritized over MODIFIED
+     */
+    fun getDirtyVegobjektChangesAsMap(vegobjektType: Int): Map<Long, ChangeType> {
+        val changes = getDirtyVegobjektChanges(vegobjektType)
+        return changes.groupBy({ it.id }, { it.changeType })
+            .mapValues { (_, changesForId) ->
+                when {
+                    changesForId.contains(ChangeType.NEW) -> ChangeType.NEW
+                    changesForId.contains(ChangeType.DELETED) -> ChangeType.DELETED
+                    else -> ChangeType.MODIFIED
+                }
+            }
+    }
 
     /**
      * Finds vegobjekt IDs of a specific type that are positioned (stedfestet) on the given veglenkesekvenser.
