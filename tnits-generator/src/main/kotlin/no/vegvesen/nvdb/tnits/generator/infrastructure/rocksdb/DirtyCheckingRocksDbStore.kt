@@ -12,22 +12,22 @@ import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 @Singleton
 class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : DirtyCheckingRepository {
 
-    override fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> {
-        val directChanges = rocksDbContext.streamValuesByPrefix(
-            ColumnFamily.DIRTY_VEGOBJEKTER,
-            VegobjekterRocksDbStore.getVegobjektTypePrefix(vegobjektType),
-        )
-            .map { value ->
-                ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
-            }
-            .toSet()
+    override fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> = rocksDbContext.streamValuesByPrefix(
+        ColumnFamily.DIRTY_VEGOBJEKTER,
+        VegobjekterRocksDbStore.getVegobjektTypePrefix(vegobjektType),
+    )
+        .map { value ->
+            ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
+        }
+        .toSet()
+
+    override fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> {
         // The mapping from supporting vegobjekter to dirty veglenkesekvenser is done at load time, so it is correct
         // to fetch indirectly located vegobjekter here
         val dirtyVeglenkeIds = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toList()
-        val indirectChanges = findStedfestingVegobjektIds(dirtyVeglenkeIds.toSet(), vegobjektType)
+        return findStedfestingVegobjektIds(dirtyVeglenkeIds.toSet(), vegobjektType)
             .map { vegobjektId -> VegobjektChange(vegobjektId, ChangeType.MODIFIED) }
             .toSet()
-        return directChanges + indirectChanges
     }
 
     override fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<Long>, vegobjektType: Int): Set<Long> {

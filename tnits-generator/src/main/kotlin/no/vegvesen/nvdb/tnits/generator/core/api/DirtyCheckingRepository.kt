@@ -5,31 +5,37 @@ import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 
 interface DirtyCheckingRepository {
     /**
-     * Retrieves all dirty vegobjekt changes for a specific type. Includes both direct changes
-     * to vegobjekter and indirect changes due to related veglenkesekvenser becoming dirty.
+     * Retrieves direct dirty vegobjekt changes for a specific type. These are changes that were
+     * explicitly marked as dirty in the current operation.
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
      * @return Set of VegobjektChange objects containing ID and change type information
      */
-    fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
+    fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
+
+    /**
+     * Retrieves indirect dirty vegobjekt changes for a specific type. These are changes that
+     * resulted from related veglenkesekvenser becoming dirty (e.g., a feature positioned on a dirty veglenke).
+     *
+     * @param vegobjektType The vegobjekt type ID to check for dirty objects
+     * @return Set of VegobjektChange objects containing ID and ChangeType.MODIFIED.
+     */
+    fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
 
     /**
      * Retrieves dirty vegobjekt changes as a map, with deduplication logic that prioritizes
-     * NEW changes over other change types when the same feature ID has multiple changes.
+     * direct changes over indirect changes. When a feature has both direct and indirect changes,
+     * the direct change type is used.
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
-     * @return Map of vegobjekt ID to ChangeType, with NEW prioritized over MODIFIED
+     * @return Map of vegobjekt ID to ChangeType, with direct changes prioritized
      */
     fun getDirtyVegobjektChangesAsMap(vegobjektType: Int): Map<Long, ChangeType> {
-        val changes = getDirtyVegobjektChanges(vegobjektType)
-        return changes.groupBy({ it.id }, { it.changeType })
-            .mapValues { (_, changesForId) ->
-                when {
-                    changesForId.contains(ChangeType.NEW) -> ChangeType.NEW
-                    changesForId.contains(ChangeType.DELETED) -> ChangeType.DELETED
-                    else -> ChangeType.MODIFIED
-                }
-            }
+        val directChanges = getDirectDirtyVegobjektChanges(vegobjektType).associate { it.id to it.changeType }
+        val indirectChanges = getIndirectDirtyVegobjektChanges(vegobjektType).associate { it.id to it.changeType }
+
+        // Direct changes take precedence over indirect changes
+        return indirectChanges + directChanges
     }
 
     /**
