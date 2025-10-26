@@ -22,6 +22,8 @@ ksp {
 dependencies {
     implementation(project(":tnits-common"))
 
+    testImplementation(testFixtures(project(":tnits-common")))
+
     // Ktor Client (for NVDB API calls)
     implementation("io.ktor:ktor-client-core")
     implementation("io.ktor:ktor-client-cio")
@@ -76,9 +78,6 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core:6.0.0")
     testImplementation("io.mockk:mockk:1.14.6")
     testImplementation("com.lemonappdev:konsist:0.17.3")
-
-    // Testcontainers for integration testing
-    testImplementation("org.testcontainers:minio:1.21.3")
 }
 
 application {

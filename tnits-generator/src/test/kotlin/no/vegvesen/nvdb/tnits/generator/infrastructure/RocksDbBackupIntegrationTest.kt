@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
-import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
+import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbS3BackupService

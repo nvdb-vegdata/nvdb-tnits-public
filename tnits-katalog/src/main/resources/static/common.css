@@ -36,21 +36,13 @@ body {
 .logo img {
   height: 40px;
   width: auto;
-}
-
-h1 {
-  color: #2d3748;
-  font-size: 1.75rem;
-  font-weight: 600;
-  flex: 1;
-  min-width: 0;
+  aspect-ratio: 199 / 36;
 }
 
 /* Navigation */
 .main-nav {
   display: flex;
   gap: 8px;
-  margin-left: auto;
 }
 
 .main-nav a {
@@ -158,14 +150,23 @@ input[type='text']:focus {
   font-style: italic;
 }
 
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header {
     padding: 16px 20px;
-  }
-
-  h1 {
-    font-size: 1.25rem;
   }
 
   .main-nav {

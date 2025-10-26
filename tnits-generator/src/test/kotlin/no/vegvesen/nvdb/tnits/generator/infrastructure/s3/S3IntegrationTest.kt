@@ -8,8 +8,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
+import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
-import no.vegvesen.nvdb.tnits.generator.MinioTestHelper
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID

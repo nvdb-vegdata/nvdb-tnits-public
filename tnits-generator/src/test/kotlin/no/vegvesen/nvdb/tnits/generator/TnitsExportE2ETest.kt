@@ -11,6 +11,7 @@ import io.mockk.every
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon
+import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.TestServices.Companion.withTestServices
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType

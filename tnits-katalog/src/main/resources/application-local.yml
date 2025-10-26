@@ -7,3 +7,5 @@ server:
   port: 8999
 app:
   baseUrl: http://localhost:8999
+security:
+  enabled: false

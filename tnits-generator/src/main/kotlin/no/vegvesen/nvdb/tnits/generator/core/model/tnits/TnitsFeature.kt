@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.core.model.tnits
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.model.JtsGeometrySerializer
@@ -22,7 +23,8 @@ data class TnitsFeature(
     val nvdbLocationReferences: List<VegobjektStedfesting>,
     val validFrom: LocalDate,
     val validTo: LocalDate? = null,
-    val updateType: UpdateType,
+    @Transient
+    val updateType: UpdateType = UpdateType.Snapshot,
     val beginLifespanVersion: Instant,
 ) {
     val hash by lazy {

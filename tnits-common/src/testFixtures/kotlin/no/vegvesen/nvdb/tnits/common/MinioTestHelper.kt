@@ -1,4 +1,4 @@
-package no.vegvesen.nvdb.tnits.generator
+package no.vegvesen.nvdb.tnits.common
 
 import io.minio.BucketExistsArgs
 import io.minio.MakeBucketArgs

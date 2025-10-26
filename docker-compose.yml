@@ -32,6 +32,5 @@ services:
       sleep 5;
       mc alias set s3 http://minio:9000 user password;
       mc mb --ignore-existing s3/nvdb-tnits-local-data-01;
-      mc mb --ignore-existing s3/nvdb-tnits-test-data-01;
       exit 0;
       '

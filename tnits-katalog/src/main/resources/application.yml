@@ -15,12 +15,41 @@ management:
 spring:
   profiles:
     active: ${ATLAS_APP_ENVIRONMENT:local}
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 1h
+          cache-public: true
+  oauth2:
+    client:
+      provider:
+        oidc:
+          issuer-uri: ${OPENID_ISSUER_URI:}
+      registration:
+        oidc:
+          client-id: ${OPENID_CLIENT_ID:}
+          client-secret: ${OPENID_CLIENT_SECRET:}
+          scope:
+            - openid
+            - svvprofile
+    resourceserver:
+      jwt:
+        issuer-uri: ${OPENID_ISSUER_URI:}
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     disable-swagger-default-url: 'true'
     path: /swagger-ui
+    oauth2-redirect-url: /swagger-ui/oauth2-redirect.html
+    oauth:
+      client-id: ${OPENID_CLIENT_ID:}
+      use-pkce-with-authorization-code-grant: true
+      scopes: openid,svvprofile
+      additional-query-string-params:
+        acr_values: Level2plus
+    groups-order: desc
 minio:
   endpoint: ${S3_ENDPOINT:}
   accessKey: ${S3_ACCESS_KEY:}
@@ -29,3 +58,8 @@ minio:
 app:
   baseUrl: ${BASE_URL:}
   vegkartBaseUrl: ${VEGKART_BASE_URL:https://vegkart.atlas.vegvesen.no}
+  nvdbBaseUrl: ${NVDB_BASE_URL:https://nvdbapiles.atlas.vegvesen.no}
+security:
+  enabled: ${SECURITY_ENABLED:true}
+  admin-role: ${ADMIN_ROLE:nvdbapi=admin}
+  role-claim-path: ${ROLE_CLAIM_PATH:svvroles}

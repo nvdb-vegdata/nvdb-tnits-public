@@ -6,4 +6,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AppConfiguration(
     val baseUrl: String,
     val vegkartBaseUrl: String,
+    val nvdbBaseUrl: String,
 )

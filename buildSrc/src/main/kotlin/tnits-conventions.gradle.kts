@@ -6,6 +6,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("com.github.ben-manes.versions")
     id("maven-publish")
+    `java-test-fixtures`
 }
 
 group = "no.vegvesen.nvdb.tnits"
@@ -23,8 +24,22 @@ ktlint {
 }
 
 dependencies {
+
     // Minio S3
     implementation("io.minio:minio:8.6.0")
+
+    // Logging
+    implementation("ch.qos.logback:logback-classic:1.5.18")
+
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+
+    // Testing - Kotest BOM manages versions
+    testImplementation(platform("io.kotest:kotest-bom:6.0.4"))
+    testImplementation("io.kotest:kotest-runner-junit5")
+    testImplementation("io.kotest:kotest-assertions-core")
+    testImplementation("io.mockk:mockk:1.13.14")
 }
 
 tasks.withType<KotlinCompile> {
@@ -44,6 +59,7 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    failOnNoDiscoveredTests = false
 }
 
 publishing {

@@ -17,5 +17,6 @@ class ConfigController(
     @GetMapping
     fun getConfig(): ConfigResponse = ConfigResponse(
         vegkartBaseUrl = appConfiguration.vegkartBaseUrl,
+        nvdbBaseUrl = appConfiguration.nvdbBaseUrl,
     )
 }
