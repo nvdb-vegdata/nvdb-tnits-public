@@ -152,7 +152,7 @@ class VegobjektLoader(
                     null
                 }
 
-                latest.toDomain(originalStartDate)?.let { id to it }
+                id to latest.toDomain(originalStartDate)
             }.toMap()
 
     private suspend fun getLastHendelseId(typeId: Int): Long =
