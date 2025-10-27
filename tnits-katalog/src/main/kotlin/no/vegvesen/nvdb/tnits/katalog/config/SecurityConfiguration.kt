@@ -14,12 +14,12 @@ import org.springframework.security.web.SecurityFilterChain
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties(SecurityProperties::class)
+@ConditionalOnProperty(prefix = "security", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class SecurityConfiguration(
     private val securityProperties: SecurityProperties,
 ) {
 
     @Bean
-    @ConditionalOnProperty(prefix = "security", name = ["enabled"], havingValue = "true", matchIfMissing = true)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
             authorizeHttpRequests {
@@ -32,20 +32,6 @@ class SecurityConfiguration(
                 jwt {
                     jwtAuthenticationConverter = jwtAuthenticationConverter()
                 }
-            }
-        }
-        return http.build()
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "security", name = ["enabled"], havingValue = "false")
-    fun disabledSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http {
-            authorizeHttpRequests {
-                authorize(anyRequest, permitAll)
-            }
-            csrf {
-                disable()
             }
         }
         return http.build()
