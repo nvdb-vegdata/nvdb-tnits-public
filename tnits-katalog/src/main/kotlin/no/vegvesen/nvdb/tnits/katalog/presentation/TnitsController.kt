@@ -90,7 +90,7 @@ If not specified, fetches updates since start of current month.
             .toInstant(),
     ): UpdatesResponse = fileService.getFileObjects(type, updateSuffix)
         .filter { it.timestamp > from }
-        .sortedBy { it.timestamp }
+        .sortedByDescending { it.timestamp }
         .let { updates ->
             UpdatesResponse(
                 updates = updates.map { (objectName, timestamp, size) ->

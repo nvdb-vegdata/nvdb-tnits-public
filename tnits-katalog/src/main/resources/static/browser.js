@@ -1,6 +1,8 @@
 import { formatFileSize, formatTimestamp } from './utils.js'
 
 let selectedType = null
+let snapshotsData = []
+let updatesData = []
 
 document.addEventListener('DOMContentLoaded', () => {
   void loadFeatureTypes()
@@ -12,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
         void loadUpdates(selectedType, event.target.value)
       }
     })
+
+  setupTableSorting()
 })
 
 async function loadFeatureTypes() {
@@ -98,6 +102,7 @@ async function loadUpdates(type, from = null) {
 }
 
 function renderSnapshots(snapshots, container) {
+  storeTableData(snapshots, true)
   container.innerHTML = snapshots
     .map(
       (snapshot) => `
@@ -113,6 +118,7 @@ function renderSnapshots(snapshots, container) {
 }
 
 function renderUpdates(updates, container) {
+  storeTableData(updates, false)
   container.innerHTML = updates
     .map(
       (update) => `
@@ -135,4 +141,50 @@ function formatTableData(table) {
   table.querySelectorAll('[data-size]').forEach((cell) => {
     cell.textContent = formatFileSize(parseInt(cell.dataset.size))
   })
+}
+
+function setupTableSorting() {
+  document.querySelectorAll('th[data-sortable]').forEach((header) => {
+    header.addEventListener('click', () => {
+      const column = header.dataset.column
+      const table = header.closest('table')
+      const tbody = table.querySelector('tbody')
+      const isSnapshots = tbody.id === 'snapshots-table'
+      const data = isSnapshots ? snapshotsData : updatesData
+
+      let sortDir = header.dataset.sort
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc'
+
+      data.sort((a, b) => {
+        let aVal = a[column]
+        let bVal = b[column]
+
+        if (column === 'timestamp') {
+          aVal = new Date(aVal).getTime()
+          bVal = new Date(bVal).getTime()
+        } else if (column === 'size') {
+          aVal = parseInt(aVal)
+          bVal = parseInt(bVal)
+        }
+
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal
+      })
+
+      table.querySelectorAll('th[data-sortable]').forEach((h) => {
+        h.removeAttribute('data-sort')
+      })
+      header.dataset.sort = sortDir
+
+      const renderFunc = isSnapshots ? renderSnapshots : renderUpdates
+      renderFunc(data, tbody)
+    })
+  })
+}
+
+function storeTableData(items, isSnapshots) {
+  if (isSnapshots) {
+    snapshotsData = items
+  } else {
+    updatesData = items
+  }
 }

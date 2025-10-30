@@ -198,11 +198,43 @@
         font-style: italic;
       }
 
-      .error {
-        color: #e53e3e;
-      }
+       .error {
+         color: #e53e3e;
+       }
 
-      .sr-only {
+       th[data-sortable] {
+         cursor: pointer;
+         user-select: none;
+       }
+
+       th[data-sortable]:hover {
+         background: #edf2f7;
+       }
+
+       th[data-sortable]::after {
+         content: '';
+         display: inline-block;
+         width: 12px;
+         height: 12px;
+         margin-left: 8px;
+         background-size: contain;
+         background-repeat: no-repeat;
+         background-position: center;
+         vertical-align: middle;
+         opacity: 0.5;
+       }
+
+       th[data-sortable][data-sort='asc']::after {
+         content: '▲';
+         opacity: 1;
+       }
+
+       th[data-sortable][data-sort='desc']::after {
+         content: '▼';
+         opacity: 1;
+       }
+
+       .sr-only {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -286,8 +318,8 @@
               </caption>
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Size</th>
+                  <th data-sortable data-column="timestamp" data-sort="desc">Timestamp</th>
+                  <th data-sortable data-column="size">Size</th>
                   <th>Download</th>
                 </tr>
               </thead>
@@ -318,8 +350,8 @@
               </caption>
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Size</th>
+                  <th data-sortable data-column="timestamp" data-sort="desc">Timestamp</th>
+                  <th data-sortable data-column="size">Size</th>
                   <th>Download</th>
                 </tr>
               </thead>
