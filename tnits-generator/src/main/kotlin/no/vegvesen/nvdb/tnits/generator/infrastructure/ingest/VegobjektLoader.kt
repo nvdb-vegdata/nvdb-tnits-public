@@ -90,6 +90,10 @@ class VegobjektLoader(
         uberiketApi.streamVegobjektHendelser(typeId = typeId, start = latestHendelseId).collect { hendelse ->
             latestHendelseId = hendelse.hendelseId
             when {
+                changesById[hendelse.vegobjektId] == ChangeType.DELETED -> {
+                    // Do nothing, once deleted always deleted
+                }
+
                 hendelse.hendelseType == "VegobjektImportert" -> changesById[hendelse.vegobjektId] = ChangeType.NEW
                 hendelse.hendelseType == "VegobjektVersjonOpprettet" && hendelse.vegobjektVersjon == 1 -> changesById[hendelse.vegobjektId] =
                     ChangeType.NEW
@@ -123,8 +127,12 @@ class VegobjektLoader(
                 VegobjektUpdate(id, changeType)
             } else {
                 val vegobjekt = vegobjekterById[id]
-                    ?: error("Forventet vegobjekt med ID $id for endringstype $changeType")
-                VegobjektUpdate(id, changeType, vegobjekt)
+                if (vegobjekt != null) {
+                    VegobjektUpdate(id, changeType, vegobjekt)
+                } else {
+                    log.error("Forventet vegobjekt med ID $id for endringstype $changeType")
+                    VegobjektUpdate(id, ChangeType.DELETED)
+                }
             }
         }
 
