@@ -61,7 +61,7 @@ GET /api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z
       "size": 1024000
     }
   ],
-  "newUpdates": "/api/v1/tnits/speedLimit/updates?from=2025-10-21T04:23:14Z"
+  "newUpdates": "{BASE_URL}/api/v1/tnits/speedLimit/updates?from=2025-10-21T04:23:14Z"
 }
 ```
 
