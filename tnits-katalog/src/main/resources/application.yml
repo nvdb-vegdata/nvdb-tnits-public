@@ -56,7 +56,7 @@ minio:
   secretKey: ${S3_SECRET_KEY:}
   bucket: ${S3_BUCKET:}
 app:
-  baseUrl: ${BASE_URL:}
+  baseUrl: ${BASE_URL:https://nvdb-tnits.atlas.vegvesen.no}
   vegkartBaseUrl: ${VEGKART_BASE_URL:https://vegkart.atlas.vegvesen.no}
   nvdbBaseUrl: ${NVDB_BASE_URL:https://nvdbapiles.atlas.vegvesen.no}
 security:

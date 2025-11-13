@@ -18,12 +18,62 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @OpenAPIDefinition(
     info = Info(
-        title = "NVDB TN-ITS & INSPIRE Export API",
+        title = "NVDB TN-ITS Export API",
         version = "v1",
         description = """
-This API provides access to TN-ITS and INSPIRE data exports from the Norwegian National Road Database (NVDB).
+This API provides access to TN-ITS data exports from the Norwegian National Road Database (NVDB).
 
-For a web-based viewer to explore the exported TN-ITS data, visit the [TN-ITS Export Viewer](https://nvdb-vegdata.github.io/nvdb-tnits-public/).
+## Getting Started
+
+The API uses a **snapshot + incremental update** pattern: fetch a complete dataset (snapshot) once, then apply delta changes (updates) to stay synchronized.
+
+## Workflow
+
+**1. Get the latest snapshot** — your starting point for a complete dataset
+
+```
+GET /api/v1/tnits/speedLimit/snapshots/latest
+```
+
+**Response:**
+```json
+{
+  "href": "{BASE_URL}/api/v1/download?path=0105-speedLimit/2025-10-20T04-23-14Z/snapshot.xml.gz",
+  "newUpdates": "{BASE_URL}/api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z"
+}
+```
+
+Download the snapshot file from `href` (GML 3.2 format, gzip compressed). This is your initial data state.
+
+**2. Poll for updates** — follow the `newUpdates` link to check for changes (e.g., daily)
+
+```
+GET /api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z
+```
+
+**Response:**
+```json
+{
+  "updates": [
+    {
+      "href": "{BASE_URL}/api/v1/download?path=0105-speedLimit/2025-10-21T04-23-14Z/update.xml.gz",
+      "timestamp": "2025-10-21T04:23:14Z",
+      "size": 1024000
+    }
+  ],
+  "newUpdates": "/api/v1/tnits/speedLimit/updates?from=2025-10-21T04:23:14Z"
+}
+```
+
+Download and apply each update from the `updates[]` array in timestamp order. Keep following the `newUpdates` link to stay synchronized—it automatically advances to the latest timestamp.
+
+**Navigation Links (HATEOAS):** The API provides hypermedia links (`newUpdates`) for navigation. Simply follow the links in responses rather than constructing URLs manually.
+
+## Best Practices
+
+- Poll for updates daily for most use cases
+- Apply updates in timestamp order to maintain consistency
+- If an update fails to apply, refetch from the latest snapshot
         """,
         contact = Contact(
             name = "Nasjonal vegdatabank (NVDB)",
@@ -42,7 +92,8 @@ For a web-based viewer to explore the exported TN-ITS data, visit the [TN-ITS Ex
     ),
 )
 class OpenApiConfiguration(
-    @Value("\${spring.security.oauth2.client.provider.oidc.issuer-uri:}") private val issuerUri: String,
+    @Value($$"${spring.security.oauth2.client.provider.oidc.issuer-uri:}") private val issuerUri: String,
+    @Value($$"${app.baseUrl}") private val baseUrl: String,
 ) {
 
     @Bean
@@ -51,6 +102,11 @@ class OpenApiConfiguration(
         .displayName("Public API")
         .pathsToMatch("/api/v1/**")
         .pathsToExclude("/api/v1/admin/**")
+        .addOpenApiCustomizer { openApi ->
+            if (baseUrl.isNotBlank()) {
+                openApi.info.description = openApi.info.description?.replace("{BASE_URL}", baseUrl)
+            }
+        }
         .build()
 
     @Bean

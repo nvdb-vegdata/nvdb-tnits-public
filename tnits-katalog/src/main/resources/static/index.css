@@ -205,6 +205,16 @@ h1 {
   margin-left: 20px;
 }
 
+.warning-box {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 20px 24px;
+  margin-bottom: 60px;
+  color: #78350f;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .compliance-box {
   background: #f7fafc;
   border-left: 4px solid #ff6900;
