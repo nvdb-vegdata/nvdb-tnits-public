@@ -2,222 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NVDB TN-ITS & INSPIRE Export API</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-          Cantarell, sans-serif;
-        background: #ffffff;
-        min-height: 100vh;
-        color: #4a5568;
-      }
-
-      .header {
-        background: #f7fafc;
-        border-bottom: 1px solid #e2e8f0;
-        padding: 20px 40px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-
-      .logo {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-      }
-
-      .logo img {
-        height: 40px;
-        width: auto;
-        aspect-ratio: 199 / 36;
-      }
-
-      .main-nav {
-        display: flex;
-        gap: 8px;
-      }
-
-      .main-nav a {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        color: #4a5568;
-        text-decoration: none;
-        font-size: 0.95rem;
-        font-weight: 500;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s ease;
-      }
-
-      .main-nav a:hover {
-        color: #2d3748;
-        border-bottom-color: #ffd4b8;
-      }
-
-      .main-nav a:focus-visible {
-        outline: 2px solid #ff6900;
-        outline-offset: 2px;
-        border-radius: 4px;
-      }
-
-      .main-nav a[aria-current='page'] {
-        color: #2d3748;
-        font-weight: 600;
-        border-bottom-color: #ff6900;
-      }
-
-      h1 {
-        color: #4a5568;
-        font-size: 2.5rem;
-        font-weight: 400;
-        text-align: center;
-        margin: 60px 0 80px 0;
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 40px;
-      }
-
-      .section-title {
-        color: #4a5568;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 30px;
-      }
-
-      .card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 60px;
-      }
-
-      .link-card {
-        display: block;
-        padding: 24px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-bottom: 4px solid #ff6900;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        position: relative;
-      }
-
-      .link-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-        border-bottom-color: #e65c00;
-      }
-
-      .link-card h2 {
-        color: #2d3748;
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .link-card h2::after {
-        content: '→';
-        font-size: 1.5rem;
-        color: #cbd5e0;
-        transition: transform 0.2s ease;
-      }
-
-      .link-card:hover h2::after {
-        transform: translateX(4px);
-        color: #ff6900;
-      }
-
-      .link-card p {
-        color: #718096;
-        font-size: 0.95rem;
-        line-height: 1.6;
-      }
-
-      .footer {
-        margin-top: 80px;
-        padding: 40px 0;
-        border-top: 1px solid #e2e8f0;
-        text-align: center;
-        color: #a0aec0;
-        font-size: 0.9rem;
-      }
-
-      .footer a {
-        color: #4a5568;
-        text-decoration: none;
-      }
-
-      .footer a:hover {
-        color: #ff6900;
-        text-decoration: underline;
-      }
-
-      .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-      }
-
-      @media (max-width: 768px) {
-        .header {
-          padding: 16px 20px;
-        }
-
-        .container {
-          padding: 0 20px;
-        }
-
-        h1 {
-          font-size: 1.75rem;
-          margin: 40px 0 50px 0;
-        }
-
-        .card-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .main-nav {
-          flex-basis: 100%;
-          justify-content: center;
-          gap: 4px;
-        }
-
-        .main-nav a {
-          padding: 10px 12px;
-          font-size: 0.9rem;
-        }
-      }
-    </style>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>NVDB TN-ITS Export API</title>
+    <link href="/index.css" rel="stylesheet" />
   </head>
   <body>
     <div class="header">
-      <a href="/" class="logo">
-        <img src="/nvdb_logo.svg" alt="NVDB - Nasjonal vegdatabank" />
+      <a class="logo" href="/">
+        <img alt="NVDB - Nasjonal vegdatabank" src="/nvdb_logo.svg" />
       </a>
       <nav aria-label="Main navigation" class="main-nav">
-        <a href="/" aria-current="page">Home</a>
+        <a aria-current="page" href="/">Home</a>
         <a href="/api-docs.html">API Docs</a>
         <a href="/browser.html">Browser</a>
         <a href="/viewer.html">Viewer</a>
@@ -225,11 +20,81 @@
     </div>
 
     <div class="container">
-      <h1>NVDB TN-ITS & INSPIRE Export API</h1>
+      <h1>NVDB TN-ITS Export API</h1>
+
+      <div class="intro">
+        <p style="margin-bottom: 20px">
+          This service provides standardized exports of Norwegian road network
+          data from
+          <a
+            class="accent-link"
+            href="https://nvdb.atlas.vegvesen.no/"
+            rel="noopener noreferrer"
+            target="_blank">
+            NVDB
+          </a>
+          (Nasjonal vegdatabank) in
+          <a
+            class="accent-link"
+            href="https://spec.tn-its.eu/"
+            rel="noopener noreferrer"
+            target="_blank">
+            TN-ITS
+          </a>
+          format for European data exchange.
+        </p>
+        <p>
+          Access complete snapshots and incremental daily updates through our
+          REST API, explore available datasets in the browser, verify data
+          quality with the interactive map viewer.
+        </p>
+      </div>
+
+      <h2 class="section-title">Use Cases</h2>
+      <div class="card-grid" style="margin-bottom: 60px">
+        <div class="info-card" style="border-bottom-color: #4299e1">
+          <h2 style="color: #2d3748">For Service Providers</h2>
+          <p style="margin-bottom: 12px">
+            Set up automated integration with our REST API to consume TN-ITS
+            data:
+          </p>
+          <ul>
+            <li>Browse available datasets in the dataset browser</li>
+            <li>Download monthly snapshots or daily incremental updates</li>
+            <li>GML 3.2 format following TN-ITS specification</li>
+          </ul>
+          <p style="margin-top: 12px">
+            <a class="accent-link bold" href="/api-docs.html">
+              View API Documentation →
+            </a>
+          </p>
+        </div>
+
+        <div class="info-card" style="border-bottom-color: #48bb78">
+          <h2 style="color: #2d3748">For Data Verification</h2>
+          <p style="margin-bottom: 12px">
+            Verify OpenLR location references and validate data quality:
+          </p>
+          <ul>
+            <li>Browse and download datasets from the dataset browser</li>
+            <li>Visualize road network and features on interactive map</li>
+            <li>Inspect OpenLR encoding and geometry accuracy</li>
+          </ul>
+          <p style="margin-top: 12px">
+            <a class="accent-link bold" href="/browser.html">
+              Browse Datasets →
+            </a>
+            <br />
+            <a class="accent-link bold" href="/viewer.html">
+              Open Map Viewer →
+            </a>
+          </p>
+        </div>
+      </div>
 
       <h2 class="section-title">API Resources</h2>
       <div class="card-grid">
-        <a href="/api-docs.html" class="link-card">
+        <a class="link-card" href="/api-docs.html">
           <h2>API Documentation</h2>
           <p>
             Explore the REST API endpoints and try them out interactively with
@@ -237,7 +102,7 @@
           </p>
         </a>
 
-        <a href="/browser.html" class="link-card">
+        <a class="link-card" href="/browser.html">
           <h2>Dataset Browser</h2>
           <p>
             Browse, explore, and download TN-ITS snapshots and delta updates for
@@ -245,7 +110,7 @@
           </p>
         </a>
 
-        <a href="/viewer.html" class="link-card">
+        <a class="link-card" href="/viewer.html">
           <h2>TN-ITS Export Viewer</h2>
           <p>
             Visualize and explore the exported TN-ITS road network data on an
@@ -254,23 +119,94 @@
         </a>
       </div>
 
+      <h2 class="section-title">External Resources</h2>
+      <div class="resource-grid">
+        <div class="resource-box">
+          <h3>Specifications</h3>
+          <ul>
+            <li>
+              <a
+                href="https://spec.tn-its.eu/"
+                rel="noopener noreferrer"
+                target="_blank">
+                TN-ITS Specification →
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.openlr.org/"
+                rel="noopener noreferrer"
+                target="_blank">
+                OpenLR Standard →
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="resource-box">
+          <h3>NVDB Resources</h3>
+          <ul>
+            <li>
+              <a
+                href="https://www.nvdb.no/"
+                rel="noopener noreferrer"
+                target="_blank">
+                NVDB Portal →
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://nvdbapiles.atlas.vegvesen.no/"
+                rel="noopener noreferrer"
+                target="_blank">
+                NVDB API Documentation →
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="resource-box">
+          <h3>Project</h3>
+          <ul>
+            <li>
+              <a
+                href="https://github.com/nvdb-vegdata/nvdb-tnits-public"
+                rel="noopener noreferrer"
+                target="_blank">
+                Source Code (GitHub) →
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://data.norge.no/nlod/no/1.0"
+                rel="noopener noreferrer"
+                target="_blank">
+                Data License (NLOD 1.0) →
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="footer">
         <p>
           Provided by
           <a
             href="https://nvdb.atlas.vegvesen.no/"
-            target="_blank"
             rel="noopener noreferrer"
-            >Nasjonal vegdatabank (NVDB)
-            <span class="sr-only">(opens in new window)</span></a
-          ><br />
+            target="_blank">
+            Nasjonal vegdatabank (NVDB)
+            <span class="sr-only">(opens in new window)</span>
+          </a>
+          <br />
           Licensed under
           <a
             href="https://data.norge.no/nlod/no/1.0"
-            target="_blank"
             rel="noopener noreferrer"
-            >NLOD 1.0 <span class="sr-only">(opens in new window)</span></a
-          >
+            target="_blank">
+            NLOD 1.0
+            <span class="sr-only">(opens in new window)</span>
+          </a>
         </p>
       </div>
     </div>

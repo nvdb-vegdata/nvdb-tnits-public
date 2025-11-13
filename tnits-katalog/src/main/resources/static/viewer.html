@@ -17,8 +17,7 @@
       crossorigin=""
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      rel="stylesheet"
-    />
+      rel="stylesheet" />
   </head>
   <body>
     <div class="header">
@@ -46,8 +45,7 @@
             accept=".xml"
             aria-describedby="file-size-hint"
             id="fileInput"
-            type="file"
-          />
+            type="file" />
           <div class="file-size-hint" id="file-size-hint">
             Maximum file size: 20 MB
           </div>
@@ -55,8 +53,7 @@
             aria-live="assertive"
             class="error-message"
             id="errorMessage"
-            role="alert"
-          ></div>
+            role="alert"></div>
         </div>
 
         <div class="metadata-section">
@@ -72,23 +69,21 @@
       <div
         aria-label="Interactive road network map"
         id="map"
-        role="application"
-      ></div>
+        role="application"></div>
 
       <!-- Search Box Overlay -->
       <div class="search-overlay" id="searchOverlay" style="display: none">
         <div class="search-container">
-          <label for="searchInput" class="search-label"
-            >Find vegobjekt by ID</label
-          >
+          <label for="searchInput" class="search-label">
+            Find vegobjekt by ID
+          </label>
           <div class="search-input-group">
             <input
               type="text"
               id="searchInput"
               class="search-input"
               placeholder="Enter vegobjekt ID"
-              aria-describedby="searchError"
-            />
+              aria-describedby="searchError" />
             <button id="searchButton" class="search-button">Search</button>
           </div>
           <div
@@ -96,8 +91,7 @@
             class="search-error"
             role="alert"
             aria-live="polite"
-            style="display: none"
-          ></div>
+            style="display: none"></div>
         </div>
       </div>
     </div>
@@ -106,8 +100,7 @@
     <script
       crossorigin=""
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    ></script>
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
       // Initialize the Leaflet map
