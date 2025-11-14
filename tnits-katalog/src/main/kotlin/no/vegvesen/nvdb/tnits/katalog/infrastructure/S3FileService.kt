@@ -46,7 +46,7 @@ class S3FileService(private val minioClient: MinioClient, private val minioPrope
     }
 
     override fun downloadFile(objectName: String): FileDownload {
-        val fileName = objectName.substringAfterLast('/')
+        val fileName = objectName.replace('/', '_')
         val contentType = determineContentType(objectName)
 
         val inputStream = try {
