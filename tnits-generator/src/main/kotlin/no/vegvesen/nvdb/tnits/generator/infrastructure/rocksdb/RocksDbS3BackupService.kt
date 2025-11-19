@@ -2,10 +2,22 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import io.minio.*
 import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.common.api.AdminFlags.RESET_DB
+import no.vegvesen.nvdb.tnits.common.api.AdminFlags.RESET_FEATURE_TYPES
+import no.vegvesen.nvdb.tnits.common.api.AdminFlags.RESET_ROADNET
+import no.vegvesen.nvdb.tnits.common.api.SharedKeyValueStore
+import no.vegvesen.nvdb.tnits.common.api.getValue
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.extensions.delete
 import no.vegvesen.nvdb.tnits.common.extensions.measure
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
+import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.LocalBackupService
+import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
+import no.vegvesen.nvdb.tnits.generator.core.extensions.clearVeglenkesekvensSettings
+import no.vegvesen.nvdb.tnits.generator.core.extensions.clearVegobjektSettings
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.S3OutputStream
 import org.rocksdb.*
 import org.slf4j.event.Level
@@ -26,7 +38,15 @@ import kotlin.io.path.exists
  * Provides manual backup functionality and startup restore capability.
  */
 @Singleton
-class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private val minioClient: MinioClient, private val backupConfig: BackupConfig) :
+class RocksDbS3BackupService(
+    private val rocksDbContext: RocksDbContext,
+    private val minioClient: MinioClient,
+    private val backupConfig: BackupConfig,
+    private val s3Config: S3Config,
+    private val adminFlags: SharedKeyValueStore,
+    private val keyValueStore: KeyValueStore,
+    private val vegobjekterRepository: VegobjekterRepository,
+) :
     WithLogger, LocalBackupService {
 
     companion object {
@@ -47,7 +67,7 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
 
         return try {
             log.measure("Performing RocksDB backup", logStart = true) {
-                log.debug("Backup config - bucket: ${backupConfig.bucket}, path: ${backupConfig.path}")
+                log.debug("Backup config - bucket: ${s3Config.bucket}, path: ${backupConfig.path}")
 
                 // Create a proper temporary directory
                 val tempBackupPath = Files.createTempDirectory("rocksdb-backup")
@@ -76,7 +96,8 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
                 tempBackupPath.toFile().deleteRecursively()
 
                 if (success) {
-                    log.info("RocksDB backup completed successfully")
+                    log.info("RocksDB backup completed successfully, clearing admin flags (if any)")
+                    adminFlags.clear()
                 } else {
                     log.error("RocksDB backup failed during upload")
                 }
@@ -90,6 +111,12 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
     }
 
     override fun restoreIfNeeded() {
+        val shouldResetDb = adminFlags.getValue<Boolean>(RESET_DB) == true
+
+        if (shouldResetDb) {
+            resetDbAndFlags()
+        }
+
         if (!rocksDbContext.existsAndHasData()) {
             log.info("RocksDB database is empty or missing, checking for backup to restore...")
             val restored = restoreFromBackup()
@@ -101,6 +128,31 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
         } else {
             log.info("RocksDB database exists and has data, skipping restore")
         }
+
+        if (adminFlags.getValue<Boolean>(RESET_ROADNET) == true) {
+            log.info("RESET_ROADNET set: Resetting roadnet before continuing...")
+            rocksDbContext.clearColumnFamily(ColumnFamily.VEGLENKER)
+            keyValueStore.clearVeglenkesekvensSettings()
+        }
+
+        for (typeId in adminFlags.getValue<Set<Int>>(RESET_FEATURE_TYPES).orEmpty()) {
+            log.info("RESET_FEATURE_TYPES set for feature type $typeId: Clearing saved features...")
+            vegobjekterRepository.clearVegobjektType(typeId)
+            keyValueStore.clearVegobjektSettings(typeId)
+        }
+    }
+
+    private fun resetDbAndFlags() {
+        log.info("RESET_DB set: Resetting database before restoring backup...")
+        if (rocksDbContext.existsAndHasData()) {
+            rocksDbContext.clear()
+        }
+
+        if (backupExistsInS3()) {
+            minioClient.delete(s3Config.bucket, backupObjectKey)
+        }
+
+        adminFlags.clear()
     }
 
     /**
@@ -167,14 +219,16 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
         }
     }
 
+    private val backupObjectKey: String = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+
     private fun compressAndUploadBackup(backupPath: Path): Boolean = try {
         log.measure("Creating and uploading backup archive: $backupPath", logStart = true) {
-            val finalKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
-            val tempKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME$BACKUP_TEMP_SUFFIX"
-            log.debug("Starting backup upload to S3 - bucket: {}, temp key: {}", backupConfig.bucket, tempKey)
+            val finalKey = backupObjectKey
+            val tempKey = "$backupObjectKey$BACKUP_TEMP_SUFFIX"
+            log.debug("Starting backup upload to S3 - bucket: {}, temp key: {}", s3Config.bucket, tempKey)
 
             // Upload to temporary location
-            S3OutputStream(minioClient, backupConfig.bucket, tempKey, "application/zip").use { s3Stream ->
+            S3OutputStream(minioClient, s3Config.bucket, tempKey, "application/zip").use { s3Stream ->
                 ZipOutputStream(s3Stream).use { zipOut ->
                     zipOut.setLevel(Deflater.NO_COMPRESSION)
                     addDirectoryToZip(backupPath.toFile(), zipOut)
@@ -223,10 +277,10 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
     }
 
     private fun backupExistsInS3(): Boolean = try {
-        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+        val objectKey = backupObjectKey
         minioClient.statObject(
             StatObjectArgs.builder()
-                .bucket(backupConfig.bucket)
+                .bucket(s3Config.bucket)
                 .`object`(objectKey)
                 .build(),
         )
@@ -237,11 +291,11 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
     }
 
     private fun downloadAndExtractBackup(restorePath: Path) {
-        val objectKey = "${backupConfig.path}/$BACKUP_OBJECT_NAME"
+        val objectKey = backupObjectKey
 
         minioClient.getObject(
             GetObjectArgs.builder()
-                .bucket(backupConfig.bucket)
+                .bucket(s3Config.bucket)
                 .`object`(objectKey)
                 .build(),
         ).use { inputStream ->
@@ -338,11 +392,11 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
         // Copy to final destination (atomic operation)
         minioClient.copyObject(
             CopyObjectArgs.builder()
-                .bucket(backupConfig.bucket)
+                .bucket(s3Config.bucket)
                 .`object`(destKey)
                 .source(
                     CopySource.builder()
-                        .bucket(backupConfig.bucket)
+                        .bucket(s3Config.bucket)
                         .`object`(sourceKey)
                         .build(),
                 )
@@ -352,7 +406,7 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
         // Delete temporary file
         minioClient.removeObject(
             RemoveObjectArgs.builder()
-                .bucket(backupConfig.bucket)
+                .bucket(s3Config.bucket)
                 .`object`(sourceKey)
                 .build(),
         )
@@ -365,7 +419,7 @@ class RocksDbS3BackupService(private val rocksDbContext: RocksDbContext, private
         try {
             minioClient.removeObject(
                 RemoveObjectArgs.builder()
-                    .bucket(backupConfig.bucket)
+                    .bucket(s3Config.bucket)
                     .`object`(sourceKey)
                     .build(),
             )

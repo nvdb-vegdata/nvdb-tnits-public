@@ -7,4 +7,7 @@ data class SecurityProperties(
     val enabled: Boolean = true,
     val adminRole: String = "nvdbapi=admin",
     val roleClaimPath: String = "svvroles",
+    val issuer: String = "",
+    val authorizationEndpoint: String = "",
+    val tokenEndpoint: String = "",
 )

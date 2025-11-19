@@ -11,8 +11,8 @@ fun KeyValueStore.clearVeglenkesekvensSettings() {
     deleteKeysByPrefix("veglenkesekvenser_")
 }
 
-fun KeyValueStore.clearVegobjektSettings() {
-    deleteKeysByPrefix("vegobjekter_")
+fun KeyValueStore.clearVegobjektSettings(typeId: Int) {
+    deleteKeysByPrefix("vegobjekter_$typeId")
 }
 
 fun KeyValueStore.getWorkerLastIdCount(): Int = countKeysByPrefix("veglenkesekvenser_backfill_last_id_")

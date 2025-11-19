@@ -23,6 +23,7 @@ class VeglenkeMappingTest : ShouldSpec({
             typeVeg = TypeVeg.KANALISERT_VEG
             detaljniva = Detaljniva.VEGTRASE_OG_KJOREBANE
             konnektering = false
+            kommune = 5001
         }
 
         val apiVeglenkesekvens = Veglenkesekvens().apply {

@@ -66,6 +66,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
                         lengde = testGeometry.length,
                         feltoversikt = emptyList(),
                         konnektering = false,
+                        kommune = 5001,
                     ),
                 )
 
@@ -112,6 +113,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
                         feltoversikt = emptyList(),
                         lengde = testGeometry.length,
                         konnektering = false,
+                        kommune = 5001,
                     ),
                 )
 
@@ -131,6 +133,7 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
                         feltoversikt = emptyList(),
                         lengde = testGeometry.length,
                         konnektering = false,
+                        kommune = 5001,
                     ),
                 )
 

@@ -4,21 +4,10 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.mockk.mockk
 import no.vegvesen.nvdb.tnits.common.utils.parseTimestampFromS3Key
-import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import kotlin.time.Instant
 
 class S3TimestampServiceTest : ShouldSpec({
-
-    val service = S3TimestampService(
-        minioClient = mockk(), // We'll only test parsing logic, not actual S3 calls
-        exporterConfig = ExporterConfig(
-            gzip = false,
-            bucket = "test-bucket",
-        ),
-    )
-
     should("parse valid snapshot key from S3") {
         val s3Key = "0105-speed-limits/2025-01-15T10-30-00Z/snapshot.xml.gz"
         val result = parseTimestampFromS3Key(s3Key)

@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Katalog - Security" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="local,local-security" />
+    <module name="nvdb-tnits-public.tnits-katalog.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="no.vegvesen.nvdb.tnits.katalog.Application" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

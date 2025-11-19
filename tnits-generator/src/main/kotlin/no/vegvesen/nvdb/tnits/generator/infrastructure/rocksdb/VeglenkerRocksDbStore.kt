@@ -124,6 +124,11 @@ class VeglenkerRocksDbStore(
 
     override fun size(): Long = rocksDbContext.getEstimatedKeys(columnFamily)
 
+    override fun clearAll() {
+        // Clear VEGLENKER column family
+        rocksDbContext.clearColumnFamily(ColumnFamily.VEGLENKER)
+    }
+
     private fun serializeVeglenker(veglenker: List<Veglenke>): ByteArray = ProtoBuf.encodeToByteArray(ListSerializer(Veglenke.serializer()), veglenker)
 
     private fun deserializeVeglenker(data: ByteArray): List<Veglenke> = ProtoBuf.decodeFromByteArray(ListSerializer(Veglenke.serializer()), data)

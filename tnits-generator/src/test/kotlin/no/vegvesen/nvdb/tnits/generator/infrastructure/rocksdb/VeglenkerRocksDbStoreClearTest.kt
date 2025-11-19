@@ -45,6 +45,7 @@ class VeglenkerRocksDbStoreClearTest :
                             lengde = testGeometry.length,
                             feltoversikt = emptyList(),
                             konnektering = false,
+                            kommune = 5001,
                         ),
                     )
 

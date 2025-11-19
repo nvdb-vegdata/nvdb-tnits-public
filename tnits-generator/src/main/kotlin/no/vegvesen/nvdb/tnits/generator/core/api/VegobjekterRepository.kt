@@ -26,4 +26,6 @@ interface VegobjekterRepository {
     fun findVegobjekter(vegobjektType: Int, ids: Collection<Long>): Map<Long, Vegobjekt?>
     fun cleanOldVersions()
     fun getVegobjektStedfestingLookup(vegobjektType: Int, veglenkesekvensIds: List<Long>): Map<Long, List<Vegobjekt>>
+
+    fun clearVegobjektType(vegobjektTypeId: Int)
 }

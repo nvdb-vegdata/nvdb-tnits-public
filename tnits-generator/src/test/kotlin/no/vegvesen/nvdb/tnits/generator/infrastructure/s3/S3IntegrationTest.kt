@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
@@ -31,7 +32,13 @@ class S3IntegrationTest : ShouldSpec() {
     private val minioContainer: MinIOContainer = MinioTestHelper.createMinioContainer()
     private lateinit var minioClient: MinioClient
     private val testBucket = "nvdb-tnits-test"
-    private val exporterConfig = ExporterConfig(false, testBucket)
+    private val exporterConfig = ExporterConfig(false)
+    private val s3Config = S3Config(
+        endpoint = "",
+        accessKey = "",
+        secretKey = "",
+        bucket = testBucket,
+    )
 
     private lateinit var featureExporter: TnitsFeatureExporter
     private lateinit var exportWriter: FeatureExportWriter
@@ -42,7 +49,7 @@ class S3IntegrationTest : ShouldSpec() {
             minioClient = MinioTestHelper.createMinioClient(minioContainer)
             MinioTestHelper.waitForMinioReady(minioClient)
             MinioTestHelper.ensureBucketExists(minioClient, testBucket)
-            featureExporter = TnitsFeatureS3Exporter(exporterConfig, minioClient)
+            featureExporter = TnitsFeatureS3Exporter(exporterConfig, minioClient, s3Config)
             exportWriter = FeatureExportWriter(featureExporter, mockk(relaxed = true))
         }
 
@@ -208,7 +215,7 @@ class S3IntegrationTest : ShouldSpec() {
             }
 
             val exportWriter = FeatureExportWriter(
-                TnitsFeatureS3Exporter(ExporterConfig(gzip = true, bucket = testBucket), minioClient),
+                TnitsFeatureS3Exporter(ExporterConfig(gzip = true), minioClient, s3Config),
                 mockk(relaxed = true),
             )
 

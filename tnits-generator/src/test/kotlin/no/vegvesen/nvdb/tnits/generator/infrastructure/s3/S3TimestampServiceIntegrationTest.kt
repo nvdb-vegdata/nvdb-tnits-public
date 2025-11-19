@@ -8,6 +8,7 @@ import io.minio.MinioClient
 import io.minio.PutObjectArgs
 import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.clear
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
@@ -22,6 +23,13 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
     private lateinit var timestampService: TimestampService
     private val testBucket = "nvdb-tnits-timestamp-test"
 
+    private val s3Config = S3Config(
+        endpoint = "",
+        accessKey = "",
+        secretKey = "",
+        bucket = testBucket,
+    )
+
     init {
         beforeSpec {
             minioContainer.start()
@@ -32,8 +40,8 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
                 minioClient,
                 ExporterConfig(
                     gzip = false,
-                    bucket = testBucket,
                 ),
+                s3Config = s3Config,
             )
         }
 

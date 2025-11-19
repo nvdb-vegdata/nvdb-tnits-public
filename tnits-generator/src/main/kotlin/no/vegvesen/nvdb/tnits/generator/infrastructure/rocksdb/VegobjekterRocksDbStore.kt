@@ -10,12 +10,19 @@ import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.model.*
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.*
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import java.nio.ByteBuffer
 import kotlin.time.Clock
 
 @Singleton
-class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext, private val clock: Clock) : VegobjekterRepository, WithLogger {
+class VegobjekterRocksDbStore(
+    private val rocksDbContext: RocksDbContext,
+    private val clock: Clock,
+) : VegobjekterRepository,
+    WithLogger {
     private val columnFamily: ColumnFamily = ColumnFamily.VEGOBJEKTER
 
     override fun findVegobjektIds(vegobjektType: Int): Sequence<Long> {
@@ -261,6 +268,18 @@ class VegobjekterRocksDbStore(private val rocksDbContext: RocksDbContext, privat
         val values = rocksDbContext.streamValuesByPrefix(columnFamily, prefix).single()
             .let { ProtoBuf.decodeFromByteArray(ListSerializer(VegobjektStedfesting.serializer()), it) }
         return values
+    }
+
+    override fun clearVegobjektType(vegobjektTypeId: Int) {
+        log.info("Clearing feature type $vegobjektTypeId from VEGOBJEKTER column family")
+
+        // Delete all vegobjekt keys for this type (prefix: [0][typeId])
+        val vegobjektPrefix = getVegobjektTypePrefix(vegobjektTypeId)
+        rocksDbContext.deleteByPrefix(ColumnFamily.VEGOBJEKTER, vegobjektPrefix)
+
+        // Delete all stedfesting keys for this type (prefix: [1][typeId])
+        val stedfestingPrefix = getStedfestingPrefix(vegobjektTypeId)
+        rocksDbContext.deleteByPrefix(ColumnFamily.VEGOBJEKTER, stedfestingPrefix)
     }
 
     companion object {

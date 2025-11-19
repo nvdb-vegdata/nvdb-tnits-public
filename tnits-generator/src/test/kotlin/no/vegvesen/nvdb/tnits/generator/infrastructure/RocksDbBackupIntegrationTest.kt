@@ -5,6 +5,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.minio.MinioClient
 import no.vegvesen.nvdb.tnits.common.MinioTestHelper
+import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
+import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbS3BackupService
@@ -33,11 +36,22 @@ class RocksDbBackupIntegrationTest : ShouldSpec() {
             withTempDb { dbContext ->
                 val backupConfig = BackupConfig(
                     enabled = true,
-                    bucket = testBucket,
                     path = "test-restore-path",
                 )
+                val s3Config = S3Config(
+                    endpoint = "",
+                    accessKey = "",
+                    secretKey = "",
+                    bucket = testBucket,
+                )
 
-                val backupService = RocksDbS3BackupService(dbContext, minioClient, backupConfig)
+                val backupService = RocksDbS3BackupService(
+                    dbContext,
+                    minioClient,
+                    backupConfig,
+                    s3Config = s3Config,
+                    adminFlags = S3KeyValueStore(MinioGateway(minioClient, s3Config)),
+                )
 
                 // Add original test data
                 dbContext.put(ColumnFamily.KEY_VALUE, "original-key".toByteArray(), "original-value".toByteArray())

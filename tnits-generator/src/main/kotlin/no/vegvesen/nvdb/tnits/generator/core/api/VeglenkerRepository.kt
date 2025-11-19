@@ -21,4 +21,6 @@ interface VeglenkerRepository {
     fun batchInsert(veglenkerById: Map<Long, List<Veglenke>>)
 
     fun size(): Long
+
+    fun clearAll()
 }

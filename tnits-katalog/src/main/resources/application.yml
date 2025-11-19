@@ -21,21 +21,23 @@ spring:
         cachecontrol:
           max-age: 1h
           cache-public: true
-  oauth2:
-    client:
-      provider:
-        oidc:
-          issuer-uri: ${OPENID_ISSUER_URI:}
-      registration:
-        oidc:
-          client-id: ${OPENID_CLIENT_ID:}
-          client-secret: ${OPENID_CLIENT_SECRET:}
-          scope:
-            - openid
-            - svvprofile
-    resourceserver:
-      jwt:
-        issuer-uri: ${OPENID_ISSUER_URI:}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${security.issuer}
+      client:
+        provider:
+          oidc:
+            issuer-uri: ${security.issuer}
+        registration:
+          oidc:
+            client-id: ${OPENID_CLIENT_ID:my-client}
+            client-secret: ${OPENID_CLIENT_SECRET:my-secret}
+            client-authentication-method: client_secret_post
+            scope:
+              - openid
+              - svvprofile
 springdoc:
   api-docs:
     path: /api-docs
@@ -44,7 +46,7 @@ springdoc:
     path: /swagger-ui
     oauth2-redirect-url: /swagger-ui/oauth2-redirect.html
     oauth:
-      client-id: ${OPENID_CLIENT_ID:}
+      client-id: ${OPENID_CLIENT_ID:my-client}
       use-pkce-with-authorization-code-grant: true
       scopes: openid,svvprofile
       additional-query-string-params:
@@ -63,3 +65,6 @@ security:
   enabled: ${SECURITY_ENABLED:true}
   admin-role: ${ADMIN_ROLE:nvdbapi=admin}
   role-claim-path: ${ROLE_CLAIM_PATH:svvroles}
+  issuer: ${OPENID_ISSUER_URI:http://localhost:8099/Employees}
+  authorization-endpoint: ${OPENID_AUTHORIZATION_ENDPOINT:${security.issuer}/authorize}
+  token-endpoint: ${OPENID_TOKEN_ENDPOINT:${security.issuer}/token}

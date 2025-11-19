@@ -153,6 +153,7 @@ private fun createTestVeglenke(
         typeVeg = typeVeg,
         detaljniva = Detaljniva.VEGTRASE,
         feltoversikt = listOf("1"),
+        kommune = 5001,
     )
 }
 

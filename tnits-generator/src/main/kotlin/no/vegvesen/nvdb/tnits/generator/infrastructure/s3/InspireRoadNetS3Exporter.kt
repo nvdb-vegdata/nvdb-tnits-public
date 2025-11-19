@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.todayIn
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.measure
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.InspireRoadNetExporter
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
@@ -33,6 +34,7 @@ class InspireRoadNetS3Exporter(
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
     private val clock: Clock,
+    private val s3Config: S3Config,
 ) : InspireRoadNetExporter, WithLogger {
 
     override suspend fun exportRoadNet(timestamp: Instant) {
@@ -76,9 +78,9 @@ class InspireRoadNetS3Exporter(
     private suspend fun exportToS3(timestamp: Instant, roadLinkFlow: Flow<InspireRoadLink>) {
         try {
             val objectKey = generateS3Key(timestamp)
-            log.info("Lagrer INSPIRE RoadLink eksport til S3: s3://${exporterConfig.bucket}/$objectKey")
+            log.info("Lagrer INSPIRE RoadLink eksport til S3: s3://${s3Config.bucket}/$objectKey")
 
-            minioClient.openS3Stream(bucket = exporterConfig.bucket, objectKey, gzip = exporterConfig.gzip).use { outputStream ->
+            minioClient.openS3Stream(bucket = s3Config.bucket, objectKey, gzip = exporterConfig.gzip).use { outputStream ->
                 writeRoadLinksToXml(timestamp, outputStream, roadLinkFlow)
             }
         } catch (e: Exception) {

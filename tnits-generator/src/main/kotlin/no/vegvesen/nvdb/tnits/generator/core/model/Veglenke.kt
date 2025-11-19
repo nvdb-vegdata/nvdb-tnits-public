@@ -30,6 +30,7 @@ data class Veglenke(
     val detaljniva: Detaljniva,
     val feltoversikt: List<String> = emptyList(),
     val superstedfesting: Superstedfesting? = null,
+    val kommune: Int,
     // added after fetching from NVDB
     @Transient
     var frc: Byte? = null,

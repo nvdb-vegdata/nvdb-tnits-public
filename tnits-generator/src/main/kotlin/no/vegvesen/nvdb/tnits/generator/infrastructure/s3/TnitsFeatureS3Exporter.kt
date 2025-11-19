@@ -4,6 +4,7 @@ import io.minio.MinioClient
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.TnitsFeatureExporter
 import no.vegvesen.nvdb.tnits.generator.core.extensions.truncateToSeconds
@@ -15,12 +16,13 @@ import kotlin.time.Instant
 class TnitsFeatureS3Exporter(
     private val exporterConfig: ExporterConfig,
     private val minioClient: MinioClient,
+    private val s3Config: S3Config,
 ) : WithLogger, TnitsFeatureExporter {
     override fun openExportStream(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType): OutputStream {
         val objectKey = generateS3Key(timestamp, exportType, featureType)
-        log.info("Lagrer $exportType eksport av $featureType til S3: s3://${exporterConfig.bucket}/$objectKey")
+        log.info("Lagrer $exportType eksport av $featureType til S3: s3://${s3Config.bucket}/$objectKey")
 
-        return minioClient.openS3Stream(bucket = exporterConfig.bucket, objectKey, gzip = exporterConfig.gzip)
+        return minioClient.openS3Stream(bucket = s3Config.bucket, objectKey, gzip = exporterConfig.gzip)
     }
 
     private fun generateS3Key(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType): String =

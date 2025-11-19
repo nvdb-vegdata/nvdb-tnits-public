@@ -259,6 +259,15 @@ open class RocksDbContext(config: RocksDbConfig, enableCompression: Boolean = tr
         db.deleteRange(handle, start, end)
     }
 
+    fun clearColumnFamily(columnFamily: ColumnFamily) {
+        clear(columnFamily)
+    }
+
+    fun deleteByPrefix(columnFamily: ColumnFamily, prefix: ByteArray) {
+        val upperBound = calculateUpperBound(prefix)
+        deleteRange(columnFamily, prefix, upperBound.data())
+    }
+
     fun getEstimatedKeys(columnFamily: ColumnFamily): Long {
         val handle = getColumnFamily(columnFamily)
         return db.getProperty(handle, "rocksdb.estimate-num-keys")?.toLongOrNull() ?: 0L

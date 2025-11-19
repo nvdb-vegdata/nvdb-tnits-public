@@ -1,0 +1,21 @@
+{
+  "interactiveLogin": true,
+  "httpServer": "NettyWrapper",
+  "tokenCallbacks": [
+    {
+      "issuerId": "Employees",
+      "requestMappings": [
+        {
+          "requestParam": "grant_type",
+          "match": ".*",
+          "claims": {
+            "svvroles": [
+              "nvdbapi=admin"
+            ],
+            "sub": "admin"
+          }
+        }
+      ]
+    }
+  ]
+}

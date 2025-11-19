@@ -8,6 +8,10 @@ import io.ktor.serialization.jackson.*
 import io.minio.MinioClient
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import no.vegvesen.nvdb.tnits.common.api.SharedKeyValueStore
+import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
+import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.generator.config.AppConfig
 import no.vegvesen.nvdb.tnits.generator.config.DatakatalogApiConfig
 import no.vegvesen.nvdb.tnits.generator.config.UberiketApiConfig
@@ -45,6 +49,12 @@ class MainModule {
 
     @Singleton
     fun clock(): Clock = Clock.System
+
+    @Singleton
+    fun minioGateway(minioClient: MinioClient, s3Config: S3Config) = MinioGateway(minioClient, s3Config)
+
+    @Singleton
+    fun adminFlags(minioGateway: MinioGateway): SharedKeyValueStore = S3KeyValueStore(minioGateway)
 
     @Singleton
     @Named("uberiketHttpClient")

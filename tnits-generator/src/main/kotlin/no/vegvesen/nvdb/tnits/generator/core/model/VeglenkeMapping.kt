@@ -53,6 +53,7 @@ fun Veglenkesekvens.convertToDomainVeglenker(today: LocalDate): List<Veglenke> {
                         kjorefelt = stedfesting.kjorefelt,
                     )
                 },
+                kommune = veglenke.kommune,
             )
         }
         .filter { veglenke -> veglenke.sluttdato == null || veglenke.sluttdato > today }

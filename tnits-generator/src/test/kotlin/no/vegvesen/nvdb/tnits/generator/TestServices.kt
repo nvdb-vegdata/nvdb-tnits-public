@@ -6,6 +6,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
+import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
+import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
@@ -64,11 +67,19 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
 
     val exportedFeatureStore = ExportedFeatureRocksDbStore(dbContext)
 
-    val exporterConfig = ExporterConfig(gzip = false, bucket = testBucket)
+    val exporterConfig = ExporterConfig(gzip = false)
+
+    val s3Config = S3Config(
+        endpoint = "N/A",
+        accessKey = "N/A",
+        secretKey = "N/A",
+        bucket = testBucket,
+    )
 
     val tnitsFeatureExporter = TnitsFeatureS3Exporter(
         exporterConfig = exporterConfig,
         minioClient = minioClient,
+        s3Config = s3Config,
     )
 
     val exportWriter = FeatureExportWriter(
@@ -96,13 +107,16 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     val backfillOrchestrator = NvdbBackfillOrchestrator(vegnettLoader, vegobjektLoader)
     val updateOrchestrator = NvdbUpdateOrchestrator(vegnettLoader, vegobjektLoader)
 
+    val adminFlags = S3KeyValueStore(MinioGateway(minioClient, s3Config))
+
     val rocksDbBackupService = RocksDbS3BackupService(
         dbContext,
         minioClient,
         BackupConfig(
             enabled = true,
-            bucket = testBucket,
         ),
+        s3Config = s3Config,
+        adminFlags = adminFlags,
     )
 
     val featureTransformer = FeatureTransformer(
@@ -125,6 +139,7 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     val timestampService = S3TimestampService(
         minioClient = minioClient,
         exporterConfig = exporterConfig,
+        s3Config = s3Config,
     )
 
     val automaticCycle = TnitsAutomaticCycle(

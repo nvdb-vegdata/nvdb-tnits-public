@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.config
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addResourceOrFileSource
+import no.vegvesen.nvdb.tnits.common.model.S3Config
 
 data class AppConfig(
     val uberiketApi: UberiketApiConfig,
@@ -15,15 +16,13 @@ data class AppConfig(
 
 data class RocksDbConfig(val path: String)
 
-data class ExporterConfig(val gzip: Boolean, val bucket: String)
+data class ExporterConfig(val gzip: Boolean)
 
-data class BackupConfig(val enabled: Boolean, val bucket: String, val path: String = "rocksdb-backup")
+data class BackupConfig(val enabled: Boolean, val path: String = "rocksdb-backup")
 
 data class UberiketApiConfig(val baseUrl: String)
 
 data class DatakatalogApiConfig(val baseUrl: String)
-
-data class S3Config(val endpoint: String, val accessKey: String, val secretKey: String)
 
 /**
  * Loads configuration from application.conf and environment variables.

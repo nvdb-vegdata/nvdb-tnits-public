@@ -24,14 +24,15 @@ class SecurityConfiguration(
         http {
             authorizeHttpRequests {
                 authorize("/api/v1/admin/**", hasRole(securityProperties.adminRole))
-                authorize("/admin-api-docs/**", hasRole(securityProperties.adminRole))
                 authorize(anyRequest, permitAll)
             }
-            oauth2Login { }
             oauth2ResourceServer {
                 jwt {
                     jwtAuthenticationConverter = jwtAuthenticationConverter()
                 }
+            }
+            headers {
+                frameOptions { sameOrigin = true }
             }
         }
         return http.build()

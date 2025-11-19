@@ -15,12 +15,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-@Configuration
-@OpenAPIDefinition(
-    info = Info(
-        title = "NVDB TN-ITS Export API",
-        version = "v1",
-        description = """
+const val description = """
 This API provides access to TN-ITS data exports from the Norwegian National Road Database (NVDB).
 
 ## Getting Started
@@ -74,7 +69,13 @@ Download and apply each update from the `updates[]` array in timestamp order. Ke
 - Poll for updates daily for most use cases
 - Apply updates in timestamp order to maintain consistency
 - If an update fails to apply, refetch from the latest snapshot
-        """,
+        """
+
+@Configuration
+@OpenAPIDefinition(
+    info = Info(
+        title = "NVDB TN-ITS Export API",
+        version = "v1",
         contact = Contact(
             name = "Nasjonal vegdatabank (NVDB)",
             url = "https://nvdb.atlas.vegvesen.no/",
@@ -92,8 +93,9 @@ Download and apply each update from the `updates[]` array in timestamp order. Ke
     ),
 )
 class OpenApiConfiguration(
-    @Value($$"${spring.security.oauth2.client.provider.oidc.issuer-uri:}") private val issuerUri: String,
+    @Value($$"${security.issuer:}") private val issuerUri: String,
     @Value($$"${app.baseUrl}") private val baseUrl: String,
+    private val securityProperties: SecurityProperties,
 ) {
 
     @Bean
@@ -104,7 +106,7 @@ class OpenApiConfiguration(
         .pathsToExclude("/api/v1/admin/**")
         .addOpenApiCustomizer { openApi ->
             if (baseUrl.isNotBlank()) {
-                openApi.info.description = openApi.info.description?.replace("{BASE_URL}", baseUrl)
+                openApi.info.description = description.replace("{BASE_URL}", baseUrl)
             }
         }
         .build()
@@ -116,22 +118,24 @@ class OpenApiConfiguration(
         .pathsToMatch("/api/v1/admin/**")
         .addOpenApiCustomizer { openApi ->
             if (issuerUri.isNotBlank()) {
+                val name = "oauth2"
                 val oauth2Scheme = SecurityScheme()
-                    .type(SecurityScheme.Type.OPENIDCONNECT)
+                    .name(name)
+                    .type(SecurityScheme.Type.OAUTH2)
                     .flows(
                         OAuthFlows()
                             .authorizationCode(
                                 OAuthFlow()
-                                    .authorizationUrl("$issuerUri/protocol/openid-connect/auth")
-                                    .tokenUrl("$issuerUri/protocol/openid-connect/token")
+                                    .authorizationUrl(securityProperties.authorizationEndpoint)
+                                    .tokenUrl(securityProperties.tokenEndpoint)
                                     .scopes(
                                         Scopes()
-                                            .addString("openid", "OpenID Connect scope")
-                                            .addString("profile", "Profile information"),
+                                            .addString("openid", "OpenID Connect")
+                                            .addString("svvprofile", "SVV Profile"),
                                     ),
                             ),
                     )
-                openApi.components.addSecuritySchemes("oauth2", oauth2Scheme)
+                openApi.components.addSecuritySchemes(name, oauth2Scheme)
             }
         }
         .build()

@@ -34,3 +34,13 @@ services:
       mc mb --ignore-existing s3/nvdb-tnits-local-data-01;
       exit 0;
       '
+
+  local-oauth:
+    image: ghcr.io/navikt/mock-oauth2-server:3.0.1
+    container_name: nvdb-local-oauth
+    ports:
+      - "8099:8080"
+    volumes:
+      - ./docker-compose/local-oauth:/config
+    environment:
+      JSON_CONFIG_PATH: /config/config.json
