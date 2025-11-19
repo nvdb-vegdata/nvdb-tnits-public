@@ -8,9 +8,12 @@ import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
 import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
 import no.vegvesen.nvdb.tnits.common.model.S3Config
+import no.vegvesen.nvdb.tnits.generator.clock
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.KeyValueRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbS3BackupService
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 import org.testcontainers.containers.MinIOContainer
 
@@ -45,12 +48,18 @@ class RocksDbBackupIntegrationTest : ShouldSpec() {
                     bucket = testBucket,
                 )
 
+                val keyValueStore = KeyValueRocksDbStore(dbContext)
+
+                val vegobjekterRepository = VegobjekterRocksDbStore(dbContext, clock)
+
                 val backupService = RocksDbS3BackupService(
                     dbContext,
                     minioClient,
                     backupConfig,
                     s3Config = s3Config,
                     adminFlags = S3KeyValueStore(MinioGateway(minioClient, s3Config)),
+                    keyValueStore = keyValueStore,
+                    vegobjekterRepository = vegobjekterRepository,
                 )
 
                 // Add original test data

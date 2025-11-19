@@ -117,6 +117,8 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         ),
         s3Config = s3Config,
         adminFlags = adminFlags,
+        keyValueStore = keyValueStore,
+        vegobjekterRepository = vegobjekterRepository,
     )
 
     val featureTransformer = FeatureTransformer(
