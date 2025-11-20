@@ -1,0 +1,144 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 946020,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 1000566,
+          "nodePortNummer": 1,
+          "posisjon": 0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 1581155,
+          "nodePortNummer": 1,
+          "posisjon": 1
+        },
+        {
+          "nummer": 3,
+          "nodeId": 1000560,
+          "nodePortNummer": 2,
+          "posisjon": 0.86490973
+        },
+        {
+          "nummer": 4,
+          "nodeId": 2607254,
+          "nodePortNummer": 2,
+          "posisjon": 0.93012765
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 3,
+          "kommune": 3122,
+          "geometri": {
+            "wkt": "LINESTRING Z (311460.4 6598448.8 126.267, 311459.4 6598447.4 126.567, 311458.3 6598442.8 126.767, 311457.9 6598429.4 126.767, 311457.5 6598415.4 126.767, 311457.3 6598400.8 126.867, 311457.1 6598386.5 126.867, 311456.7 6598372.6 126.767, 311456.5 6598357.9 126.767, 311456.4 6598342.9 126.567, 311456.4 6598328.1 126.567, 311456.7 6598313.6 126.567, 311456.4 6598301.8 126.567, 311455.6 6598288.5 126.467, 311454.7 6598273.7 126.467, 311455.2 6598262.9 126.567, 311456.4 6598253.3 126.667, 311458.4 6598245.2 126.467, 311460.1 6598240.4 126.267, 311461.8 6598235.9 126.167, 311462.9 6598231.1 126.067, 311463.2 6598229.1 126.067, 311464.2 6598224.8 125.867, 311464.6 6598221.7 125.767, 311464.4 6598217.5 125.667, 311463.1 6598212.7 125.267, 311461.2 6598208.1 124.967, 311457.7 6598202.1 124.367, 311451.91 6598193.43 122.927)",
+            "srid": 5973,
+            "lengde": 260.575352484444,
+            "datafangstdato": "1992-07-01",
+            "temakode": 7001,
+            "kommune": 3122,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 200,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 260.575352484444,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 2,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 3,
+          "sluttport": 4,
+          "kommune": 3122,
+          "geometri": {
+            "wkt": "LINESTRING Z (311451.91 6598193.43 122.927, 311447.699951172 6598189.70001221 123.667, 311438.96 6598179.86 121.797)",
+            "srid": 5973,
+            "lengde": 18.9663875379934,
+            "datafangstdato": "1992-07-01",
+            "temakode": 7001,
+            "kommune": 3122,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 200,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 18.9663875379934,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "nummer": 3,
+          "gyldighetsperiode": {
+            "startdato": "1950-01-01",
+            "sluttdato": "2017-11-29"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 4,
+          "sluttport": 2,
+          "kommune": 3122,
+          "geometri": {
+            "wkt": "LINESTRING Z (311438.96 6598179.86 121.797, 311435 6598174.29998779 122.567, 311431.699951172 6598170.40002442 122.367, 311424.842285156 6598164.1472168 122.267)",
+            "srid": 5973,
+            "lengde": 21.2630068997856,
+            "datafangstdato": "1992-07-01",
+            "temakode": 7001,
+            "kommune": 3122,
+            "kvalitet": {
+              "malemetode": 20,
+              "noyaktighet": 200,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "fot"
+            }
+          },
+          "lengde": 21.2630068997856,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 300.174888579139,
+      "sistEndret": "2025-11-21T20:54:37.484359Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 1,
+    "sidestorrelse": 500
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": 1003298856,
+  "versjon": 1,
+  "typeId": 915,
+  "gyldighetsperiode": {
+    "startdato": "2016-12-01"
+  },
+  "egenskaper": {
+    "11276": {
+      "type": "EnumEgenskap",
+      "verdi": 19027
+    },
+    "11277": {
+      "type": "HeltallEgenskap",
+      "verdi": 2806
+    },
+    "11278": {
+      "type": "EnumEgenskap",
+      "verdi": 19032
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 41718,
+        "startposisjon": 0,
+        "sluttposisjon": 0.10268175,
+        "retning": "MED"
+      },
+      {
+        "id": 41718,
+        "startposisjon": 0.94579718,
+        "sluttposisjon": 1,
+        "retning": "MED"
+      }
+    ]
+  },
+  "sistEndret": "2025-05-02T16:07:45.571054Z"
+}

@@ -141,6 +141,21 @@ class TnitsExportE2ETest : ShouldSpec() {
             }
         }
 
+        context("road numbers") {
+            should("export snapshot") {
+                withTestServices(minioClient) {
+                    val timestamp = Instant.parse("2025-09-26T10:30:00Z")
+                    val expectedXml = readFile("915-expected-snapshot.xml")
+                    setupBackfill()
+
+                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.RoadNumber)
+
+                    val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.RoadNumber)
+                    xml shouldBe expectedXml
+                }
+            }
+        }
+
         context("height restrictions") {
             should("export snapshot") {
                 withTestServices(minioClient) {

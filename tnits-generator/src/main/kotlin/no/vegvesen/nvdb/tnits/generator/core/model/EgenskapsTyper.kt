@@ -6,6 +6,9 @@ object EgenskapsTyper {
     const val FELTOVERSIKT_I_VEGLENKERETNING = 5528
 
     const val ADRESSENAVN = 4589
+    const val VEGSYSTEM_VEGKATAGORI = 11276
+    const val VEGSYSTEM_VEGNUMMER = 11277
+    const val VEGSYSTEM_FASE = 11278
 
     const val SKILTA_HOYDE = 5277
 
@@ -22,5 +25,21 @@ object EgenskapsTyper {
         5087 to 100,
         9721 to 110,
         19642 to 120,
+    )
+
+    val hardcodedVegkategoriTillatteVerdier = mapOf(
+        19024 to "E",
+        19025 to "R",
+        19026 to "F",
+        19027 to "K",
+        19028 to "P",
+        19029 to "S",
+    )
+
+    val hardcodedFaseTillatteVerdier = mapOf(
+        19030 to "P",
+        19031 to "A",
+        19032 to "V",
+        19090 to "F",
     )
 }

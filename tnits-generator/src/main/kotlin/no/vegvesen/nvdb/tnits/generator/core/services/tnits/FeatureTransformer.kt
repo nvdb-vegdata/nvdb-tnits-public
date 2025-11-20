@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import no.vegvesen.nvdb.apiles.uberiket.HeltallEgenskap
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
@@ -41,6 +42,18 @@ class FeatureTransformer(
     private val kmhByEgenskapVerdi: Map<Int, Int> by lazy {
         runBlocking {
             datakatalogApi.getKmhByEgenskapVerdi()
+        }
+    }
+
+    private val vegkategoriByEgenskapVerdi: Map<Int, String> by lazy {
+        runBlocking {
+            datakatalogApi.getVegkategoriByEgenskapVerdi()
+        }
+    }
+
+    private val vegfaseByEgenskapVerdi: Map<Int, String> by lazy {
+        runBlocking {
+            datakatalogApi.getVegfaseByEgenskapVerdi()
         }
     }
 
@@ -114,6 +127,7 @@ class FeatureTransformer(
     fun getPropertyMapper(type: ExportedFeatureType): VegobjektPropertyMapper = when (type) {
         ExportedFeatureType.SpeedLimit -> VegobjektPropertyMapper(::getSpeedLimitProperties)
         ExportedFeatureType.RoadName -> VegobjektPropertyMapper(::getRoadNameProperties)
+        ExportedFeatureType.RoadNumber -> VegobjektPropertyMapper(::getRoadNumberProperties)
         ExportedFeatureType.MaximumHeight -> VegobjektPropertyMapper(::getMaximumHeightProperties)
     }
 
@@ -131,6 +145,46 @@ class FeatureTransformer(
             RoadFeaturePropertyType.RoadName to StringProperty(nameEgenskap.verdi),
         )
     }
+
+    private fun getRoadNumberProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
+        val roadNumberVegkatagori = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_VEGKATAGORI] as? EnumVerdi ?: return emptyMap()
+        val vegkategori = vegkategoriByEgenskapVerdi[roadNumberVegkatagori.verdi]
+        val vegnummer = when (val prop = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_VEGNUMMER]) {
+            is EnumVerdi -> prop.verdi
+            is HeltallVerdi -> prop.verdi
+            is HeltallEgenskap -> prop.verdi
+            else -> return emptyMap()
+        }
+        val roadNumberFase = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_FASE] as? EnumVerdi ?: return emptyMap()
+        val vegfaseName = vegfaseByEgenskapVerdi[roadNumberFase.verdi]
+
+        val kommunenummer = if (vegkategori in setOf("K", "S", "P")) {
+            vegobjekt.stedfestinger
+                .map { it.veglenkesekvensId }
+                .flatMap { cachedVegnett.getVeglenker(it) }
+                .map { it.kommune }
+                .firstOrNull()
+                ?.toString()
+                ?.padStart(4, '0')
+                ?: ""
+        } else {
+            ""
+        }
+        val officialNumber = "$kommunenummer $vegkategori$vegnummer".trim()
+        val conditionOfFacility = vegfaseNameToConditionOfFacility[vegfaseName].toString().trim()
+
+        return mapOf(
+            RoadFeaturePropertyType.RoadNumber to StringProperty(officialNumber),
+            RoadFeaturePropertyType.ConditionOfFacility to StringProperty(conditionOfFacility),
+        )
+    }
+
+    val vegfaseNameToConditionOfFacility = mapOf(
+        "P" to "projected",
+        "A" to "under construction",
+        "V" to "functional",
+        "F" to "fictitious",
+    )
 
     private fun getMaximumHeightProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
         val skiltaHoydeEgenskap = vegobjekt.egenskaper[EgenskapsTyper.SKILTA_HOYDE] as? FlyttallVerdi ?: return emptyMap()
@@ -240,6 +294,17 @@ class FeatureTransformer(
             ExportedFeatureType.RoadName -> properties[RoadFeaturePropertyType.RoadName].let {
                 it is StringProperty && it.value.isNotBlank()
             } && vegobjekt.stedfestinger.isNotEmpty()
+
+            ExportedFeatureType.RoadNumber -> {
+                val hasValidRoadNumber = properties[RoadFeaturePropertyType.RoadNumber].let {
+                    it is StringProperty && it.value.isNotBlank()
+                }
+                val hasValidConditionofFacility = properties[RoadFeaturePropertyType.ConditionOfFacility].let {
+                    it is StringProperty && it.value.isNotBlank() &&
+                        !it.value.contains("fictitious") && !it.value.contains("projected")
+                }
+                hasValidRoadNumber && hasValidConditionofFacility && vegobjekt.stedfestinger.isNotEmpty()
+            }
 
             ExportedFeatureType.MaximumHeight -> properties.containsKey(RoadFeaturePropertyType.MaximumHeight) &&
                 vegobjekt.stedfestinger.isNotEmpty()

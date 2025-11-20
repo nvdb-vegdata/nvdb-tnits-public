@@ -10,6 +10,7 @@ package no.vegvesen.nvdb.tnits.common.model
 enum class ExportedFeatureType(val typeId: Int, val sourceCode: String, val typeCode: RoadFeatureTypeCode) {
     SpeedLimit(VegobjektTyper.FARTSGRENSE, "regulation", RoadFeatureTypeCode.speedLimit),
     RoadName(VegobjektTyper.ADRESSE, "otherRoadFeature", RoadFeatureTypeCode.roadName),
+    RoadNumber(VegobjektTyper.VEGSYSTEM, "otherRoadFeature", RoadFeatureTypeCode.roadNumber),
     MaximumHeight(VegobjektTyper.HOYDEBEGRENSNING, "regulation", RoadFeatureTypeCode.restrictionForVehicles),
     ;
 

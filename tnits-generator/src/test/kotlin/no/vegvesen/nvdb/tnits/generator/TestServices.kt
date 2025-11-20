@@ -17,6 +17,8 @@ import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFartsgrenseTillatteVerdier
+import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFaseTillatteVerdier
+import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedVegkategoriTillatteVerdier
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureExportWriter
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.FeatureTransformer
 import no.vegvesen.nvdb.tnits.generator.core.services.tnits.TnitsExportService
@@ -63,7 +65,11 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
     )
     val cachedVegnett = CachedVegnett(veglenkerRepository, vegobjekterRepository, clock)
 
-    val datakatalogApi = mockk<DatakatalogApi> { coEvery { getKmhByEgenskapVerdi() } returns hardcodedFartsgrenseTillatteVerdier }
+    val datakatalogApi = mockk<DatakatalogApi> {
+        coEvery { getKmhByEgenskapVerdi() } returns hardcodedFartsgrenseTillatteVerdier
+        coEvery { getVegkategoriByEgenskapVerdi() } returns hardcodedVegkategoriTillatteVerdier
+        coEvery { getVegfaseByEgenskapVerdi() } returns hardcodedFaseTillatteVerdier
+    }
 
     val exportedFeatureStore = ExportedFeatureRocksDbStore(dbContext)
 

@@ -1,0 +1,65 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 1951809,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 1951825,
+          "nodePortNummer": 2,
+          "posisjon": 0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 1951851,
+          "nodePortNummer": 3,
+          "posisjon": 1
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "2011-02-25"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE",
+          "typeVeg": "KANALISERT_VEG",
+          "startport": 1,
+          "sluttport": 2,
+          "kommune": 301,
+          "geometri": {
+            "wkt": "LINESTRING Z(270882.069999695 6651693.75 165.488, 270880.606132507 6651699.7779541 165.463, 270878.069999695 6651708.06005859 165.428)",
+            "srid": 5973,
+            "lengde": 14.8649868632275,
+            "datafangstdato": "2011-02-25",
+            "temakode": 7012,
+            "kommune": 301,
+            "kvalitet": {
+              "malemetode": 45,
+              "malemetodeHoyde": -1,
+              "noyaktighet": 200,
+              "noyaktighetHoyde": -1,
+              "synbarhet": 0,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "dig"
+            }
+          },
+          "lengde": 14.8649868632275,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 14.8649868632275,
+      "sistEndret": "2025-05-02T13:20:03.017657Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 1,
+    "sidestorrelse": 500
+  }
+}

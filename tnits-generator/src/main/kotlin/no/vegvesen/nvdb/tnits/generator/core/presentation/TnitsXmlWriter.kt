@@ -119,7 +119,7 @@ object TnitsXmlWriter : WithLogger {
                                 "type" {
                                     attribute(
                                         "xlink:href",
-                                        "http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#${type.definition}",
+                                        "${type.codelistBaseUrl}${type.definition}",
                                     )
                                 }
                                 "value" { writeFeatureProperty(property) }

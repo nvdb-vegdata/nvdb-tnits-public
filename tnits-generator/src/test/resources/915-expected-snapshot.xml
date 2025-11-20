@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RoadFeatureDataset xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://spec.tn-its.eu/schemas/" xsi:schemaLocation="http://spec.tn-its.eu/schemas/ http://spec.tn-its.eu/schemas/TNITS.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
+	<metadata>
+		<Metadata>
+			<datasetId>NVDB-TNITS-915-RoadNumber_Snapshot_2025-09-26T10:30:00Z</datasetId>
+			<datasetCreationTime>2025-09-26T10:30:00Z</datasetCreationTime>
+		</Metadata>
+	</metadata>
+	<type>Snapshot</type>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2013-02-21</validFrom>
+			<beginLifespanVersion>2013-02-20T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>F363</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>functional</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1002109738</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>58.89346 9.30398 58.89319 9.30388 58.89299 9.30369 58.89285 9.30347 58.89276 9.30323 58.8927 9.30303 58.89265 9.30273 58.89264 9.30253 58.89272 9.30214 58.89273 9.30195 58.89266 9.3016 58.89265 9.30139 58.89267 9.30122 58.89276 9.30097 58.89277 9.30085 58.89276 9.30071 58.89269 9.30053 58.89262 9.30045 58.89252 9.30041 58.89225 9.30052 58.89209 9.3005 58.89181 9.30031 58.89133 9.30007 58.89108 9.2999 58.89095 9.29986 58.89083 9.29993 58.89073 9.30017 58.89061 9.30076 58.89057 9.30145 58.89053 9.3016 58.89048 9.3017 58.89058 9.3021 58.8906 9.30224 58.89057 9.30265 58.89059 9.30294 58.89059 9.30333 58.89061 9.30367 58.89068 9.30431 58.89068 9.30445 58.89066 9.30454 58.89063 9.30461 58.89054 9.30474 58.89049 9.30479 58.89039 9.30481 58.89032 9.30477 58.89017 9.30465 58.88997 9.30455 58.88982 9.30443</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwadvSnhOzvxDwAX/nw7Igg=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwadyCnghjviD//pAYQ7UQg=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@521222:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2016-01-01</validFrom>
+			<beginLifespanVersion>2015-12-31T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>3122 K1035</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>under construction</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1002163832</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>59.47884 11.67216 59.47879 11.67222 59.47875 11.67232 59.47869 11.67269 59.47871 11.67289 59.47874 11.67298 59.47886 11.67311</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwhMnipL9TvrAwDh/6k7U6U=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwhNBypLzDvzA/8fAFc7K6U=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2607303:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2011-02-25</validFrom>
+			<beginLifespanVersion>2011-02-24T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>0301 K17308</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>functional</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1002308426</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>59.93876 10.89813 59.93905 10.8979 59.93949 10.89763 59.93992 10.89761 59.9406 10.89764</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>Cwe/8iqfhTr+A//PALg7EA==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>Cwe/2yqf2zvwAwAx/0g6Hg==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0.08938172-0.4758868@605545:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@1938758:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@1951809:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2016-10-01</validFrom>
+			<beginLifespanVersion>2016-09-30T22:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>E6</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>functional</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1002315770</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>60.52524 11.24263 60.52568 11.24286 60.52666 11.24299 60.52684 11.24304 60.5281 11.24357 60.52962 11.24376 60.52987 11.24376 60.53143 11.24358 60.53294 11.24376 60.53315 11.24376 60.53375 11.24351 60.53383 11.24351 60.53522 11.24367 60.53607 11.24382 60.53672 11.24376 60.53688 11.24382 60.5374 11.24414 60.53839 11.24463 60.53869 11.24468 60.53922 11.24496 60.53936 11.24491 60.53978 11.24534 60.54009 11.24557 60.5413 11.24605 60.54157 11.2463</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>Cwf/VCsNQjryD/72/Nc6Hg==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>Cwf+qSsKSTrhDwBlAzg6Dw==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2678829:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2678830:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2016-12-01</validFrom>
+			<beginLifespanVersion>2016-11-30T23:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>5001 K2806</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>functional</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1003298856</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>63.40781 10.44981 63.40769 10.44964 63.40751 10.44929 63.40744 10.44925</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwduVS0XCzvyAP/W/+c7Aw==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwduQS0W/zv7BQAAAAA7UvQ=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwduQS0W/zvyBQAAAAA7O/Q=</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwduQS0W/zvjAAAqABk7Eg==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-0.10268175@41718:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0.94579718-1@41718:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+	<roadFeatures>
+		<RoadFeature>
+			<validFrom>2025-04-14</validFrom>
+			<beginLifespanVersion>2025-04-13T22:00:00Z</beginLifespanVersion>
+			<source xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureSourceCode#otherRoadFeature"></source>
+			<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#roadNumber"></type>
+			<properties>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://spec.tn-its.eu/codelists/RoadFeaturePropertyType#officialNumber"></type>
+					<value>1506 S1002</value>
+				</GenericRoadFeatureProperty>
+				<GenericRoadFeatureProperty>
+					<type xlink:href="http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue"></type>
+					<value>functional</value>
+				</GenericRoadFeatureProperty>
+			</properties>
+			<id>
+				<RoadFeatureId>
+					<providerId>nvdb.no</providerId>
+					<id>1022483905</id>
+				</RoadFeatureId>
+			</id>
+			<locationReference>
+				<GeometryLocationReference>
+					<encodedGeometry>
+						<gml:LineString srsDimension="2" srsName="EPSG:4326">
+							<gml:posList>62.81677 7.59699 62.8167 7.5974 62.81674 7.59767 62.81662 7.59781 62.8165 7.59783 62.81631 7.59779 62.81594 7.59743 62.81573 7.59729 62.81552 7.5972 62.81539 7.59724 62.81515 7.59747 62.81507 7.59759 62.815 7.59779 62.81483 7.59839 62.81474 7.59886 62.81467 7.59935 62.81463 7.59981 62.81464 7.6006 62.81462 7.60104 62.81458 7.60133 62.81445 7.6021 62.81442 7.60235 62.81444 7.60257 62.81451 7.60281 62.81459 7.60296 62.81472 7.60311 62.81478 7.60325 62.81485 7.60354 62.81483 7.60377 62.81473 7.604 62.81432 7.60435 62.81414 7.60469 62.81407 7.60485 62.81398 7.6052 62.81384 7.60607 62.81375 7.60632 62.8137 7.60641 62.81362 7.6065 62.81354 7.60655 62.81321 7.60662 62.81309 7.60678 62.81302 7.60705 62.81289 7.60791 62.81287 7.60823 62.81287 7.60839 62.81291 7.60894 62.81296 7.60925 62.81295 7.60972 62.81301 7.61029 62.81324 7.61148 62.81413 7.61626 62.81452 7.61829 62.81498 7.61967 62.81512 7.61992 62.81533 7.62017 62.8154 7.6203 62.81548 7.6206 62.81554 7.62091 62.81594 7.62221 62.81617 7.62286 62.81658 7.62342 62.81696 7.62421 62.81715 7.62451 62.81749 7.62523 62.81776 7.62568 62.81816 7.62672 62.81834 7.62733 62.81847 7.6279 62.81857 7.62816 62.81872 7.62848 62.81912 7.62951 62.81943 7.63008 62.81975 7.63076 62.81982 7.63098 62.81989 7.63125 62.81998 7.63207 62.82013 7.63257 62.82015 7.63283 62.82014 7.63313 62.82014 7.63333 62.8202 7.63369 62.82039 7.63446 62.82054 7.63487 62.82073 7.63558 62.82098 7.63642 62.82113 7.63678 62.82144 7.63739 62.82151 7.63749 62.82163 7.63759 62.82188 7.63773 62.82233 7.63813 62.82249 7.63833 62.82255 7.63846 62.82274 7.63907 62.82282 7.6394 62.82283 7.63961 62.82285 7.6404 62.82286 7.6406 62.82292 7.64081 62.82313 7.64105 62.8232 7.6412 62.82324 7.64144 62.82328 7.64194 62.8234 7.64242 62.82347 7.64262 62.82396 7.64356 62.82431 7.64436 62.82498 7.64615 62.82518 7.64676 62.8254 7.64754 62.82548 7.64771 62.82569 7.64807 62.82586 7.64848 62.82613 7.6494 62.82626 7.64999 62.82641 7.65085 62.82646 7.65105 62.82653 7.65121 62.82673 7.6515 62.82684 7.65172 62.82707 7.6524 62.82745 7.65333 62.82757 7.65369 62.82771 7.65441 62.82775 7.65454 62.82796 7.65506 62.82813 7.65558 62.82847 7.65649 62.82862 7.65698 62.82904 7.6579 62.82924 7.65874 62.82932 7.65916 62.82947 7.65962 62.82959 7.66019 62.82971 7.66094 62.82986 7.66172 62.8301 7.66274 62.83023 7.66359 62.83034 7.66414 62.83056 7.66477 62.83106 7.66655 62.8312 7.66726 62.83127 7.66781 62.83148 7.66892 62.83153 7.66911 62.83171 7.66955 62.83179 7.66985 62.832 7.6708 62.83211 7.67138 62.83232 7.67213 62.83245 7.67289 62.83261 7.67363 62.83288 7.67504 62.83315 7.67669 62.83336 7.67815 62.83332 7.6787 62.83332 7.67994 62.83359 7.6819 62.83368 7.68271 62.83389 7.68391 62.834 7.68416 62.83442 7.68494 62.83487 7.68618 62.83504 7.68635 62.8355 7.68656 62.83589 7.68707 62.83618 7.68736 62.8365 7.68754 62.83664 7.68776 62.837 7.68863 62.8373 7.68963 62.83752 7.69058</gml:posList>
+						</gml:LineString>
+					</encodedGeometry>
+				</GeometryLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwVm/iyrcjvqaSSOCBs7FQ==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<OpenLRLocationReference>
+					<binaryLocationReference>
+						<BinaryLocationReference>
+							<base64String>CwV4ByyvOTv1adty9+U7Cg==</base64String>
+							<openLRBinaryVersion xlink:href="http://spec.tn-its.eu/codelists/OpenLRBinaryVersionCode#v2_4"></openLRBinaryVersion>
+						</BinaryLocationReference>
+					</binaryLocationReference>
+				</OpenLRLocationReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-0.32636184@247908:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@2610099:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0.38497131-1@247908:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+			<locationReference>
+				<LocationByExternalReference>
+					<predefinedLocationReference xlink:href="nvdb.no:0-1@3968219:MED:-:-"></predefinedLocationReference>
+				</LocationByExternalReference>
+			</locationReference>
+		</RoadFeature>
+	</roadFeatures>
+</RoadFeatureDataset>

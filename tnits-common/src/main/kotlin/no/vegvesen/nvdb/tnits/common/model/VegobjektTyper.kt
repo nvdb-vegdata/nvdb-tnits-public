@@ -5,6 +5,7 @@ object VegobjektTyper {
     const val FARTSGRENSE = 105
     const val FUNKSJONELL_VEGKLASSE = 821
     const val ADRESSE = 538
+    const val VEGSYSTEM = 915
     const val HOYDEBEGRENSNING = 591
 }
 

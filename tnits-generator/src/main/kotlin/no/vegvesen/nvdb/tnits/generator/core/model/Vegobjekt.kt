@@ -19,6 +19,10 @@ data class EnumVerdi(val verdi: Int) : EgenskapVerdi
 data class TekstVerdi(val verdi: String) : EgenskapVerdi
 
 @Serializable
+@SerialName("HeltallVerdi")
+data class HeltallVerdi(val verdi: Long) : EgenskapVerdi
+
+@Serializable
 @SerialName("FlyttallVerdi")
 data class FlyttallVerdi(val verdi: Double) : EgenskapVerdi
 

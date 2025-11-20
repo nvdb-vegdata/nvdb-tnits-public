@@ -1,0 +1,63 @@
+{
+  "veglenkesekvenser": [
+    {
+      "id": 2607303,
+      "porter": [
+        {
+          "nummer": 1,
+          "nodeId": 2607255,
+          "nodePortNummer": 1,
+          "posisjon": 0
+        },
+        {
+          "nummer": 2,
+          "nodeId": 2607256,
+          "nodePortNummer": 1,
+          "posisjon": 1
+        }
+      ],
+      "veglenker": [
+        {
+          "nummer": 1,
+          "gyldighetsperiode": {
+            "startdato": "2016-01-01"
+          },
+          "konnektering": false,
+          "topologiniva": "VEGTRASE",
+          "malemetode": "GEOMETRISK",
+          "detaljniva": "VEGTRASE_OG_KJOREBANE",
+          "typeVeg": "ENKEL_BILVEG",
+          "startport": 1,
+          "sluttport": 2,
+          "kommune": 3122,
+          "geometri": {
+            "wkt": "LINESTRING Z (311520.610046387 6598090.3491745 127.647, 311523.566680908 6598084.44542694 127.897, 311525.65045166 6598082.03668213 128.167, 311529.195831299 6598079.53627777 128.767, 311533.067504883 6598077.78627777 129.167, 311539.505432129 6598075.0475235 129.907, 311544.483337402 6598073.23668671 130.467, 311549.890014648 6598072.4446106 131.027, 311555.312927246 6598072.62126923 131.247, 311561.061248779 6598074.09584045 131.327, 311566.42 6598077.31 131.407, 311570.1 6598082.03 131.487, 311573.1 6598087.8 131.557, 311574.31 6598090.24 131.597)",
+            "srid": 5973,
+            "lengde": 69.1336120810445,
+            "datafangstdato": "2016-01-01",
+            "temakode": 7001,
+            "kommune": 3122,
+            "kvalitet": {
+              "malemetode": 69,
+              "noyaktighet": 100,
+              "synbarhet": 99,
+              "maksimaltAvvik": -1,
+              "datafangstmetode": "gen"
+            }
+          },
+          "lengde": 69.1336120810445,
+          "feltoversikt": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "lengde": 72.7451081141262,
+      "sistEndret": "2025-11-21T21:12:29.825932Z"
+    }
+  ],
+  "metadata": {
+    "returnert": 1,
+    "sidestorrelse": 500
+  }
+}
