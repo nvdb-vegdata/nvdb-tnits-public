@@ -369,6 +369,62 @@ rocksDbBackupService.restoreIfNeeded()
 3. Restore using RocksDB BackupEngine
 4. Clean up temporary files
 
+## Admin Flags and Database Operations
+
+The application supports **admin flags** for remote control of database state through the tnits-katalog REST API. Flags are stored in S3 and processed during startup.
+
+### Available Operations
+
+**Complete database reset:**
+
+```kotlin
+// Triggered by RESET_DB flag
+rocksDbContext.clear()  // Deletes entire veglenker.db/ directory
+```
+
+**Clear road network only:**
+
+```kotlin
+// Triggered by RESET_ROADNET flag
+rocksDbContext.clearColumnFamily(ColumnFamily.VEGLENKER)
+keyValueStore.clearVeglenkesekvensSettings()
+```
+
+**Clear specific feature types:**
+
+```kotlin
+// Triggered by RESET_FEATURE_TYPES flag with type IDs
+vegobjekterRepository.clearVegobjektType(typeId)  // Clear VEGOBJEKTER entries
+keyValueStore.clearVegobjektSettings(typeId)      // Clear settings
+```
+
+### Processing Flow
+
+Admin flags are processed in `RocksDbS3BackupService.restoreIfNeeded()`:
+
+1. Check RESET_DB flag - if set, delete database and backup, then continue
+2. Restore from backup if database is empty
+3. Check RESET_ROADNET flag - if set, clear road network data
+4. Check RESET_FEATURE_TYPES flag - if set, clear specified types
+
+### Flag Storage
+
+Flags are managed through the `SharedKeyValueStore` interface with S3 backend:
+
+```kotlin
+// tnits-katalog sets flags
+adminFlags.putValue(RESET_ROADNET, true)
+
+// tnits-generator reads flags
+val shouldReset = adminFlags.getValue<Boolean>(RESET_ROADNET) == true
+```
+
+**Storage location:** `s3://{bucket}/admin-flags/{FlagName}`
+
+**Format:** JSON-serialized values
+
+For comprehensive documentation on admin flags, including API usage, authentication, and troubleshooting, see [Admin Flags Guide](ADMIN_FLAGS.md).
+
 ## Performance Characteristics
 
 ### Write Performance
@@ -526,3 +582,4 @@ rocksDbContext.clear()  // Deletes entire database and reinitializes
 - [Architecture Overview](ARCHITECTURE.md) - System architecture
 - [Data Flow](DATA_FLOW.md) - How data flows through storage
 - [Getting Started](GETTING_STARTED.md) - Setup instructions
+- [Admin Flags](ADMIN_FLAGS.md) - Remote control and database reset operations

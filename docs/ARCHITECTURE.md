@@ -50,6 +50,7 @@ flowchart TB
     subgraph S3Storage["S3/MinIO Storage"]
         Backups["RocksDB backups"]
         Exports["TN-ITS XML exports<br/>snapshots/updates"]
+        AdminFlags["Admin flags<br/>(remote control)"]
     end
 
     subgraph Katalog["tnits-katalog"]
@@ -62,6 +63,8 @@ flowchart TB
     RocksDB -->|read/write| Storage
     S3 -->|upload| S3Storage
     S3Storage -->|serve| REST
+    REST -->|set flags| AdminFlags
+    AdminFlags -->|read flags| RocksDB
 ```
 
 ## Module Structure
@@ -115,6 +118,7 @@ Spring Boot REST service that serves exported TN-ITS files from MinIO/S3.
 - Provide HTTP access to generated TN-ITS files
 - List available snapshots and updates
 - Stream files directly from S3 storage
+- Set admin flags for remote control of tnits-generator (authenticated endpoint)
 
 ## Technology Stack
 
@@ -298,17 +302,16 @@ s3 {
     endpoint = "http://localhost:9000"
     accessKey = user
     secretKey = password
+    bucket = nvdb-tnits-local-data-01
 }
 
 exporter {
     gzip = true
     target = S3
-    bucket = nvdb-tnits-local-data-01
 }
 
 backup {
     enabled = true
-    bucket = nvdb-tnits-local-data-01
     path = rocksdb-backup
 }
 ```
@@ -346,3 +349,4 @@ See: [Memory Optimization Guide](MEMORY_OPTIMIZATION.md) for details on 72% memo
 - [Testing Guide](TESTING.md) - Test structure and execution
 - [Concepts Glossary](CONCEPTS.md) - Domain terminology
 - [Memory Optimization](MEMORY_OPTIMIZATION.md) - CachedVegnett memory optimization
+- [Admin Flags](ADMIN_FLAGS.md) - Remote control and data reset functionality

@@ -142,6 +142,29 @@ Access the API at http://localhost:8999:
 - `GET /api/v1/updates/{typeId}?from=<timestamp>` - List available updates since a given time
 - `GET /api/v1/download?path={file}` - Download a specific file
 
+### Admin Flags API
+
+The katalog service provides an authenticated endpoint for setting admin flags that control the generator's data state.
+
+**Endpoint:** `POST /api/v1/admin/flags`
+
+**Authentication:** Requires OAuth2 token with `nvdbapi=admin` scope
+
+**Use cases:**
+- Reset entire database (data corruption recovery)
+- Clear road network only (force re-sync)
+- Clear specific feature types (e.g., speed limits)
+
+**Example - Reset road network:**
+```bash
+curl -X POST "http://localhost:8999/api/v1/admin/flags?resetRoadnet=true" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Local development:** OAuth2 mock server is available via Docker Compose on port 8099.
+
+For comprehensive documentation including all available flags, authentication setup, and troubleshooting, see [Admin Flags Guide](ADMIN_FLAGS.md).
+
 ## Common Development Tasks
 
 ### Run Tests
@@ -382,5 +405,6 @@ Typical development workflow:
 - **Architecture questions:** See [Architecture](ARCHITECTURE.md)
 - **NVDB concepts:** See [Concepts Glossary](CONCEPTS.md)
 - **Testing help:** See [Testing Guide](TESTING.md)
+- **Admin flags and data reset:** See [Admin Flags](ADMIN_FLAGS.md)
 - **Project-specific:** Check `CLAUDE.md` for coding guidelines
 - **NVDB API docs:** https://nvdbapiles.atlas.vegvesen.no/

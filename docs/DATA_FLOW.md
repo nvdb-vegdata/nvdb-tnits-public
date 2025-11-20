@@ -18,6 +18,8 @@ Each phase has specific responsibilities and data transformations.
 
 The backfill phase downloads all road network data from NVDB when starting from an empty database.
 
+**Note:** Before backfill begins, the system checks for admin flags that may trigger database resets or selective data clearing. This enables remote control of the generator's data state. See [Admin Flags Guide](ADMIN_FLAGS.md) for details.
+
 ### Backfill Flow Diagram
 
 All backfill operations run in parallel:
@@ -466,3 +468,4 @@ INFO  Export: completed in 4m 32s
 - [Storage Architecture](STORAGE.md) - RocksDB details
 - [TN-ITS Export](TNITS_EXPORT.md) - Export specifics
 - [Concepts Glossary](CONCEPTS.md) - Domain terminology
+- [Admin Flags](ADMIN_FLAGS.md) - Remote control and data reset operations
