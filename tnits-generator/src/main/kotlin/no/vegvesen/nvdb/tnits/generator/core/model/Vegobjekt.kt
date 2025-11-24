@@ -19,6 +19,10 @@ data class EnumVerdi(val verdi: Int) : EgenskapVerdi
 data class TekstVerdi(val verdi: String) : EgenskapVerdi
 
 @Serializable
+@SerialName("FlyttallVerdi")
+data class FlyttallVerdi(val verdi: Double) : EgenskapVerdi
+
+@Serializable
 data class Vegobjekt(
     val id: Long,
     val type: Int,

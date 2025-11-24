@@ -7,4 +7,5 @@ package no.vegvesen.nvdb.tnits.common.model
 enum class RoadFeatureTypeCode {
     speedLimit,
     roadName,
+    restrictionForVehicles,
 }

@@ -7,6 +7,8 @@ object EgenskapsTyper {
 
     const val ADRESSENAVN = 4589
 
+    const val SKILTA_HOYDE = 5277
+
     val hardcodedFartsgrenseTillatteVerdier = mapOf(
         19885 to 5,
         11576 to 20,

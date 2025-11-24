@@ -141,6 +141,21 @@ class TnitsExportE2ETest : ShouldSpec() {
             }
         }
 
+        context("height restrictions") {
+            should("export snapshot") {
+                withTestServices(minioClient) {
+                    val timestamp = Instant.parse("2025-09-26T10:30:00Z")
+                    val expectedXml = readFile("591-expected-snapshot.xml")
+                    setupBackfill()
+
+                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.MaximumHeight)
+
+                    val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.MaximumHeight)
+                    xml shouldBe expectedXml
+                }
+            }
+        }
+
         context("automatic mode") {
             should("handle full cycle of snapshot and update exports") {
                 withTestServices(minioClient) {

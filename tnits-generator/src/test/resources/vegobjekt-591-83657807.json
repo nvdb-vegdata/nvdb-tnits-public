@@ -1,0 +1,51 @@
+{
+  "id": 83657807,
+  "versjon": 2,
+  "typeId": 591,
+  "gyldighetsperiode": {
+    "startdato": "2003-06-25"
+  },
+  "egenskaper": {
+    "3868": {
+      "type": "FlyttallEgenskap",
+      "verdi": 5.05
+    },
+    "3870": {
+      "type": "FlyttallEgenskap",
+      "verdi": 5.2
+    },
+    "5270": {
+      "type": "EnumEgenskap",
+      "verdi": 8151
+    },
+    "5277": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.8
+    },
+    "5778": {
+      "type": "TekstEgenskap",
+      "verdi": "Jessheim II"
+    },
+    "10247": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.8
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 444049,
+        "startposisjon": 0.75276029,
+        "sluttposisjon": 0.75373977,
+        "retning": "MED",
+        "kjorefelt": [
+          "1",
+          "2"
+        ]
+      }
+    ]
+  },
+  "sistEndret": "2025-05-01T13:20:07.086834Z"
+}

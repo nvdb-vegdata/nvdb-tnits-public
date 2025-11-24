@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.core.model
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
 import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
+import no.vegvesen.nvdb.apiles.uberiket.FlyttallEgenskap
 import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
 import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
@@ -22,6 +23,7 @@ private val relevanteEgenskaperPerType: Map<Int, Set<Int>> = mapOf(
     VegobjektTyper.FUNKSJONELL_VEGKLASSE to setOf(EgenskapsTyper.VEGKLASSE),
     VegobjektTyper.FELTSTREKNING to setOf(EgenskapsTyper.FELTOVERSIKT_I_VEGLENKERETNING),
     VegobjektTyper.ADRESSE to setOf(EgenskapsTyper.ADRESSENAVN),
+    VegobjektTyper.HOYDEBEGRENSNING to setOf(EgenskapsTyper.SKILTA_HOYDE),
 )
 
 /**
@@ -40,6 +42,7 @@ fun ApiVegobjekt.toDomain(overrideValidFrom: LocalDate? = null): Vegobjekt {
         sistEndret = sistEndret.toInstant().toKotlinInstant(),
         egenskaper = relevanteEgenskaper.associateWith {
             when (val egenskap = egenskaper!![it.toString()]) {
+                is FlyttallEgenskap -> FlyttallVerdi(egenskap.verdi)
                 is EnumEgenskap -> EnumVerdi(egenskap.verdi)
                 is TekstEgenskap -> TekstVerdi(egenskap.verdi)
                 else -> error("Ugyldig egenskap-verdi for egenskap $it: $egenskap")

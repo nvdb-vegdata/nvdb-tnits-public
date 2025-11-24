@@ -43,3 +43,7 @@ data class IntProperty(val value: Int) : RoadFeatureProperty
 @Serializable
 @SerialName("StringProperty")
 data class StringProperty(val value: String) : RoadFeatureProperty
+
+@Serializable
+@SerialName("DoubleProperty")
+data class DoubleProperty(val value: Double) : RoadFeatureProperty

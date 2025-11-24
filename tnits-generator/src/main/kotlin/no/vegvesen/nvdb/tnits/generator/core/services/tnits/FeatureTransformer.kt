@@ -114,6 +114,7 @@ class FeatureTransformer(
     fun getPropertyMapper(type: ExportedFeatureType): VegobjektPropertyMapper = when (type) {
         ExportedFeatureType.SpeedLimit -> VegobjektPropertyMapper(::getSpeedLimitProperties)
         ExportedFeatureType.RoadName -> VegobjektPropertyMapper(::getRoadNameProperties)
+        ExportedFeatureType.MaximumHeight -> VegobjektPropertyMapper(::getMaximumHeightProperties)
     }
 
     private fun getSpeedLimitProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
@@ -128,6 +129,13 @@ class FeatureTransformer(
         val nameEgenskap = vegobjekt.egenskaper[EgenskapsTyper.ADRESSENAVN] as? TekstVerdi ?: return emptyMap()
         return mapOf(
             RoadFeaturePropertyType.RoadName to StringProperty(nameEgenskap.verdi),
+        )
+    }
+
+    private fun getMaximumHeightProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
+        val skiltaHoydeEgenskap = vegobjekt.egenskaper[EgenskapsTyper.SKILTA_HOYDE] as? FlyttallVerdi ?: return emptyMap()
+        return mapOf(
+            RoadFeaturePropertyType.MaximumHeight to DoubleProperty(skiltaHoydeEgenskap.verdi),
         )
     }
 
@@ -232,6 +240,9 @@ class FeatureTransformer(
             ExportedFeatureType.RoadName -> properties[RoadFeaturePropertyType.RoadName].let {
                 it is StringProperty && it.value.isNotBlank()
             } && vegobjekt.stedfestinger.isNotEmpty()
+
+            ExportedFeatureType.MaximumHeight -> properties.containsKey(RoadFeaturePropertyType.MaximumHeight) &&
+                vegobjekt.stedfestinger.isNotEmpty()
         }
 
         if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= clock.todayIn(OsloZone)) {

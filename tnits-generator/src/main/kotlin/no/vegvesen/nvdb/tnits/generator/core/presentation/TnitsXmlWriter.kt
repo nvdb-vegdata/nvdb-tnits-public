@@ -78,6 +78,7 @@ object TnitsXmlWriter : WithLogger {
 
     private fun XmlStreamDsl.writeFeatureProperty(property: RoadFeatureProperty) {
         when (property) {
+            is DoubleProperty -> text(property.value.toString())
             is IntProperty -> text(property.value.toString())
             is StringProperty -> text(property.value)
         }
