@@ -21,6 +21,9 @@ spring:
         cachecontrol:
           max-age: 1h
           cache-public: true
+  mvc:
+    async:
+      request-timeout: 5m
   security:
     oauth2:
       resourceserver:
