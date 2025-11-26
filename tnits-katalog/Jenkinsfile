@@ -80,7 +80,10 @@ pipeline {
       steps {
         script { FAILED_STAGE = env.STAGE_NAME }
         dir('atlas') {
-          git credentialsId: config.credentials.git, url: 'https://git.vegvesen.no/scm/nvdbdata/nvdb-tnits-atlas.git', branch: 'main'
+          withCredentials([string(credentialsId: 'test-bitbucket-pat', variable: 'TOKEN')]) {
+            git url: "https://x-token-auth:${TOKEN}@git.vegvesen.no/scm/nvdbdata/nvdb-tnits-atlas.git",
+                branch: 'main'
+          }
           atlasSetImageTag file: "utv-1/${deployName}.json", version: version
           atlasDeploy deploy: deployName, ikt: config.iktlosning, environment: 'utv-1', waitUntilFinished: true
         }
