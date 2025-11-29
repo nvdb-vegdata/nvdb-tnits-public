@@ -53,9 +53,9 @@ class FeatureTransformer(
             vegobjekterById.forEach { (id, vegobjekt) ->
                 try {
                     val changeType = changesById[id]!!
+                    val previous = previousFeatures[id]
 
                     if (changeType == ChangeType.DELETED) {
-                        val previous = previousFeatures[id]
                         if (previous != null) {
                             emit(
                                 previous.copy(
@@ -71,7 +71,6 @@ class FeatureTransformer(
                     } else if (vegobjekt == null) {
                         log.error("Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
                     } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
-                        val previous = previousFeatures[id]
                         if (previous != null) {
                             emit(
                                 previous.copy(
@@ -91,9 +90,14 @@ class FeatureTransformer(
                             ChangeType.MODIFIED -> UpdateType.Modify
                             else -> error("this should not happen")
                         }
-                        val feature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
-                        if (feature != null) {
-                            emit(feature)
+                        val newFeature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
+                        if (newFeature != null) {
+                            val isIdentical = previous != null && newFeature.hash == previous.hash
+                            if (!isIdentical) {
+                                emit(newFeature)
+                            } else {
+                                log.debug("Skipping identical feature for vegobjekt $id")
+                            }
                         }
                     }
                 } catch (exception: Exception) {
