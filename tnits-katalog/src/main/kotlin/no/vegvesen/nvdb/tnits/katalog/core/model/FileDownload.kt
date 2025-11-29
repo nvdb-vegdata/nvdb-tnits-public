@@ -6,4 +6,5 @@ data class FileDownload(
     val inputStream: InputStream,
     val fileName: String,
     val contentType: String,
+    val size: Long,
 )

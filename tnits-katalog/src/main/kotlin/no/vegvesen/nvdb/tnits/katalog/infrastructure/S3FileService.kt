@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.katalog.infrastructure
 import io.minio.GetObjectArgs
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
+import io.minio.StatObjectArgs
 import io.minio.errors.ErrorResponseException
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.common.model.RoadFeatureTypeCode
@@ -48,25 +49,41 @@ class S3FileService(private val minioClient: MinioClient, private val minioPrope
     override fun downloadFile(objectName: String): FileDownload {
         val fileName = objectName.replace('/', '_')
         val contentType = determineContentType(objectName)
-
-        val inputStream = try {
-            minioClient.getObject(
-                GetObjectArgs.builder()
-                    .bucket(minioProperties.bucket)
-                    .`object`(objectName)
-                    .build(),
-            )
-        } catch (e: ErrorResponseException) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $objectName", e)
-        } catch (e: Exception) {
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error downloading file: $objectName", e)
-        }
+        val size = getFileSize(objectName)
+        val inputStream = getInputStream(objectName)
 
         return FileDownload(
             inputStream = inputStream,
             fileName = fileName,
             contentType = contentType,
+            size = size,
         )
+    }
+
+    private fun getFileSize(objectName: String): Long = try {
+        minioClient.statObject(
+            StatObjectArgs.builder()
+                .bucket(minioProperties.bucket)
+                .`object`(objectName)
+                .build(),
+        ).size()
+    } catch (e: ErrorResponseException) {
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $objectName", e)
+    } catch (e: Exception) {
+        throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error getting file metadata: $objectName", e)
+    }
+
+    private fun getInputStream(objectName: String) = try {
+        minioClient.getObject(
+            GetObjectArgs.builder()
+                .bucket(minioProperties.bucket)
+                .`object`(objectName)
+                .build(),
+        )
+    } catch (e: ErrorResponseException) {
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $objectName", e)
+    } catch (e: Exception) {
+        throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error downloading file: $objectName", e)
     }
 
     private fun determineContentType(path: String): String = when {
