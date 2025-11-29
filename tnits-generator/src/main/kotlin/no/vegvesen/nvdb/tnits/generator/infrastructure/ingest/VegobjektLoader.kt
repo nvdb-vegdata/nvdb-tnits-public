@@ -120,6 +120,8 @@ class VegobjektLoader(
             return 0
         }
 
+        log.info("Oppdaterer ${changesById.size} vegobjekter for type $typeId...")
+
         val vegobjekterById = fetchVegobjekterByIds(typeId, changesById.keys, fetchOriginalStartDate)
 
         val updatesById = changesById.mapValues { (id, changeType) ->

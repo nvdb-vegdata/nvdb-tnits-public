@@ -82,6 +82,7 @@ class VegnettLoader(
             )
 
         var hendelseCount = 0
+        var batchCount = 0
 
         uberiketApi.streamVeglenkesekvensHendelser(lastHendelseId).chunked(100)
             .collect { hendelser ->
@@ -96,6 +97,10 @@ class VegnettLoader(
                 }
                 log.debug("Behandlet ${hendelser.size} hendelser, siste ID: $lastHendelseId")
                 hendelseCount += hendelser.size
+                batchCount++
+                if (batchCount % 50 == 0) {
+                    log.info("Behandlet $hendelseCount hendelser for veglenkesekvenser, siste ID: $lastHendelseId")
+                }
             }
 
         log.info("Oppdatering fra $hendelseCount hendelser for veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
