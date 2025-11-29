@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Auto" type="JetRunConfigurationType">
+    <envs>
+      <env name="HTTP_CLIENT_LOG_LEVEL" value="NONE" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="no.vegvesen.nvdb.tnits.generator.ApplicationKt" />
     <module name="nvdb-tnits-public.tnits-generator.main" />
     <option name="PROGRAM_PARAMETERS" value="auto" />

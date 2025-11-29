@@ -4,6 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.jackson.*
 import io.minio.MinioClient
 import jakarta.inject.Named
@@ -58,11 +59,11 @@ class MainModule {
 
     @Singleton
     @Named("uberiketHttpClient")
-    fun uberiketHttpClient(config: UberiketApiConfig) = createUberiketHttpClient(config.baseUrl)
+    fun uberiketHttpClient(config: UberiketApiConfig, appConfig: AppConfig) = createUberiketHttpClient(config.baseUrl, appConfig)
 
     @Singleton
     @Named("datakatalogHttpClient")
-    fun datakatalogHttpClient(config: DatakatalogApiConfig) = createDatakatalogHttpClient(config.baseUrl)
+    fun datakatalogHttpClient(config: DatakatalogApiConfig, appConfig: AppConfig) = createDatakatalogHttpClient(config.baseUrl, appConfig)
 
     @Singleton
     fun minioClient(config: AppConfig): MinioClient = config.s3.let { s3Config ->
@@ -74,13 +75,50 @@ class MainModule {
     }
 
     companion object {
-        private fun createUberiketHttpClient(baseUrl: String): HttpClient = HttpClient(CIO) {
-            expectSuccess = true
-            install(ContentNegotiation) {
-                jackson {
-                    initialize()
+        private fun createUberiketHttpClient(baseUrl: String, appConfig: AppConfig): HttpClient = HttpClient(CIO) {
+            commonConfig(appConfig)
+            defaultRequest {
+                url(baseUrl)
+                headers.append("Accept", "application/json, application/x-ndjson")
+                headers.append("X-Client", "nvdb-tnits-console")
+            }
+        }
+
+        private fun createDatakatalogHttpClient(baseUrl: String, appConfig: AppConfig): HttpClient = HttpClient(CIO) {
+            commonConfig(appConfig)
+            defaultRequest {
+                url(baseUrl)
+                headers.append("Accept", "application/json")
+                headers.append("X-Client", "nvdb-tnits-console")
+            }
+        }
+
+        private fun HttpClientConfig<*>.configureLogging(appConfig: AppConfig) {
+            val logLevel = appConfig.httpClient.logLevel
+            if (logLevel != LogLevel.NONE) {
+                install(Logging) {
+                    level = logLevel
                 }
             }
+        }
+
+        private fun HttpClientConfig<CIOEngineConfig>.commonConfig(appConfig: AppConfig) {
+            expectSuccess = true
+            configureJackson()
+            configureLogging(appConfig)
+            configureRetry()
+            configureTimeouts()
+        }
+
+        private fun HttpClientConfig<CIOEngineConfig>.configureTimeouts() {
+            install(HttpTimeout) {
+                requestTimeoutMillis = 60_000
+                connectTimeoutMillis = 10_000
+                socketTimeoutMillis = 60_000
+            }
+        }
+
+        private fun HttpClientConfig<CIOEngineConfig>.configureRetry() {
             install(HttpRequestRetry) {
                 retryOnServerErrors(maxRetries = 5)
                 retryOnException(maxRetries = 5, retryOnTimeout = true)
@@ -90,29 +128,13 @@ class MainModule {
                     log.warn("Retrying API request to ${request.url}")
                 }
             }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 60_000
-                connectTimeoutMillis = 10_000
-                socketTimeoutMillis = 60_000
-            }
-            defaultRequest {
-                url(baseUrl)
-                headers.append("Accept", "application/json, application/x-ndjson")
-                headers.append("X-Client", "nvdb-tnits-console")
-            }
         }
 
-        private fun createDatakatalogHttpClient(baseUrl: String): HttpClient = HttpClient(CIO) {
-            expectSuccess = true
+        private fun HttpClientConfig<CIOEngineConfig>.configureJackson() {
             install(ContentNegotiation) {
                 jackson {
                     initialize()
                 }
-            }
-            defaultRequest {
-                url(baseUrl)
-                headers.append("Accept", "application/json")
-                headers.append("X-Client", "nvdb-tnits-console")
             }
         }
     }

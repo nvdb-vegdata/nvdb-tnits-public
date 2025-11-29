@@ -29,6 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-jackson")
+    implementation("io.ktor:ktor-client-logging")
 
     // Configuration
     implementation("com.sksamuel.hoplite:hoplite-core:2.8.0")
