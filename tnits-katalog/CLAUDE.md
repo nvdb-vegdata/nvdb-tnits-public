@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-REST API service that exposes TN-ITS and INSPIRE road network data exports from NVDB. Built with Kotlin and Spring Boot.
+REST API service that exposes TN-ITS road network data exports from NVDB. Built with Kotlin and Spring Boot.
 
 **Local URL**: http://127.0.0.1:8999/
 

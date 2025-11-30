@@ -47,7 +47,6 @@ Or test specific modes:
 ```bash
 ./gradlew run --args="snapshot"
 ./gradlew run --args="update"
-./gradlew run --args="inspire-roadnet"
 ```
 
 ## Important Notes

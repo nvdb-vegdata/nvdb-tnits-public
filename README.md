@@ -1,6 +1,6 @@
 # XML Export from NVDB
 
-This project enables generation and publication of XML exports of road data from NVDB (Norwegian Road Database), in accordance with [TN-ITS](https://tn-its.eu/standardisation/) and [INSPIRE](https://inspire.ec.europa.eu/).
+This project enables generation and publication of XML exports of road data from NVDB (Norwegian Road Database), in accordance with [TN-ITS](https://tn-its.eu/standardisation/).
 
 ## Public repository and reference
 
@@ -17,7 +17,6 @@ Detailed documentation can be found in [docs](docs):
 - [STORAGE.md](docs/STORAGE.md) - Storage
 - [TESTING.md](docs/TESTING.md) - Testing
 - [TNITS_EXPORT.md](docs/TNITS_EXPORT.md) - About TN-ITS Export
-- [INSPIRE_ROADNET_EXPORT.md](docs/INSPIRE_ROADNET_EXPORT.md) - About INSPIRE Export
 
 ## Developer Setup
 

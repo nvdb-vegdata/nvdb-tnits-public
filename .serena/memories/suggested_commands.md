@@ -12,7 +12,6 @@
 ./gradlew run                        # Auto mode (decides snapshot vs update)
 ./gradlew run --args="snapshot"      # Generate full snapshot
 ./gradlew run --args="update"        # Generate delta update
-./gradlew run --args="inspire-roadnet"  # Export INSPIRE RoadNet
 ```
 
 ## Code Formatting

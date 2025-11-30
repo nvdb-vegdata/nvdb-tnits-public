@@ -44,7 +44,6 @@ tnits-generator/src/main/kotlin/no/vegvesen/nvdb/tnits/generator/
   - `TnitsSnapshotCycle` - Full data snapshot
   - `TnitsUpdateCycle` - Incremental updates
   - `TnitsAutomaticCycle` - Automatic mode selection
-  - `InspireRoadnetCycle` - INSPIRE export
 - **services/**: Domain services and business logic
 - **model/**: Domain entities and value objects
 - **extensions/**: Kotlin extensions for geometry, etc.

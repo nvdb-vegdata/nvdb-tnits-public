@@ -207,10 +207,9 @@ suspend fun main(args: Array<String>) {
     when (args.firstOrNull()) {
         "snapshot" -> app.koin.get<TnitsSnapshotCycle>().execute()
         "update" -> app.koin.get<TnitsUpdateCycle>().execute()
-        "inspire-roadnet" -> app.koin.get<PerformInspireRoadnetExport>().execute()
-        "auto", null -> app.koin.get<PerformSmartTnitsExport>().execute()
+        "auto", null -> app.koin.get<TnitsAutomaticCycle>().execute()
         else -> {
-            log.error("Unknown command '${args.first()}'")
+            log.error("Unknown command '${args.first()}', use one of 'snapshot', 'update', or 'auto'")
         }
     }
 

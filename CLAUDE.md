@@ -29,9 +29,6 @@ This is a Kotlin CLI application for synchronizing road network data from the No
 
 # Generate delta update
 ./gradlew run --args="update"
-
-# Export INSPIRE RoadNet
-./gradlew run --args="inspire-roadnet"
 ```
 
 ### Dependency Injection

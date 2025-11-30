@@ -1,6 +1,6 @@
 # NVDB TN-ITS Documentation
 
-Complete documentation for the nvdb-tnits system - a Kotlin CLI application for synchronizing Norwegian road network data and exporting it in TN-ITS and INSPIRE formats.
+Complete documentation for the nvdb-tnits system - a Kotlin CLI application for synchronizing Norwegian road network data and exporting it in TN-ITS format.
 
 ## Getting Started
 
@@ -46,10 +46,6 @@ Four-phase optimization guide reducing CachedVegnett memory usage by 72%, includ
 
 TN-ITS snapshot and update exports, data mapping, OpenLR encoding, geometry handling, and S3 configuration.
 
-### [INSPIRE RoadNet Export](INSPIRE_ROADNET_EXPORT.md)
-
-INSPIRE RoadLink export for the complete Norwegian road network in WFS 2.0 format with ETRS89/UTM33 coordinates.
-
 ## Development
 
 ### [Testing Guide](TESTING.md)
@@ -67,7 +63,6 @@ Testing framework (Kotest), test structure, running tests, assertions, test util
 | [Storage](STORAGE.md)                         | Working with RocksDB or implementing repositories         |
 | [Koin DI](KOIN_DEPENDENCY_INJECTION.md)       | Adding new services or understanding dependency injection |
 | [TN-ITS Export](TNITS_EXPORT.md)              | Working on speed limit or traffic regulation exports      |
-| [INSPIRE Export](INSPIRE_ROADNET_EXPORT.md)   | Working on road network geometry exports                  |
 | [Testing](TESTING.md)                         | Writing or debugging tests                                |
 | [Memory Optimization](MEMORY_OPTIMIZATION.md) | Understanding CachedVegnett optimizations                 |
 | [FAQ](FAQ.md)                                 | Quick answers to common questions                         |
@@ -85,4 +80,3 @@ Testing framework (Kotest), test structure, running tests, assertions, test util
 - [CLAUDE.md](../CLAUDE.md) - Guidelines for Code assistants
 - [NVDB API Documentation](https://nvdbapiles.atlas.vegvesen.no/)
 - [TN-ITS Specification](https://spec.tn-its.eu)
-- [INSPIRE Transport Networks](https://inspire.ec.europa.eu/id/document/tg/tn)
