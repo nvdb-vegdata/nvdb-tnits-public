@@ -1,0 +1,87 @@
+#!/usr/bin/env groovy
+
+/**
+ *  When the PR is created, updated or re-scoped in nvdb-tnits, we run this pipeline to build and run the tests on the relevant/changed modules.
+ *      - runs backend with java-21
+ *      - runs `mvn clean install -pl $modules_changed`
+ *
+ **/
+
+def buildGenerator = false
+def buildKatalog = false
+
+pipeline {
+
+    agent any
+    tools {
+        jdk 'java-25'
+    }
+
+    stages {
+        stage('Abort previous running builds') {
+            steps {
+                abortPreviousRunningBuilds()
+            }
+        }
+        stage('Check changed folders') {
+            when { changeRequest() }
+            steps {
+                script {
+                    // Get changed folders in git
+                    sh 'git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/*'
+                    sh 'git fetch --no-tags'
+
+                    def changedFolders = sh(
+                        label: 'Get changed folders in pull request',
+                        script: "git diff --name-only origin/${env.CHANGE_TARGET}...origin/${env.CHANGE_BRANCH} | xargs -L1 dirname | uniq",
+                        returnStdout: true
+                    ).trim()
+                    echo "Changed folders in tnits pull request ${env.CHANGE_ID}: ${changedFolders}"
+
+                    buildGenerator = changedFolders.contains('generator')
+                    buildKatalog = changedFolders.contains('katalog')
+
+                    echo "Build tnits-generator: ${buildGenerator}"
+                    echo "Build tnits-katalog: ${buildKatalog}"
+                }
+            }
+        }
+        stage('Build and test PR') {
+            when { changeRequest() } 
+            parallel {
+                stage('Build tnits-generator'){
+                    when { expression { buildGenerator }}
+                    steps {
+                        echo "Building tnits-generator"
+                        script { 
+                            sh("./gradlew tnits-generator:clean tnits-generator:check --info") 
+                        }
+                    }
+                }
+                stage('Build tnits-katalog'){
+                    when { expression { buildKatalog }}
+                    steps {
+                        echo "Building tnits-katalog"
+                        script {
+                             sh("./gradlew tnits-katalog:clean tnits-katalog:check --info")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def abortPreviousRunningBuilds() {
+    def previousBuild = currentBuild.getRawBuild().getPreviousBuildInProgress()
+    while (previousBuild != null) {
+        if (previousBuild.isInProgress()) {
+            def executor = previousBuild.getExecutor()
+            if (executor != null) {
+                echo ">> Aborting older build #${previousBuild.number}"
+                executor.interrupt(Result.ABORTED, new CauseOfInterruption.UserInterruption("Aborted by newer build #${currentBuild.number}"))
+            }
+        }
+        previousBuild = previousBuild.getPreviousBuildInProgress()
+    }
+}
