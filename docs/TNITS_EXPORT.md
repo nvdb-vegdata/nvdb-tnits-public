@@ -39,7 +39,7 @@ The application generates two types of exports:
 **Output location:**
 
 ```
-s3://bucket/0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
+s3://bucket/0105-SpeedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 ```
 
 ### Update Export
@@ -63,7 +63,7 @@ s3://bucket/0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 **Output location:**
 
 ```
-s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
+s3://bucket/0105-SpeedLimit/2025-10-06T14-30-00Z/update.xml.gz
 ```
 
 ## Export Process
@@ -179,7 +179,7 @@ if (gzipEnabled) {
 **Example:**
 
 ```
-0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
+0105-SpeedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 ```
 
 See: `infrastructure/s3/S3OutputStream.kt`
@@ -463,7 +463,7 @@ bucket/
 Speed limits use vegobjekttype 105:
 
 ```
-0105-speedLimit/
+0105-SpeedLimit/
 ```
 
 **Padding:** 4 digits, zero-padded

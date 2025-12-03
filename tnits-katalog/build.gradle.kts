@@ -1,6 +1,6 @@
 plugins {
     id("tnits-conventions")
-    id("org.springframework.boot") version "3.5.6"
+    id("org.springframework.boot") version "3.5.8"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.spring") version "2.2.20"
 }
@@ -39,6 +39,5 @@ dependencies {
     testImplementation("com.ninja-squad:springmockk:4.0.2")
 
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:minio")
     testImplementation("no.nav.security:mock-oauth2-server:3.0.0")
 }

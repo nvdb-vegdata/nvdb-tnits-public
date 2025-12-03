@@ -26,8 +26,8 @@ fun KeyValueStore.markRangeCompleted(workerIndex: Int) {
 }
 
 fun KeyValueStore.putLastUpdateCheck(featureType: ExportedFeatureType, timestamp: Instant) {
-    this.put("vegobjekter_${featureType.typeCode}_last_update_check", timestamp, Instant.serializer())
+    this.put("vegobjekter_${featureType.typeId}_last_update_check", timestamp, Instant.serializer())
 }
 
 fun KeyValueStore.getLastUpdateCheck(featureType: ExportedFeatureType): Instant? =
-    this.get("vegobjekter_${featureType.typeCode}_last_update_check", Instant.serializer())
+    this.get("vegobjekter_${featureType.typeId}_last_update_check", Instant.serializer())

@@ -15,15 +15,12 @@ enum class ExportedFeatureType(val typeId: Int, val sourceCode: String, val type
 
     fun getTypePrefix(): String {
         val paddedType = typeId.toString().padStart(4, '0')
-        val typePrefix = "$paddedType-$typeCode"
+        val typePrefix = "$paddedType-$name"
         return typePrefix
     }
 
     companion object {
         val entriesById = entries.associateBy { it.typeId }
         fun from(typeId: Int): ExportedFeatureType = entriesById[typeId] ?: error("Unknown feature typeId: $typeId")
-
-        fun from(typeCode: RoadFeatureTypeCode): ExportedFeatureType = entries.firstOrNull { it.typeCode == typeCode }
-            ?: error("Unknown feature typeCode: $typeCode")
     }
 }

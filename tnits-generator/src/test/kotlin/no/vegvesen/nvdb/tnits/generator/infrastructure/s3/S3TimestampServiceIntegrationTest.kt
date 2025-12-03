@@ -82,7 +82,7 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
             )
 
             timestamps.forEach { timestamp ->
-                val objectKey = "0105-speedLimit/$timestamp/snapshot.xml.gz"
+                val objectKey = "0105-SpeedLimit/$timestamp/snapshot.xml.gz"
                 uploadTestFile(objectKey, "<xml>test snapshot</xml>")
             }
 
@@ -103,7 +103,7 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
             )
 
             timestamps.forEach { timestamp ->
-                val objectKey = "0105-speedLimit/$timestamp/update.xml"
+                val objectKey = "0105-SpeedLimit/$timestamp/update.xml"
                 uploadTestFile(objectKey, "<xml>test update</xml>")
             }
 
@@ -117,9 +117,9 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
 
         should("distinguish between snapshot and update exports") {
             // Arrange - create both types
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>snapshot</xml>")
-            uploadTestFile("0105-speedLimit/2025-01-15T11-00-00Z/update.xml.gz", "<xml>update</xml>")
-            uploadTestFile("0105-speedLimit/2025-01-15T12-00-00Z/snapshot.xml", "<xml>another snapshot</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>snapshot</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T11-00-00Z/update.xml.gz", "<xml>update</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T12-00-00Z/snapshot.xml", "<xml>another snapshot</xml>")
 
             // Act
             val lastSnapshot = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
@@ -135,8 +135,8 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
 
         should("handle mixed file extensions (compressed and uncompressed)") {
             // Arrange
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>compressed</xml>")
-            uploadTestFile("0105-speedLimit/2025-01-15T11-00-00Z/snapshot.xml", "<xml>uncompressed</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/snapshot.xml.gz", "<xml>compressed</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T11-00-00Z/snapshot.xml", "<xml>uncompressed</xml>")
 
             // Act
             val result = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
@@ -148,9 +148,9 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
 
         should("ignore files with malformed timestamps") {
             // Arrange
-            uploadTestFile("0105-speedLimit/not-a-timestamp/snapshot.xml", "<xml>bad timestamp</xml>")
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>good timestamp</xml>")
-            uploadTestFile("0105-speedLimit/malformed-date/snapshot.xml", "<xml>another bad one</xml>")
+            uploadTestFile("0105-SpeedLimit/not-a-timestamp/snapshot.xml", "<xml>bad timestamp</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>good timestamp</xml>")
+            uploadTestFile("0105-SpeedLimit/malformed-date/snapshot.xml", "<xml>another bad one</xml>")
 
             // Act
             val result = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
@@ -162,10 +162,10 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
 
         should("ignore non-export files in the folder structure") {
             // Arrange
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>real export</xml>")
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/readme.txt", "This is not an export")
-            uploadTestFile("0105-speedLimit/2025-01-15T10-00-00Z/backup.bak", "backup file")
-            uploadTestFile("0105-speedLimit/logs/error.log", "log file")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/snapshot.xml", "<xml>real export</xml>")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/readme.txt", "This is not an export")
+            uploadTestFile("0105-SpeedLimit/2025-01-15T10-00-00Z/backup.bak", "backup file")
+            uploadTestFile("0105-SpeedLimit/logs/error.log", "log file")
 
             // Act
             val result = timestampService.getLastSnapshotTimestamp(ExportedFeatureType.SpeedLimit)
@@ -195,7 +195,7 @@ class S3TimestampServiceIntegrationTest : ShouldSpec() {
             )
 
             chronologicalTimestamps.forEach { timestamp ->
-                val objectKey = "0105-speedLimit/$timestamp/snapshot.xml"
+                val objectKey = "0105-SpeedLimit/$timestamp/snapshot.xml"
                 uploadTestFile(objectKey, "<xml>export at $timestamp</xml>")
             }
 

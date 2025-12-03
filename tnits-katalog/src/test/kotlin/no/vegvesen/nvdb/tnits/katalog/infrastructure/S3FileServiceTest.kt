@@ -27,8 +27,8 @@ class S3FileServiceTest : ShouldSpec({
     }
 
     should("transform S3 path slashes to underscores in filename") {
-        val objectName = "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
-        val expectedFileName = "0105-speedLimit_2025-01-15T10-30-00Z_snapshot.xml.gz"
+        val objectName = "0105-SpeedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
+        val expectedFileName = "0105-SpeedLimit_2025-01-15T10-30-00Z_snapshot.xml.gz"
 
         val (_, _, service) = setupMocks()
 
@@ -38,7 +38,7 @@ class S3FileServiceTest : ShouldSpec({
     }
 
     should("retrieve file size from MinIO metadata") {
-        val objectName = "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
+        val objectName = "0105-SpeedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
         val expectedSize = 5242880L // 5 MB
 
         val (_, _, service) = setupMocks(expectedSize)

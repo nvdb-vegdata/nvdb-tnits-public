@@ -106,7 +106,7 @@ INFO  Backfill complete: 1234567 veglenkesekvenser processed
 INFO  Starting backfill of vegobjekter...
 INFO  Backfill complete: 234567 speed limits processed
 INFO  Generating TN-ITS snapshot...
-INFO  Snapshot exported to S3: 0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
+INFO  Snapshot exported to S3: 0105-SpeedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 INFO  NVDB TN-ITS application finished
 ```
 
@@ -125,7 +125,7 @@ Check MinIO console at http://localhost:9001 (login: user / password)
 You should see:
 
 - Bucket: `nvdb-tnits-local-data-01`
-- Folder: `0105-speedLimit/YYYY-MM-DDTHH-MM-SSZ/`
+- Folder: `0105-SpeedLimit/YYYY-MM-DDTHH-MM-SSZ/`
 - Files: `snapshot.xml.gz` and `update.xml.gz`
 
 ### Run the Katalog Service (Optional)
@@ -151,11 +151,13 @@ The katalog service provides an authenticated endpoint for setting admin flags t
 **Authentication:** Requires OAuth2 token with `nvdbapi=admin` scope
 
 **Use cases:**
+
 - Reset entire database (data corruption recovery)
 - Clear road network only (force re-sync)
 - Clear specific feature types (e.g., speed limits)
 
 **Example - Reset road network:**
+
 ```bash
 curl -X POST "http://localhost:8999/api/v1/admin/flags?resetRoadnet=true" \
   -H "Authorization: Bearer YOUR_TOKEN"

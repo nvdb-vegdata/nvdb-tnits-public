@@ -27,14 +27,14 @@ The API uses a **snapshot + incremental update** pattern: fetch a complete datas
 **1. Get the latest snapshot** — your starting point for a complete dataset
 
 ```
-GET /api/v1/tnits/speedLimit/snapshots/latest
+GET /api/v1/tnits/SpeedLimit/snapshots/latest
 ```
 
 **Response:**
 ```json
 {
-  "href": "{BASE_URL}/api/v1/download?path=0105-speedLimit/2025-10-20T04-23-14Z/snapshot.xml.gz",
-  "newUpdates": "{BASE_URL}/api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z"
+  "href": "{BASE_URL}/api/v1/download?path=0105-SpeedLimit/2025-10-20T04-23-14Z/snapshot.xml.gz",
+  "newUpdates": "{BASE_URL}/api/v1/tnits/SpeedLimit/updates?from=2025-10-20T04:23:14Z"
 }
 ```
 
@@ -43,7 +43,7 @@ Download the snapshot file from `href` (GML 3.2 format, gzip compressed). This i
 **2. Poll for updates** — follow the `newUpdates` link to check for changes (e.g., daily)
 
 ```
-GET /api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z
+GET /api/v1/tnits/SpeedLimit/updates?from=2025-10-20T04:23:14Z
 ```
 
 **Response:**
@@ -51,12 +51,12 @@ GET /api/v1/tnits/speedLimit/updates?from=2025-10-20T04:23:14Z
 {
   "updates": [
     {
-      "href": "{BASE_URL}/api/v1/download?path=0105-speedLimit/2025-10-21T04-23-14Z/update.xml.gz",
+      "href": "{BASE_URL}/api/v1/download?path=0105-SpeedLimit/2025-10-21T04-23-14Z/update.xml.gz",
       "timestamp": "2025-10-21T04:23:14Z",
       "size": 1024000
     }
   ],
-  "newUpdates": "{BASE_URL}/api/v1/tnits/speedLimit/updates?from=2025-10-21T04:23:14Z"
+  "newUpdates": "{BASE_URL}/api/v1/tnits/SpeedLimit/updates?from=2025-10-21T04:23:14Z"
 }
 ```
 

@@ -4,14 +4,10 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.vegvesen.nvdb.tnits.common.extensions.OsloZoneId
-import no.vegvesen.nvdb.tnits.common.model.RoadFeatureTypeCode
+import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.katalog.config.AppConfiguration
 import no.vegvesen.nvdb.tnits.katalog.core.api.FileService
-import no.vegvesen.nvdb.tnits.katalog.presentation.model.Snapshot
-import no.vegvesen.nvdb.tnits.katalog.presentation.model.SnapshotResponse
-import no.vegvesen.nvdb.tnits.katalog.presentation.model.SnapshotsResponse
-import no.vegvesen.nvdb.tnits.katalog.presentation.model.Update
-import no.vegvesen.nvdb.tnits.katalog.presentation.model.UpdatesResponse
+import no.vegvesen.nvdb.tnits.katalog.presentation.model.*
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
@@ -32,17 +28,14 @@ class TnitsController(
     private val fileService: FileService,
 ) {
 
-    @Operation(
-        description = """List available road feature types for TN-ITS data export,
-            |based on [TN-ITS codelists](http://spec.tn-its.eu/codelists/RoadFeatureTypeCode.xml).""",
-    )
+    @Operation(description = """List available road feature types for TN-ITS data export.""")
     @GetMapping("/types")
-    fun getExportedFeatureTypeCodes(): List<RoadFeatureTypeCode> = RoadFeatureTypeCode.entries
+    fun getExportedFeatureTypeCodes(): List<ExportedFeatureType> = ExportedFeatureType.entries
 
     @Operation(description = "List available snapshots for a given road feature type.")
     @GetMapping("/{type}/snapshots")
     fun getSnapshots(
-        @PathVariable @Parameter(description = "TN-ITS RoadFeatureTypeCode to list snapshots for, see /api/v1/tnits/types") type: RoadFeatureTypeCode,
+        @PathVariable @Parameter(description = "Road feature type to list snapshots for, see /api/v1/tnits/types") type: ExportedFeatureType,
     ): SnapshotsResponse = fileService.getFileObjects(type, snapshotSuffix)
         .sortedByDescending { it.timestamp }
         .map { (objectName, timestamp, size) ->
@@ -57,25 +50,24 @@ class TnitsController(
 
     @Operation(description = "Get the most recent full snapshot for a given road feature type.")
     @GetMapping("/{type}/snapshots/latest")
-    fun getLatestSnapshot(
-        @PathVariable @Parameter(description = "TN-ITS RoadFeatureTypeCode, see /api/v1/tnits/types") type: RoadFeatureTypeCode,
-    ): SnapshotResponse = fileService.getFileObjects(type, snapshotSuffix)
-        .maxByOrNull { it.timestamp }
-        ?.let { (objectName, timestamp) ->
-            SnapshotResponse(
-                href = getDownloadUrl(objectName),
-                newUpdates = getUpdatesUrl(type, timestamp),
-            )
-        } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+    fun getLatestSnapshot(@PathVariable @Parameter(description = "Road feature type, see /api/v1/tnits/types") type: ExportedFeatureType): SnapshotResponse =
+        fileService.getFileObjects(type, snapshotSuffix)
+            .maxByOrNull { it.timestamp }
+            ?.let { (objectName, timestamp) ->
+                SnapshotResponse(
+                    href = getDownloadUrl(objectName),
+                    newUpdates = getUpdatesUrl(type, timestamp),
+                )
+            } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
 
-    private fun getUpdatesUrl(type: RoadFeatureTypeCode, timestamp: Instant): String = "${appConfiguration.baseUrl}/api/v1/tnits/$type/updates?from=$timestamp"
+    private fun getUpdatesUrl(type: ExportedFeatureType, timestamp: Instant): String = "${appConfiguration.baseUrl}/api/v1/tnits/$type/updates?from=$timestamp"
 
     private fun getDownloadUrl(objectName: String): String = "${appConfiguration.baseUrl}/api/v1/download?path=$objectName"
 
     @Operation(description = "Get delta updates for a given road feature type after a specified timestamp.")
     @GetMapping("/{type}/updates")
     fun getUpdatesFrom(
-        @PathVariable @Parameter(description = "TN-ITS RoadFeatureTypeCode, see /api/v1/tnits/types") type: RoadFeatureTypeCode,
+        @PathVariable @Parameter(description = "Road feature type, see /api/v1/tnits/types") type: ExportedFeatureType,
         @RequestParam @Parameter(
             description = """
 Timestamp to get updates after. ISO-format, can be date (`2025-01-01`) or UTC timestamp (`2025-01-05T12:00:00Z`).

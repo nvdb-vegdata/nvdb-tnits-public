@@ -168,7 +168,7 @@ class S3IntegrationTest : ShouldSpec() {
             exporter.exportSnapshot(exportTimestamp, ExportedFeatureType.SpeedLimit)
 
             // Assert - verify object was uploaded with correct key
-            val expectedKey = "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml"
+            val expectedKey = "0105-SpeedLimit/2025-01-15T10-30-00Z/snapshot.xml"
 
             val statResponse = minioClient.statObject(
                 StatObjectArgs.builder()
@@ -226,7 +226,7 @@ class S3IntegrationTest : ShouldSpec() {
             exporter.exportSnapshot(exportTimestamp, ExportedFeatureType.SpeedLimit)
 
             // Assert - verify GZIP object was uploaded
-            val expectedKey = "0105-speedLimit/2025-01-15T11-45-30Z/snapshot.xml.gz"
+            val expectedKey = "0105-SpeedLimit/2025-01-15T11-45-30Z/snapshot.xml.gz"
 
             val statResponse = minioClient.statObject(
                 StatObjectArgs.builder()

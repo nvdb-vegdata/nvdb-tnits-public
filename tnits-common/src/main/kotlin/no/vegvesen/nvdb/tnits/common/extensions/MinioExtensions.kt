@@ -2,6 +2,7 @@ package no.vegvesen.nvdb.tnits.common.extensions
 
 import io.minio.*
 import io.minio.errors.ErrorResponseException
+import io.minio.messages.DeleteObject
 import java.io.ByteArrayInputStream
 
 fun MinioClient.getOrNull(bucket: String, objectKey: String): ByteArray? = try {
@@ -48,5 +49,45 @@ fun MinioClient.clear(bucket: String, prefix: String = "") {
     )
     for (result in objects) {
         delete(bucket, result.get().objectName())
+    }
+}
+
+fun MinioClient.objectExists(bucket: String, objectName: String): Boolean = try {
+    statObject(
+        StatObjectArgs.builder()
+            .bucket(bucket)
+            .`object`(objectName)
+            .build(),
+    )
+    true
+} catch (e: ErrorResponseException) {
+    if (e.errorResponse().code() == "NoSuchKey") {
+        false
+    } else {
+        throw e
+    }
+}
+
+fun MinioClient.listObjectNames(bucket: String, prefix: String, recursive: Boolean = true): List<String> = listObjects(
+    ListObjectsArgs.builder()
+        .bucket(bucket)
+        .prefix(prefix)
+        .recursive(recursive)
+        .build(),
+)
+    .map { it.get().objectName() }
+    .toList()
+
+fun MinioClient.deleteMultiple(bucket: String, objects: List<String>) {
+    val deleteResults = removeObjects(
+        RemoveObjectsArgs.builder()
+            .bucket(bucket)
+            .objects(objects.map { DeleteObject(it) })
+            .build(),
+    )
+
+    // Trigger deletion and collect any errors
+    for (result in deleteResults) {
+        result.get() // This throws if deletion failed
     }
 }

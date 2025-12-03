@@ -4,7 +4,7 @@ import kotlin.time.Instant
 
 fun parseTimestampFromS3Key(s3Key: String): Instant? {
     return try {
-        // Expected format: 0105-speedLimits/2025-01-15T10-30-00Z/snapshot.xml.gz
+        // Expected format: 0105-SpeedLimits/2025-01-15T10-30-00Z/snapshot.xml.gz
         // Extract timestamp using regex: YYYY-MM-DDTHH-mm-ssZ
         val timestampRegex = Regex("""(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)""")
         val matchResult = timestampRegex.find(s3Key)

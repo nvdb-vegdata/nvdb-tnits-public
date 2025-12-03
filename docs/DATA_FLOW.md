@@ -222,7 +222,7 @@ flowchart TD
   EXPORT["TnitsFeatureExporter<br/>• Parallel processing<br/>• Stream XML"]
   XML["XmlStreamDsl<br/>Generate XML (StAX)"]
   OUT["S3OutputStream or FileOutput"]
-  STORAGE[("S3/MinIO Storage<br/>0105-speedLimit/timestamp/<br/>snapshot.xml.gz")]
+  STORAGE[("S3/MinIO Storage<br/>0105-SpeedLimit/timestamp/<br/>snapshot.xml.gz")]
   CMD --> CACHE
   CACHE --> SCOPE
   SCOPE -->|Snapshot| SNAP
@@ -251,7 +251,7 @@ flowchart TD
 **Output example:**
 
 ```
-s3://bucket/0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
+s3://bucket/0105-SpeedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 ```
 
 #### Update Export
@@ -269,7 +269,7 @@ s3://bucket/0105-speedLimit/2025-10-06T12-00-00Z/snapshot.xml.gz
 **Output example:**
 
 ```
-s3://bucket/0105-speedLimit/2025-10-06T14-30-00Z/update.xml.gz
+s3://bucket/0105-SpeedLimit/2025-10-06T14-30-00Z/update.xml.gz
 ```
 
 ### Parallel Processing

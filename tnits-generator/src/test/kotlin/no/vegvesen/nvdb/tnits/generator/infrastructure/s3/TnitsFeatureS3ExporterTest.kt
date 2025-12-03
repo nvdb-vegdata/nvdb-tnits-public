@@ -18,8 +18,8 @@ class TnitsFeatureS3ExporterTest : ShouldSpec({
         val snapshotKey = generateS3Key(timestamp, TnitsExportType.Snapshot, false, ExportedFeatureType.SpeedLimit)
         val updateKey = generateS3Key(timestamp, TnitsExportType.Update, false, ExportedFeatureType.SpeedLimit)
 
-        snapshotKey shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml"
-        updateKey shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/update.xml"
+        snapshotKey shouldBe "0105-SpeedLimit/2025-01-15T10-30-00Z/snapshot.xml"
+        updateKey shouldBe "0105-SpeedLimit/2025-01-15T10-30-00Z/update.xml"
     }
 
     should("include .gz extension in S3 key when gzip is enabled") {
@@ -30,7 +30,7 @@ class TnitsFeatureS3ExporterTest : ShouldSpec({
         val key = generateS3Key(timestamp, TnitsExportType.Snapshot, true, ExportedFeatureType.SpeedLimit)
 
         // Assert
-        key shouldBe "0105-speedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
+        key shouldBe "0105-SpeedLimit/2025-01-15T10-30-00Z/snapshot.xml.gz"
     }
 
     should("replace colons in timestamp with hyphens in S3 key") {
@@ -42,6 +42,6 @@ class TnitsFeatureS3ExporterTest : ShouldSpec({
 
         // Assert
         key shouldContain "2025-01-15T10-30-45Z"
-        key shouldBe "0105-speedLimit/2025-01-15T10-30-45Z/snapshot.xml"
+        key shouldBe "0105-SpeedLimit/2025-01-15T10-30-45Z/snapshot.xml"
     }
 })

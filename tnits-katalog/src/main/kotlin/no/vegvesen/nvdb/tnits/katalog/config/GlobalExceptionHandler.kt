@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.katalog.core.exceptions.ClientException
 import no.vegvesen.nvdb.tnits.katalog.core.exceptions.DomainException
+import no.vegvesen.nvdb.tnits.katalog.core.exceptions.NotFoundException
 import org.springframework.http.*
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -19,6 +20,13 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler(), WithLogger {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleClientException(e: ClientException) = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST).apply {
         title = "Bad request"
+        detail = e.localizedMessage
+    }
+
+    @ExceptionHandler(NotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleNotFoundException(e: NotFoundException) = ProblemDetail.forStatus(HttpStatus.NOT_FOUND).apply {
+        title = "Not found"
         detail = e.localizedMessage
     }
 
