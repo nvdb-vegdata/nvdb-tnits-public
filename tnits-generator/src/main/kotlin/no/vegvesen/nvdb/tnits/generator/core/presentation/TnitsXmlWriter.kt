@@ -113,8 +113,8 @@ object TnitsXmlWriter : WithLogger {
                     attribute("xlink:href", "http://spec.tn-its.eu/codelists/RoadFeatureTypeCode#${feature.type.typeCode}")
                 }
                 if (feature.properties.any()) {
-                    "properties" {
-                        for ((type, property) in feature.properties) {
+                    for ((type, property) in feature.properties) {
+                        "properties" {
                             "GenericRoadFeatureProperty" {
                                 "type" {
                                     attribute(

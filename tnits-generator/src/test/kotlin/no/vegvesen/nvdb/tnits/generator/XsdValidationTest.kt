@@ -36,6 +36,14 @@ class XsdValidationTest : ShouldSpec() {
                 shouldBeValidXsd(xml)
             }
         }
+
+        context("road numbers") {
+            should("validate expected snapshot against its XSD") {
+                val xml = readFile("915-expected-snapshot.xml")
+
+                shouldBeValidXsd(xml)
+            }
+        }
     }
 }
 
