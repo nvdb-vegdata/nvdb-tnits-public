@@ -161,14 +161,20 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         clock = clock,
     )
 
-    suspend fun setupBackfill(paths: List<String> = readJsonTestResources()) {
+    suspend fun setupBackfill(vararg paths: String) {
+        val paths = paths.toList().ifEmpty { readJsonTestResources() }
         val (veglenkesekvenser, vegobjekter) = readTestData(*paths.toTypedArray())
+        // Initial stream will return all veglenkesekvenser
         coEvery { uberiketApi.streamVeglenkesekvenser() } returns veglenkesekvenser.asFlow()
+        // Next page will return no veglenkesekvenser
         coEvery { uberiketApi.streamVeglenkesekvenser(isNull(true)) } returns emptyFlow()
         for (typeId in mainVegobjektTyper + supportingVegobjektTyper) {
+            // Same pattern; initial stream returns all vegobjekter of a given type
             coEvery { uberiketApi.streamVegobjekter(typeId) } returns
                 vegobjekter.filter { it.typeId == typeId }.asFlow()
+            // Next page returns no vegobjekter of that type
             coEvery { uberiketApi.streamVegobjekter(any(), start = isNull(true)) } returns emptyFlow()
+            // When startdato of first version is needed, auto-paginated endpoint is used instead of stream
             coEvery { uberiketApi.getVegobjekterPaginated(any(), any(), any()) } answers {
                 val typeId = firstArg<Int>()
                 val ids = secondArg<Set<Long>>()

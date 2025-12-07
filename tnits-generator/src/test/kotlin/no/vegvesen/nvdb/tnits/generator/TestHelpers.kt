@@ -15,6 +15,7 @@ import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
+import no.vegvesen.nvdb.tnits.generator.objectMapper
 import java.io.InputStream
 import java.nio.file.Files
 import kotlin.io.path.Path
@@ -34,7 +35,14 @@ fun readJsonTestResources(): List<String> = Files.walk(Path("src/test/resources"
 fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVegobjekt>> {
     val veglenkesekvenser =
         paths.filter { it.startsWith("veglenkesekvens") }.flatMap { path ->
-            objectMapper.readJson<VeglenkesekvenserSide>(path).veglenkesekvenser
+            streamFile(path).use { inputStream ->
+                val jsonNode = objectMapper.readTree(inputStream)
+                if (jsonNode.has("veglenkesekvenser")) {
+                    objectMapper.treeToValue(jsonNode, VeglenkesekvenserSide::class.java).veglenkesekvenser
+                } else {
+                    listOf(objectMapper.treeToValue(jsonNode, Veglenkesekvens::class.java))
+                }
+            }
         }
 
     val vegobjekter = paths.filter { it.startsWith("vegobjekt") }.map { path ->

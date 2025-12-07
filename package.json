@@ -1,0 +1,13 @@
+{
+  "name": "nvdb-tnits-public",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-nvdb": "bun scripts/fetch-nvdb-data.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prettier": "latest"
+  }
+}

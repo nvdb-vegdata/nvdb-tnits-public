@@ -287,28 +287,7 @@ class FeatureTransformer(
         val properties = propertyMapper.getFeatureProperties(vegobjekt)
         val type = ExportedFeatureType.from(vegobjekt.type)
 
-        val isValid = when (type) {
-            ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit) &&
-                vegobjekt.stedfestinger.isNotEmpty()
-
-            ExportedFeatureType.RoadName -> properties[RoadFeaturePropertyType.RoadName].let {
-                it is StringProperty && it.value.isNotBlank()
-            } && vegobjekt.stedfestinger.isNotEmpty()
-
-            ExportedFeatureType.RoadNumber -> {
-                val hasValidRoadNumber = properties[RoadFeaturePropertyType.RoadNumber].let {
-                    it is StringProperty && it.value.isNotBlank()
-                }
-                val hasValidConditionofFacility = properties[RoadFeaturePropertyType.ConditionOfFacility].let {
-                    it is StringProperty && it.value.isNotBlank() &&
-                        !it.value.contains("fictitious") && !it.value.contains("projected")
-                }
-                hasValidRoadNumber && hasValidConditionofFacility && vegobjekt.stedfestinger.isNotEmpty()
-            }
-
-            ExportedFeatureType.MaximumHeight -> properties.containsKey(RoadFeaturePropertyType.MaximumHeight) &&
-                vegobjekt.stedfestinger.isNotEmpty()
-        }
+        val isValid = vegobjekt.stedfestinger.isNotEmpty() && propertiesValidForType(type, properties)
 
         if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= clock.todayIn(OsloZone)) {
             log.warn("Vegobjekt for type ${type.typeCode} med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
@@ -367,5 +346,26 @@ class FeatureTransformer(
             updateType = updateType,
             beginLifespanVersion = vegobjekt.startdato.atStartOfDayIn(OsloZone),
         )
+    }
+
+    private fun propertiesValidForType(type: ExportedFeatureType, properties: Map<RoadFeaturePropertyType, RoadFeatureProperty>): Boolean = when (type) {
+        ExportedFeatureType.SpeedLimit -> properties.containsKey(RoadFeaturePropertyType.MaximumSpeedLimit)
+
+        ExportedFeatureType.RoadName -> properties[RoadFeaturePropertyType.RoadName].let {
+            it is StringProperty && it.value.isNotBlank()
+        }
+
+        ExportedFeatureType.RoadNumber -> {
+            val hasValidRoadNumber = properties[RoadFeaturePropertyType.RoadNumber].let {
+                it is StringProperty && it.value.isNotBlank()
+            }
+            val hasValidConditionofFacility = properties[RoadFeaturePropertyType.ConditionOfFacility].let {
+                it is StringProperty && it.value.isNotBlank() &&
+                    !it.value.contains("fictitious") && !it.value.contains("projected")
+            }
+            hasValidRoadNumber && hasValidConditionofFacility
+        }
+
+        ExportedFeatureType.MaximumHeight -> properties.containsKey(RoadFeaturePropertyType.MaximumHeight)
     }
 }

@@ -37,6 +37,10 @@ bin/
 # VS Code
 .vscode/
 
+# Node.js / Bun
+node_modules/
+bun.lockb
+
 # NetBeans
 /nbproject/private/
 /nbbuild/
@@ -86,3 +90,5 @@ nvdb-api.json.bak
 **/.kotlin/
 
 .playwright-mcp
+
+.claude

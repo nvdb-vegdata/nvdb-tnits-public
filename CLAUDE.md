@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a Kotlin CLI application for synchronizing road network data from the Norwegian Road Database (NVDB) and exporting it in TN-ITS format. The application uses clean architecture principles with RocksDB for storage and Koin for dependency injection.
 
 **For comprehensive documentation, see:**
+
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design and structure
 - [Getting Started](docs/GETTING_STARTED.md) - Setup and first run
 - [Concepts Glossary](docs/CONCEPTS.md) - Domain terminology
@@ -34,6 +35,7 @@ This is a Kotlin CLI application for synchronizing road network data from the No
 ### Dependency Injection
 
 The application uses **Koin with annotations** for dependency injection:
+
 - `@Singleton` - Register services and repositories
 - `@Named("name")` - Distinguish multiple instances of same type
 - `@KoinApplication` - Automatic module discovery and initialization
@@ -71,7 +73,8 @@ kotest_filter_tests="*.generateS3Key should format with padded vegobjekttype for
 ```
 
 **Important test filtering rules:**
-- NEVER use asterisks (*) or wildcards in `--tests` parameter
+
+- NEVER use asterisks (\*) or wildcards in `--tests` parameter
 - ALWAYS use `--tests` with exact class names only (e.g., `--tests="ClassName"`)
 - For test name filtering, use `kotest_filter_tests` environment variable with wildcards
 - Pattern: `kotest_filter_tests="*test name pattern*" ./gradlew test --tests="ExactClassName"`
@@ -98,16 +101,23 @@ See [Testing Guide](docs/TESTING.md) for comprehensive testing documentation.
 
 **IMPORTANT:** All fetched NVDB data must be saved to `tnits-generator/src/test/resources/`
 
+Use the provided TypeScript script to fetch vegobjekter and their related veglenkesekvenser:
+
 ```bash
-# Fetch a vegobjekt by type and ID
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegobjekter/105/323113504?inkluder=alle" | jq > tnits-generator/src/test/resources/vegobjekt-105-323113504.json
+# Fetch a vegobjekt by type and ID (automatically fetches related veglenkesekvenser)
+bun scripts/fetch-nvdb-data.ts <typeId> <vegobjektId>
 
-# Extract veglenkesekvens IDs from vegobjekt (IMPORTANT: IDs are in stedfesting.linjer, NOT lokasjon)
-IDS=$(jq -r '.stedfesting.linjer[].id' tnits-generator/src/test/resources/vegobjekt-105-323113504.json | paste -sd, -)
-
-# Fetch related veglenkesekvenser
-curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekvenser?ider=$IDS" | jq > tnits-generator/src/test/resources/veglenkesekvenser-$(echo $IDS | cut -d, -f1)-$(echo $IDS | rev | cut -d, -f1 | rev).json
+# Example: Fetch vegobjekt type 591, ID 85341377
+bun scripts/fetch-nvdb-data.ts 591 85341377
 ```
+
+The script will:
+
+- Fetch the vegobjekt with `inkluder=alle`
+- Extract veglenkesekvens IDs from `stedfesting.linjer` (NOT from `lokasjon`)
+- Fetch all related veglenkesekvenser
+- Save files with proper naming to `tnits-generator/src/test/resources/`
+- Format JSON output automatically
 
 ### Test Resource Naming
 
@@ -118,4 +128,5 @@ curl "https://nvdbapiles.atlas.vegvesen.no/uberiket/api/v1/vegnett/veglenkesekve
 - Always save to `tnits-generator/src/test/resources/`
 
 See [Concepts Glossary](docs/CONCEPTS.md) for NVDB domain terminology.
+
 - When writing test with ShouldSpec, 'should' will automatically be inserted as the first part of the test name

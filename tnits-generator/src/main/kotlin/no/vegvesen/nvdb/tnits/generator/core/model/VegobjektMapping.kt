@@ -2,13 +2,10 @@ package no.vegvesen.nvdb.tnits.generator.core.model
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
-import no.vegvesen.nvdb.apiles.uberiket.EnumEgenskap
-import no.vegvesen.nvdb.apiles.uberiket.FlyttallEgenskap
-import no.vegvesen.nvdb.apiles.uberiket.HeltallEgenskap
-import no.vegvesen.nvdb.apiles.uberiket.StedfestingLinjer
-import no.vegvesen.nvdb.apiles.uberiket.TekstEgenskap
+import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
+import no.vegvesen.nvdb.tnits.generator.core.extensions.associateNotNullValues
 import kotlin.time.toKotlinInstant
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
@@ -46,12 +43,13 @@ fun ApiVegobjekt.toDomain(overrideValidFrom: LocalDate? = null): Vegobjekt {
         startdato = gyldighetsperiode!!.startdato.toKotlinLocalDate(),
         sluttdato = gyldighetsperiode!!.sluttdato?.toKotlinLocalDate(),
         sistEndret = sistEndret.toInstant().toKotlinInstant(),
-        egenskaper = relevanteEgenskaper.associateWith {
-            when (val egenskap = egenskaper!![it.toString()]) {
+        egenskaper = relevanteEgenskaper.associateNotNullValues {
+            it to when (val egenskap = egenskaper!![it.toString()]) {
                 is FlyttallEgenskap -> FlyttallVerdi(egenskap.verdi)
                 is EnumEgenskap -> EnumVerdi(egenskap.verdi)
                 is TekstEgenskap -> TekstVerdi(egenskap.verdi)
                 is HeltallEgenskap -> HeltallVerdi(egenskap.verdi)
+                null -> null
                 else -> error("Ugyldig egenskap-verdi for egenskap $it: $egenskap")
             }
         },

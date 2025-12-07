@@ -1,0 +1,62 @@
+{
+  "id": 848324148,
+  "versjon": 1,
+  "typeId": 591,
+  "gyldighetsperiode": {
+    "startdato": "2018-03-01"
+  },
+  "egenskaper": {
+    "3868": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.84
+    },
+    "3869": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.79
+    },
+    "3870": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.79
+    },
+    "5270": {
+      "type": "EnumEgenskap",
+      "verdi": 8151
+    },
+    "5778": {
+      "type": "TekstEgenskap",
+      "verdi": "Blaklivegen Felt 2"
+    },
+    "9489": {
+      "type": "DatoEgenskap",
+      "verdi": "2017-08-30"
+    },
+    "9490": {
+      "type": "EnumEgenskap",
+      "verdi": 13366
+    },
+    "10247": {
+      "type": "FlyttallEgenskap",
+      "verdi": 4.5
+    },
+    "11149": {
+      "type": "TekstEgenskap",
+      "verdi": "Etterslep 2017"
+    }
+  },
+  "barn": {},
+  "stedfesting": {
+    "type": "StedfestingLinjer",
+    "linjer": [
+      {
+        "id": 41383,
+        "startposisjon": 0.85513699,
+        "sluttposisjon": 0.86366968,
+        "retning": "MED",
+        "kjorefelt": [
+          "2"
+        ]
+      }
+    ]
+  },
+  "sistEndret": "2025-05-01T13:43:27.445819Z"
+}

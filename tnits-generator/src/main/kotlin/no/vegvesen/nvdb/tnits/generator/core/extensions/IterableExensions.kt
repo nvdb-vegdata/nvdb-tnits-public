@@ -13,3 +13,12 @@ inline fun <reified T> Iterable<T>.forEachChunked(size: Int, block: (List<T>) ->
         block(chunk)
     }
 }
+
+/**
+ * Filters out all entries with null values from the map.
+ */
+@Suppress("UNCHECKED_CAST")
+fun <K, V> Map<K, V>.filterNonNullValues(): Map<K, V & Any> = filterValues { it != null } as Map<K, V & Any>
+
+fun <T, K, V> Iterable<T>.associateNotNullValues(transform: (T) -> Pair<K, V?>): Map<K, V> = associate(transform)
+    .filterNonNullValues()

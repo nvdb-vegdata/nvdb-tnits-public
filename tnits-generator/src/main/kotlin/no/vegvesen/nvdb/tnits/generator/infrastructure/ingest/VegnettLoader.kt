@@ -50,7 +50,7 @@ class VegnettLoader(
             lastId = veglenkesekvenser.lastOrNull()?.id
 
             if (veglenkesekvenser.isEmpty()) {
-                log.info("Ingen veglenkesekvenser å sette inn, backfill fullført.")
+                log.info("Ingen veglenkesekvenser å sette inn, backfill fullført. Totalt ca. ${veglenkerRepository.size()} veglenkesekvenser.")
                 keyValueStore.putValue("veglenkesekvenser_backfill_completed", clock.now())
             } else {
                 val updates = veglenkesekvenser.associate {
