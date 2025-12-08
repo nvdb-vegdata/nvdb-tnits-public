@@ -324,8 +324,9 @@ class FeatureTransformer(
             }
         }
 
-        require(lineStrings.isNotEmpty()) {
-            "Finner ingen veglenker for $type ${vegobjekt.id} med stedfesting ${vegobjekt.stedfestinger}"
+        if (lineStrings.isEmpty()) {
+            log.debug("Finner ingen veglenker for {} {} med stedfesting {}", type, vegobjekt.id, vegobjekt.stedfestinger)
+            return null
         }
 
         val merged = mergeGeometries(lineStrings) ?: error("Klarte ikke slå sammen geometrier for $type ${vegobjekt.id}")

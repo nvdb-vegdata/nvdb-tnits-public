@@ -168,8 +168,6 @@ class CachedVegnett(
         TypeVeg.RUNDKJORING,
         TypeVeg.TRAKTORVEG,
         TypeVeg.GAGATE,
-        TypeVeg.GANG_OG_SYKKELVEG,
-        TypeVeg.GANGVEG,
     ) && isActive(today)
 
     fun getOutgoingVeglenker(nodeId: Long, retning: TillattRetning): Set<Veglenke> {
