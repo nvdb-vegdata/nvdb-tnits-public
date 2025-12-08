@@ -306,7 +306,7 @@ class FeatureTransformer(
         }
 
         if (!isValid) {
-            log.warn("Ugyldig vegobjekt for type ${type.typeCode} med id ${vegobjekt.id}, hopper over")
+            log.debug("Ugyldig vegobjekt for type {} med id {}, hopper over", type.typeCode, vegobjekt.id)
             return null
         }
 
