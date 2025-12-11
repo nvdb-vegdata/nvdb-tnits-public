@@ -164,6 +164,18 @@
           reader.readAsText(file)
         })
 
+      // Strip namespace prefix from property names
+      function stripNamespace(name) {
+        // Handle URL-style namespaces (e.g., "http://inspire.ec.europa.eu/codelist/ConditionOfFacilityValue")
+        const lastSlashIndex = name.lastIndexOf('/')
+        if (lastSlashIndex !== -1) {
+          return name.substring(lastSlashIndex + 1)
+        }
+        // Handle colon-style namespaces (e.g., "nvdb:property")
+        const colonIndex = name.indexOf(':')
+        return colonIndex !== -1 ? name.substring(colonIndex + 1) : name
+      }
+
       // Copy text to clipboard with visual feedback
       function copyToClipboard(elementId) {
         const element = document.getElementById(elementId)
@@ -447,7 +459,11 @@
             popupContent += '<b>Properties:</b><br>'
             properties.forEach((prop) => {
               popupContent +=
-                '&nbsp;&nbsp;<b>' + prop.type + ':</b> ' + prop.value + '<br>'
+                '&nbsp;&nbsp;<b>' +
+                stripNamespace(prop.type) +
+                ':</b> ' +
+                prop.value +
+                '<br>'
             })
           }
           if (validFrom !== null || validTo !== null) {
