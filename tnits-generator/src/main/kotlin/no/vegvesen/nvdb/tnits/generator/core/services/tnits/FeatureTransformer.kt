@@ -114,7 +114,7 @@ class FeatureTransformer(
                         }
                     }
                 } catch (exception: Exception) {
-                    log.error("Error processing vegobjekt with id $id", exception)
+                    log.error("Error processing vegobjekt with id $id: ${exception.localizedMessage}")
                 }
             }
         }
@@ -278,7 +278,7 @@ class FeatureTransformer(
             }
         }
     } catch (e: Exception) {
-        log.error("Error processing ID range ${idRange.startId}-${idRange.endId}", e)
+        log.error("Error processing ID range ${idRange.startId}-${idRange.endId}: ${e.localizedMessage}", e)
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
