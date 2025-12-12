@@ -45,18 +45,6 @@ class FeatureTransformer(
         }
     }
 
-    private val vegkategoriByEgenskapVerdi: Map<Int, String> by lazy {
-        runBlocking {
-            datakatalogApi.getVegkategoriByEgenskapVerdi()
-        }
-    }
-
-    private val vegfaseByEgenskapVerdi: Map<Int, String> by lazy {
-        runBlocking {
-            datakatalogApi.getVegfaseByEgenskapVerdi()
-        }
-    }
-
     fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>, timestamp: Instant): Flow<TnitsFeature> = flow {
         changesById.keys.forEachChunked(fetchSize) { ids ->
             val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
@@ -111,6 +99,14 @@ class FeatureTransformer(
                             } else {
                                 log.debug("Skipping identical feature for vegobjekt $id")
                             }
+                        } else if (previous != null) {
+                            // Feature was valid before, but no longer. Emit as Removed.
+                            emit(
+                                previous.copy(
+                                    updateType = UpdateType.Remove,
+                                    validTo = timestamp.toLocalDateTime(OsloZone).date,
+                                ),
+                            )
                         }
                     }
                 } catch (exception: Exception) {
@@ -148,7 +144,7 @@ class FeatureTransformer(
 
     private fun getRoadNumberProperties(vegobjekt: Vegobjekt): Map<RoadFeaturePropertyType, RoadFeatureProperty> {
         val roadNumberVegkatagori = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_VEGKATAGORI] as? EnumVerdi ?: return emptyMap()
-        val vegkategori = vegkategoriByEgenskapVerdi[roadNumberVegkatagori.verdi]
+        val vegkategori = EgenskapsTyper.vegkategoriTillatteVerdier[roadNumberVegkatagori.verdi]
         val vegnummer = when (val prop = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_VEGNUMMER]) {
             is EnumVerdi -> prop.verdi
             is HeltallVerdi -> prop.verdi
@@ -156,7 +152,7 @@ class FeatureTransformer(
             else -> return emptyMap()
         }
         val roadNumberFase = vegobjekt.egenskaper[EgenskapsTyper.VEGSYSTEM_FASE] as? EnumVerdi ?: return emptyMap()
-        val vegfaseName = vegfaseByEgenskapVerdi[roadNumberFase.verdi]
+        val vegfaseName = EgenskapsTyper.vegfaseTillatteVerdier[roadNumberFase.verdi]
 
         val kommunenummer = if (vegkategori in setOf("K", "S", "P")) {
             vegobjekt.stedfestinger
@@ -361,8 +357,7 @@ class FeatureTransformer(
                 it is StringProperty && it.value.isNotBlank()
             }
             val hasValidConditionofFacility = properties[RoadFeaturePropertyType.ConditionOfFacility].let {
-                it is StringProperty && it.value.isNotBlank() &&
-                    !it.value.contains("fictitious") && !it.value.contains("projected")
+                it is StringProperty && it.value.isNotBlank() && it.value !in setOf("fictitious", "projected")
             }
             hasValidRoadNumber && hasValidConditionofFacility
         }

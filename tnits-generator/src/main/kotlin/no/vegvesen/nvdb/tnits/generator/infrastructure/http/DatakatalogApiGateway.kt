@@ -6,15 +6,12 @@ import io.ktor.client.request.*
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeHeltallenum
-import no.vegvesen.nvdb.apiles.datakatalog.EgenskapstypeTekstenum
 import no.vegvesen.nvdb.apiles.datakatalog.Vegobjekttype
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper
 import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFartsgrenseTillatteVerdier
-import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedFaseTillatteVerdier
-import no.vegvesen.nvdb.tnits.generator.core.model.EgenskapsTyper.hardcodedVegkategoriTillatteVerdier
 
 @Singleton
 class DatakatalogApiGateway(@Named("datakatalogHttpClient") private val httpClient: HttpClient) : WithLogger, DatakatalogApi {
@@ -32,28 +29,5 @@ class DatakatalogApiGateway(@Named("datakatalogHttpClient") private val httpClie
     } catch (exception: Exception) {
         log.warn("Feil ved henting av vegobjekttype ${VegobjektTyper.FARTSGRENSE} fra datakatalogen: $exception. Bruker hardkodede verdier.")
         hardcodedFartsgrenseTillatteVerdier
-    }
-
-    override suspend fun getVegkategoriByEgenskapVerdi(): Map<Int, String> = try {
-        getVegobjekttype(VegobjektTyper.VEGSYSTEM)
-            .egenskapstyper!!
-            .filterIsInstance<EgenskapstypeTekstenum>()
-            .first().tillatteVerdier
-            .associate { it.id to (it.kortnavn ?: "") }
-    } catch (exception: Exception) {
-        log.warn("Feil ved henting av vegkategori fra datakatalogen: $exception. Bruker hardokdede verdier.")
-        hardcodedVegkategoriTillatteVerdier
-    }
-
-    override suspend fun getVegfaseByEgenskapVerdi(): Map<Int, String> = try {
-        getVegobjekttype(VegobjektTyper.VEGSYSTEM)
-            .egenskapstyper!!
-            .filterIsInstance<EgenskapstypeTekstenum>()
-            .single { it.id == EgenskapsTyper.VEGSYSTEM_FASE }
-            .tillatteVerdier
-            .associate { it.id to (it.kortnavn ?: "") }
-    } catch (exception: Exception) {
-        log.warn("Feil ved henting av vegkafase fra datakatalogen: $exception. Bruker hardokdede verdier.")
-        hardcodedFaseTillatteVerdier
     }
 }

@@ -27,7 +27,7 @@ object EgenskapsTyper {
         19642 to 120,
     )
 
-    val hardcodedVegkategoriTillatteVerdier = mapOf(
+    val vegkategoriTillatteVerdier = mapOf(
         19024 to "E",
         19025 to "R",
         19026 to "F",
@@ -36,7 +36,7 @@ object EgenskapsTyper {
         19029 to "S",
     )
 
-    val hardcodedFaseTillatteVerdier = mapOf(
+    val vegfaseTillatteVerdier = mapOf(
         19030 to "P",
         19031 to "A",
         19032 to "V",
