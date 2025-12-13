@@ -18,23 +18,23 @@ import java.nio.file.Files
 
 class VeglenkerRocksDbStoreTest : ShouldSpec() {
     private lateinit var tempDir: String
-    private lateinit var configuration: RocksDbContext
+    private lateinit var dbContext: RocksDbContext
     private lateinit var store: VeglenkerRocksDbStore
 
     override suspend fun beforeSpec(spec: Spec) {
         tempDir = Files.createTempDirectory("rocksdb-veglenker-test").toString()
-        configuration = RocksDbContext(RocksDbConfig(tempDir), enableCompression = true)
-        store = VeglenkerRocksDbStore(configuration, clock)
+        dbContext = RocksDbContext(RocksDbConfig(tempDir), enableCompression = true)
+        store = VeglenkerRocksDbStore(dbContext, clock)
     }
 
     override suspend fun beforeEach(testCase: TestCase) {
-        configuration.clear()
+        dbContext.clear()
         // Recreate the store with fresh references after clearing
-        store = VeglenkerRocksDbStore(configuration, clock)
+        store = VeglenkerRocksDbStore(dbContext, clock)
     }
 
     override suspend fun afterSpec(spec: Spec) {
-        configuration.close()
+        dbContext.close()
         java.io.File(tempDir).deleteRecursively()
     }
 
@@ -144,7 +144,9 @@ class VeglenkerRocksDbStoreTest : ShouldSpec() {
                     3L to null,
                 )
 
-            store.batchUpdate(updates)
+            dbContext.writeBatch {
+                store.batchUpdate(updates)
+            }
 
             store.get(1L) shouldBe testVeglenker1
             store.get(2L) shouldBe testVeglenker2

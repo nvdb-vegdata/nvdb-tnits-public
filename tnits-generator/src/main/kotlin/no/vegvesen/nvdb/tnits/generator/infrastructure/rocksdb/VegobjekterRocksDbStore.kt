@@ -5,14 +5,12 @@ import kotlinx.datetime.todayIn
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
-import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
-import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
+import no.vegvesen.nvdb.tnits.generator.core.api.DirtyVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import java.nio.ByteBuffer
 import kotlin.time.Clock
@@ -167,7 +165,7 @@ class VegobjekterRocksDbStore(
     }
 
     context(context: WriteBatchContext)
-    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>) {
+    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>): DirtyVeglenkesekvenser {
         val dirtyVeglenkesekvenser = mutableSetOf<Long>()
         for ((vegobjektId, update) in updates) {
             val vegobjektKey = getVegobjektKey(vegobjektType, vegobjektId)
@@ -201,19 +199,7 @@ class VegobjekterRocksDbStore(
             }
         }
 
-        // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
-        // and should not mark anything as dirty
-        val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
-        val now = clock.now()
-        if (shouldDirtyMark) {
-            if (vegobjektType in mainVegobjektTyper) {
-                context.publishChangedVegobjekter(vegobjektType, updates.map { VegobjektChange(it.key, it.value.changeType) })
-            }
-
-            if (vegobjektType in supportingVegobjektTyper) {
-                context.publishChangedVeglenkesekvenser(dirtyVeglenkesekvenser, now)
-            }
-        }
+        return dirtyVeglenkesekvenser
     }
 
     private fun createStedfestingerUpserts(

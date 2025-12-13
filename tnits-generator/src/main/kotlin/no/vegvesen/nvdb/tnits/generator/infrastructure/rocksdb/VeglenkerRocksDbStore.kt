@@ -99,19 +99,6 @@ class VeglenkerRocksDbStore(
             }
 
         batchContext.write(columnFamily, operations)
-
-        // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
-        // and should not mark anything as dirty
-        val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
-        if (shouldDirtyMark) {
-            batchContext.publishChangedVeglenkesekvenser(updates.keys, clock.now())
-        }
-    }
-
-    fun batchUpdate(updates: Map<Long, List<Veglenke>?>) {
-        rocksDbContext.writeBatch {
-            batchUpdate(updates)
-        }
     }
 
     fun clear() {

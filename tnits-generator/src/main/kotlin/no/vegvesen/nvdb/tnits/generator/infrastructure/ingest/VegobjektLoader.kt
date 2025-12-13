@@ -4,17 +4,23 @@ import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
-import kotlinx.serialization.builtins.serializer
 import no.vegvesen.nvdb.apiles.uberiket.InkluderIVegobjekt
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
+import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
+import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
+import no.vegvesen.nvdb.tnits.generator.core.api.DirtyVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
+import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterKeyValues.Companion.vegobjekterKeyValues
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
-import no.vegvesen.nvdb.tnits.generator.core.api.getValue
 import no.vegvesen.nvdb.tnits.generator.core.model.*
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.publishChangedVeglenkesekvenser
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.publishChangedVegobjekter
 import kotlin.time.Clock
-import kotlin.time.Instant
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 @Singleton
@@ -25,20 +31,22 @@ class VegobjektLoader(
     private val rocksDbContext: RocksDbContext,
     private val clock: Clock,
 ) : WithLogger {
+
     suspend fun backfillVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
-        val backfillCompleted = keyValueStore.getValue<Instant>("vegobjekter_${typeId}_backfill_completed")
+        val keyValues = keyValueStore.vegobjekterKeyValues(typeId)
+
+        val backfillCompleted = keyValues.getBackfillCompleted()
 
         if (backfillCompleted != null) {
-            log.info("Backfill for type $typeId er allerede fullført den $backfillCompleted")
+            log.info("Backfill for type $typeId er allerede fullført med tidspunkt $backfillCompleted")
             return 0
         }
 
-        var lastId = keyValueStore.getValue<Long>("vegobjekter_${typeId}_backfill_last_id")
+        var lastId = keyValues.getBackfillLastId()
 
         if (lastId == null) {
             log.info("Ingen backfill har blitt startet ennå for type $typeId. Starter backfill...")
-            val now = clock.now()
-            keyValueStore.put("vegobjekter_${typeId}_backfill_started", now, Instant.serializer())
+            keyValues.putBackfillStarted(clock.now())
         } else {
             log.info("Backfill pågår for type $typeId. Gjenopptar fra siste ID: $lastId")
         }
@@ -52,13 +60,13 @@ class VegobjektLoader(
 
             if (vegobjekter.isEmpty()) {
                 log.info("Ingen vegobjekter å sette inn for type $typeId, backfill fullført.")
-                keyValueStore.put("vegobjekter_${typeId}_backfill_completed", clock.now(), Instant.serializer())
+                keyValues.putBackfillCompleted(clock.now())
             } else {
                 val validFromById = if (fetchOriginalStartDate) getOriginalStartdatoWhereDifferent(typeId, vegobjekter) else emptyMap()
 
                 rocksDbContext.writeBatch {
                     vegobjekterRepository.batchInsert(typeId, vegobjekter.toDomainVegobjekter(validFromById))
-                    keyValueStore.put("vegobjekter_${typeId}_backfill_last_id", lastId!!, Long.serializer())
+                    keyValues.putBackfillLastId(lastId!!)
                 }
                 totalCount += vegobjekter.size
                 batchCount++
@@ -109,7 +117,11 @@ class VegobjektLoader(
     }
 
     suspend fun updateVegobjekter(typeId: Int, fetchOriginalStartDate: Boolean): Int {
-        val previousHendelseId = getLastHendelseId(typeId)
+        val keyValues = keyValueStore.vegobjekterKeyValues(typeId)
+
+        val backfillCompleted = keyValues.getBackfillCompleted() ?: error("Backfill for type $typeId er ikke ferdig")
+
+        val previousHendelseId = keyValues.getLastHendelseId() ?: uberiketApi.getLatestVegobjektHendelseId(typeId, backfillCompleted)
 
         log.info("Starter oppdatering av vegobjekter for type $typeId, siste hendelse-ID: $previousHendelseId")
 
@@ -139,11 +151,28 @@ class VegobjektLoader(
         }
 
         rocksDbContext.writeBatch {
-            vegobjekterRepository.batchUpdate(typeId, updatesById)
-            keyValueStore.put("vegobjekter_${typeId}_last_hendelse_id", latestHendelseId, Long.serializer())
+            val dirtyVeglenkesekvenser = vegobjekterRepository.batchUpdate(typeId, updatesById)
+
+            performDirtyMarking(typeId, updatesById, dirtyVeglenkesekvenser)
+
+            keyValues.putLastHendelseId(latestHendelseId)
         }
 
         return changesById.size
+    }
+
+    private fun WriteBatchContext.performDirtyMarking(typeId: Int, updatesById: Map<Long, VegobjektUpdate>, dirtyVeglenkesekvenser: DirtyVeglenkesekvenser) {
+        // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
+        // and should not mark anything as dirty
+        val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
+        val now = clock.now()
+        if (shouldDirtyMark) {
+            if (typeId in mainVegobjektTyper) {
+                publishChangedVegobjekter(typeId, updatesById.map { VegobjektChange(it.key, it.value.changeType) })
+            } else if (typeId in supportingVegobjektTyper) {
+                publishChangedVeglenkesekvenser(dirtyVeglenkesekvenser, now)
+            }
+        }
     }
 
     private suspend fun fetchVegobjekterByIds(typeId: Int, ids: Set<Long>, fetchOriginalStartDate: Boolean): Map<Long, Vegobjekt> =
@@ -164,11 +193,4 @@ class VegobjektLoader(
 
                 id to latest.toDomain(originalStartDate)
             }.toMap()
-
-    private suspend fun getLastHendelseId(typeId: Int): Long =
-        keyValueStore.getValue<Long>("vegobjekter_${typeId}_last_hendelse_id") ?: uberiketApi.getLatestVegobjektHendelseId(
-            typeId,
-            keyValueStore.getValue<Instant>("vegobjekter_${typeId}_backfill_completed")
-                ?: error("Backfill for type $typeId er ikke ferdig"),
-        )
 }

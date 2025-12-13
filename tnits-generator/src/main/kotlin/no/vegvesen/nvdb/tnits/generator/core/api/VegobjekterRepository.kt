@@ -6,9 +6,11 @@ import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektUpdate
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 
+typealias DirtyVeglenkesekvenser = Set<Long>
+
 interface VegobjekterRepository {
     context(_: WriteBatchContext)
-    fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>)
+    fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>): DirtyVeglenkesekvenser
 
     context(_: WriteBatchContext)
     fun batchInsert(vegobjektType: Int, vegobjekter: List<Vegobjekt>)
