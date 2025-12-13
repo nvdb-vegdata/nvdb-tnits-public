@@ -8,6 +8,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Splits a single upstream [Flow] into two synchronized downstream flows, broadcasting each element to both.
+ *
+ * Manages upstream collection lifecycle: collects when at least one consumer is active, cancels when none remain.
+ * Ensures thread safety with [Mutex] and uses [Channel] buffers for distribution. Downstream flows will be synchronized to within [bufferSize].
+ *
+ * @param bufferSize Buffer size for intermediary [Channel]s.
+ */
 private class FlowSplitter<T>(
     private val source: Flow<T>,
     bufferSize: Int,
