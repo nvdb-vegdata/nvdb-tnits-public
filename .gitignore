@@ -92,3 +92,5 @@ nvdb-api.json.bak
 .playwright-mcp
 
 .claude
+
+*.orig

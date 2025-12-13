@@ -3,7 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.config
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addResourceOrFileSource
-import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.*
 import no.vegvesen.nvdb.tnits.common.model.S3Config
 
 data class AppConfig(
