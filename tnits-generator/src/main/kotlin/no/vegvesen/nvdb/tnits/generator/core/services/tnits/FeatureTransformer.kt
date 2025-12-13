@@ -51,6 +51,12 @@ class FeatureTransformer(
 
             val previousFeatures = exportedFeatureStore.getExportedFeatures(ids)
 
+            log.info(
+                "Fant ${vegobjekterById.count {
+                    it.value != null
+                }} lagrede vegobjekter og ${previousFeatures.count()} tidligere eksporterte vegobjekter for $featureType",
+            )
+
             vegobjekterById.forEach { (id, vegobjekt) ->
                 try {
                     val changeType = changesById[id]!!
@@ -196,7 +202,7 @@ class FeatureTransformer(
 
         vegobjekterRepository.findVegobjektIds(featureType.typeId).chunked(superBatchSize).forEach { ids ->
 
-            log.measure("Behandler superbatch med ${ids.size} ${featureType.typeCode}, starter med id ${ids.first()}, totalt $count av $totalCount") {
+            log.measure("Behandler superbatch med ${ids.size} $featureType, starter med id ${ids.first()}, totalt $count av $totalCount") {
                 // Create ranges of work for parallel processing
                 val idRanges = createIdRanges(ids)
 
@@ -211,7 +217,7 @@ class FeatureTransformer(
             }
         }
 
-        log.info("Ferdig med å generere ${featureType.typeCode}. Totalt $count av $totalCount")
+        log.info("Ferdig med å generere $featureType. Totalt $count av $totalCount")
     }
 
     private fun createIdRanges(ids: List<Long>): List<IdRange> {
@@ -269,7 +275,7 @@ class FeatureTransformer(
             try {
                 processVegobjektToFeature(vegobjekt, getFeatureProperties, UpdateType.Snapshot)
             } catch (e: Exception) {
-                log.warn("Error processing ${featureType.typeCode} ${vegobjekt.id}: ${e.localizedMessage}")
+                log.warn("Error processing $featureType ${vegobjekt.id}: ${e.localizedMessage}")
                 null // Skip this item but continue processing others
             }
         }
@@ -286,7 +292,7 @@ class FeatureTransformer(
         val isValid = vegobjekt.stedfestinger.isNotEmpty() && propertiesValidForType(type, properties)
 
         if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= clock.todayIn(OsloZone)) {
-            log.warn("Vegobjekt for type ${type.typeCode} med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
+            log.warn("Vegobjekt for type $type med id ${vegobjekt.id} er ikke lenger gyldig (sluttdato ${vegobjekt.sluttdato}), lukkes")
             return TnitsFeature(
                 id = vegobjekt.id,
                 type = type,
@@ -302,7 +308,7 @@ class FeatureTransformer(
         }
 
         if (!isValid) {
-            log.debug("Ugyldig vegobjekt for type {} med id {}, hopper over", type.typeCode, vegobjekt.id)
+            log.debug("Ugyldig vegobjekt for type {} med id {}, hopper over", type, vegobjekt.id)
             return null
         }
 

@@ -27,13 +27,13 @@ class TnitsExportService(
 ) : WithLogger {
 
     suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, lastUpdate: Instant? = null) {
-        log.info("Genererer delta snapshot av TN-ITS ${featureType.typeCode}...")
+        log.info("Genererer delta snapshot av TN-ITS $featureType...")
         val changesById = dirtyCheckingRepository.getDirtyVegobjektChangesAsMap(featureType.typeId)
 
         if (changesById.isEmpty()) {
             log.info("Ingen endringer siden forrige eksport, hopper over eksport")
         } else {
-            log.info("Eksporterer ${changesById.size} endrede vegobjekter for TN-ITS ${featureType.typeCode}...")
+            log.info("Eksporterer ${changesById.size} endrede vegobjekter for TN-ITS $featureType...")
 
             // TODO: Handle if we lose dirty checking data (e.g., after a crash), by checking timestamp for latest export, and fetching hendelser
 
@@ -52,7 +52,7 @@ class TnitsExportService(
     }
 
     suspend fun exportSnapshot(timestamp: Instant, featureType: ExportedFeatureType) {
-        log.info("Genererer fullt snapshot av TN-ITS ${featureType.typeCode}...")
+        log.info("Genererer fullt snapshot av TN-ITS $featureType...")
         val featureFlow = featureTransformer.generateSnapshot(featureType)
         exportWriter.exportFeatures(timestamp, featureType, featureFlow, TnitsExportType.Snapshot)
     }
@@ -65,7 +65,7 @@ class TnitsExportService(
         for (timestamp in olderThanCutoff) {
             exportWriter.deleteExport(timestamp, TnitsExportType.Update, featureType)
         }
-        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS ${featureType.typeCode} oppdateringer")
+        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS $featureType oppdateringer")
     }
 
     fun deleteOldSnapshots(featureType: ExportedFeatureType) {
@@ -76,6 +76,6 @@ class TnitsExportService(
         for (timestamp in olderThanCutoff) {
             exportWriter.deleteExport(timestamp, TnitsExportType.Snapshot, featureType)
         }
-        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS ${featureType.typeCode} snapshots")
+        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS $featureType snapshots")
     }
 }
