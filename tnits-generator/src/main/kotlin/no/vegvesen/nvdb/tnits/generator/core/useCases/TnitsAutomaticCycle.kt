@@ -93,7 +93,7 @@ class TnitsAutomaticCycle(
         } ?: false
 
         val shouldPerformSnapshot = !hasSnapshotBeenTakenThisMonth
-        val shouldPerformUpdate = !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
+        val shouldPerformUpdate = lastSnapshot != null && !hasUpdateBeenTakenToday && !hasUpdateBeenCheckedToday
         return UpdateStatus(shouldPerformSnapshot, shouldPerformUpdate, lastUpdate)
     }
 }
