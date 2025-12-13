@@ -4,14 +4,19 @@ import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
-import no.vegvesen.nvdb.tnits.generator.core.api.*
+import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
+import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
+import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
+import no.vegvesen.nvdb.tnits.generator.core.api.vegnettKeyValues
 import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
 import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
+import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
+import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.publishChangedVeglenkesekvenser
 import kotlin.time.Clock
-import kotlin.time.Instant
 
 @Singleton
 class VegnettLoader(
@@ -22,20 +27,21 @@ class VegnettLoader(
     private val clock: Clock,
 ) : WithLogger {
 
+    private val keyValues = keyValueStore.vegnettKeyValues
+
     suspend fun backfillVeglenkesekvenser(): Int {
-        val backfillCompleted = keyValueStore.getValue<Instant>("veglenkesekvenser_backfill_completed")
+        val backfillCompleted = keyValues.getBackfillCompleted()
 
         if (backfillCompleted != null) {
             log.info("Backfill for veglenkesekvenser er allerede fullført den $backfillCompleted")
             return 0
         }
 
-        var lastId = keyValueStore.getValue<Long>("veglenkesekvenser_backfill_last_id")
+        var lastId = keyValues.getBackfillLastId()
 
         if (lastId == null) {
             log.info("Ingen veglenkesekvenser backfill har blitt startet ennå. Starter backfill...")
-            val now = clock.now()
-            keyValueStore.putValue("veglenkesekvenser_backfill_started", now)
+            keyValues.putBackfillStarted(clock.now())
         } else {
             log.info("Veglenkesekvenser backfill pågår. Gjenopptar fra siste ID: $lastId")
         }
@@ -51,7 +57,7 @@ class VegnettLoader(
 
             if (veglenkesekvenser.isEmpty()) {
                 log.info("Ingen veglenkesekvenser å sette inn, backfill fullført. Totalt ca. ${veglenkerRepository.size()} veglenkesekvenser.")
-                keyValueStore.putValue("veglenkesekvenser_backfill_completed", clock.now())
+                keyValues.putBackfillCompleted(clock.now())
             } else {
                 val updates = veglenkesekvenser.associate {
                     val domainVeglenker = it.convertToDomainVeglenker(today)
@@ -60,7 +66,7 @@ class VegnettLoader(
 
                 rocksDbContext.writeBatch {
                     veglenkerRepository.batchInsert(updates)
-                    keyValueStore.putValue("veglenkesekvenser_backfill_last_id", lastId!!)
+                    keyValues.putBackfillLastId(lastId!!)
                 }
 
                 totalCount += veglenkesekvenser.size
@@ -75,11 +81,8 @@ class VegnettLoader(
     }
 
     suspend fun updateVeglenkesekvenser(): Int {
-        var lastHendelseId =
-            keyValueStore.getValue<Long>("veglenkesekvenser_last_hendelse_id") ?: uberiketApi.getLatestVeglenkesekvensHendelseId(
-                keyValueStore.getValue<Instant>("veglenkesekvenser_backfill_completed")
-                    ?: error("Veglenkesekvenser backfill er ikke ferdig"),
-            )
+        val backfillCompleted = keyValues.getBackfillCompleted() ?: error("Veglenkesekvenser backfill er ikke ferdig")
+        var lastHendelseId = keyValues.getLastHendelseId() ?: uberiketApi.getLatestVeglenkesekvensHendelseId(backfillCompleted)
 
         var hendelseCount = 0
         var batchCount = 0
@@ -93,7 +96,10 @@ class VegnettLoader(
 
                 rocksDbContext.writeBatch {
                     veglenkerRepository.batchUpdate(updates)
-                    keyValueStore.putValue("veglenkesekvenser_last_hendelse_id", lastHendelseId)
+
+                    performDirtyMarking(updates.keys)
+
+                    keyValues.putLastHendelseId(lastHendelseId)
                 }
                 log.debug("Behandlet ${hendelser.size} hendelser, siste ID: $lastHendelseId")
                 hendelseCount += hendelser.size
@@ -106,6 +112,15 @@ class VegnettLoader(
         log.info("Oppdatering fra $hendelseCount hendelser for veglenkesekvenser fullført. Siste hendelse-ID: $lastHendelseId")
 
         return hendelseCount
+    }
+
+    private fun WriteBatchContext.performDirtyMarking(veglenkesekvensIds: MutableSet<Long>) {
+        // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
+        // and should not mark anything as dirty
+        val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
+        if (shouldDirtyMark) {
+            publishChangedVeglenkesekvenser(veglenkesekvensIds, clock.now())
+        }
     }
 
     private suspend fun fetchUpdates(changedIds: Set<Long>): MutableMap<Long, List<Veglenke>?> {
