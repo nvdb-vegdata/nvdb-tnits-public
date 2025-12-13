@@ -49,6 +49,9 @@ class MainModule {
     fun rocksDbConfig(appConfig: AppConfig) = appConfig.rocksDb
 
     @Singleton
+    fun retentionConfig(appConfig: AppConfig) = appConfig.retention
+
+    @Singleton
     fun clock(): Clock = Clock.System
 
     @Singleton

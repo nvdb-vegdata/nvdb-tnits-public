@@ -7,4 +7,5 @@ import kotlin.time.Instant
 
 interface TnitsFeatureExporter {
     fun openExportStream(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType): OutputStream
+    fun deleteExport(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType)
 }

@@ -14,7 +14,10 @@ data class AppConfig(
     val backup: BackupConfig,
     val rocksDb: RocksDbConfig,
     val httpClient: HttpClientConfig = HttpClientConfig(),
+    val retention: RetentionConfig,
 )
+
+data class RetentionConfig(val deleteSnapshotsAfterDays: Int, val deleteUpdatesAfterDays: Int)
 
 data class RocksDbConfig(val path: String)
 

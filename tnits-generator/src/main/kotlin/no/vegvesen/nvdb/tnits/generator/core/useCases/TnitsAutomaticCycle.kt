@@ -55,9 +55,11 @@ class TnitsAutomaticCycle(
             for ((exportedFeatureType, updateStatus) in updateStatusByType) {
                 if (updateStatus.pendingUpdate) {
                     tnitsExportService.exportUpdate(timestamp, exportedFeatureType, updateStatus.lastUpdate)
+                    tnitsExportService.deleteOldUpdates(exportedFeatureType)
                 }
                 if (updateStatus.pendingSnapshot) {
                     tnitsExportService.exportSnapshot(timestamp, exportedFeatureType)
+                    tnitsExportService.deleteOldSnapshots(exportedFeatureType)
                 }
             }
 

@@ -24,6 +24,42 @@ class S3TimestampService(private val minioClient: MinioClient, exporterConfig: E
 
     override fun getLastUpdateTimestamp(featureType: ExportedFeatureType): Instant? = getLastExportTimestamp(featureType, TnitsExportType.Update)
 
+    override fun findAllSnapshotTimestamps(featureType: ExportedFeatureType): List<Instant> = try {
+        val typePrefix = featureType.getTypePrefix() + "/"
+
+        log.debug("Searching for all snapshot exports in S3 bucket: {}, prefix: {}", bucketName, typePrefix)
+
+        val exports = listExportsByType(typePrefix, TnitsExportType.Snapshot)
+        val timestamps = exports
+            .mapNotNull { parseTimestampFromS3Key(it.objectName()) }
+            .sorted()
+
+        log.debug("Found {} snapshot exports with valid timestamps", timestamps.size)
+
+        timestamps
+    } catch (e: Exception) {
+        log.warn("Failed to retrieve snapshot timestamps from S3")
+        throw e
+    }
+
+    override fun findAllUpdateTimestamps(featureType: ExportedFeatureType): List<Instant> = try {
+        val typePrefix = featureType.getTypePrefix() + "/"
+
+        log.debug("Searching for all update exports in S3 bucket: {}, prefix: {}", bucketName, typePrefix)
+
+        val exports = listExportsByType(typePrefix, TnitsExportType.Update)
+        val timestamps = exports
+            .mapNotNull { parseTimestampFromS3Key(it.objectName()) }
+            .sorted()
+
+        log.debug("Found {} update exports with valid timestamps", timestamps.size)
+
+        timestamps
+    } catch (e: Exception) {
+        log.warn("Failed to retrieve update timestamps from S3")
+        throw e
+    }
+
     private fun getLastExportTimestamp(featureType: ExportedFeatureType, exportType: TnitsExportType): Instant? = try {
         val typePrefix = featureType.getTypePrefix() + "/"
 

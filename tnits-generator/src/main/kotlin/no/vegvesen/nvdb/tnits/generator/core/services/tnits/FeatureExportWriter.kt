@@ -54,4 +54,7 @@ class FeatureExportWriter(
             }
         }
     }
+
+    fun deleteExport(timestamp: Instant, exportType: TnitsExportType, featureType: ExportedFeatureType) =
+        featureExporter.deleteExport(timestamp, exportType, featureType)
 }

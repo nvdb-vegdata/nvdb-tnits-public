@@ -3,11 +3,15 @@ package no.vegvesen.nvdb.tnits.generator.core.services.tnits
 import jakarta.inject.Singleton
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
+import no.vegvesen.nvdb.tnits.generator.config.RetentionConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.DirtyCheckingRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
+import no.vegvesen.nvdb.tnits.generator.core.api.TimestampService
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.putLastUpdateCheck
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 
 @Singleton
@@ -17,6 +21,9 @@ class TnitsExportService(
     private val dirtyCheckingRepository: DirtyCheckingRepository,
     private val vegobjekterRepository: VegobjekterRepository,
     private val keyValueStore: KeyValueStore,
+    private val timestampService: TimestampService,
+    private val clock: Clock,
+    private val retentionConfig: RetentionConfig,
 ) : WithLogger {
 
     suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, lastUpdate: Instant? = null) {
@@ -48,5 +55,27 @@ class TnitsExportService(
         log.info("Genererer fullt snapshot av TN-ITS ${featureType.typeCode}...")
         val featureFlow = featureTransformer.generateSnapshot(featureType)
         exportWriter.exportFeatures(timestamp, featureType, featureFlow, TnitsExportType.Snapshot)
+    }
+
+    fun deleteOldUpdates(featureType: ExportedFeatureType) {
+        val timestamps = timestampService.findAllUpdateTimestamps(featureType)
+        val cutoffDate = clock.now().minus(retentionConfig.deleteUpdatesAfterDays.days)
+        val olderThanCutoff = timestamps.filter { it < cutoffDate }
+        if (olderThanCutoff.isEmpty()) return
+        for (timestamp in olderThanCutoff) {
+            exportWriter.deleteExport(timestamp, TnitsExportType.Update, featureType)
+        }
+        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS ${featureType.typeCode} oppdateringer")
+    }
+
+    fun deleteOldSnapshots(featureType: ExportedFeatureType) {
+        val timestamps = timestampService.findAllSnapshotTimestamps(featureType)
+        val twoMonthsAgo = clock.now().minus(retentionConfig.deleteSnapshotsAfterDays.days)
+        val olderThanCutoff = timestamps.filter { it < twoMonthsAgo }
+        if (olderThanCutoff.isEmpty()) return
+        for (timestamp in olderThanCutoff) {
+            exportWriter.deleteExport(timestamp, TnitsExportType.Snapshot, featureType)
+        }
+        log.info("Slettet ${olderThanCutoff.size} gamle TN-ITS ${featureType.typeCode} snapshots")
     }
 }
