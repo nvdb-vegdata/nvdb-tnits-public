@@ -44,11 +44,23 @@ class VegobjekterRocksDbStore(
             }
         }
 
+        return getVegobjekterByVeglenkesekvensId(vegobjektIds, vegobjektType)
+    }
+
+    override fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<Vegobjekt>> {
+        val vegobjektIds = mutableSetOf<Long>()
+        rocksDbContext.streamKeysByPrefix(columnFamily, getStedfestingPrefix(vegobjektType)).forEach { key ->
+            vegobjektIds.add(getStedfestingVegobjektId(key))
+        }
+        return getVegobjekterByVeglenkesekvensId(vegobjektIds, vegobjektType)
+    }
+
+    private fun getVegobjekterByVeglenkesekvensId(vegobjektIds: MutableSet<Long>, vegobjektType: Int): MutableMap<Long, MutableList<Vegobjekt>> {
         val vegobjektKeys = vegobjektIds.map { getVegobjektKey(vegobjektType, it) }
         val lookup = mutableMapOf<Long, MutableList<Vegobjekt>>()
         rocksDbContext.getBatch(columnFamily, vegobjektKeys).mapNotNull { it?.toVegobjekt() }.forEach { vegobjekt ->
-            val vegobjektVeglenkesekvensIds = vegobjekt.stedfestinger.map { it.veglenkesekvensId }.toSet()
-            for (veglenkesekvensId in vegobjektVeglenkesekvensIds) {
+            val stedfestingIds = vegobjekt.stedfestinger.map { it.veglenkesekvensId }.toSet()
+            for (veglenkesekvensId in stedfestingIds) {
                 lookup.computeIfAbsent(veglenkesekvensId) { mutableListOf() }.add(vegobjekt)
             }
         }
@@ -60,13 +72,13 @@ class VegobjekterRocksDbStore(
         return rocksDbContext.countEntriesByPrefix(columnFamily, prefix)
     }
 
-    override fun cleanOldVersions() {
+    override fun cleanOldVersions(vegobjektType: Int) {
         val today = clock.todayIn(OsloZone)
         val keysToDelete = mutableListOf<ByteArray>()
 
         var count = 0
 
-        rocksDbContext.streamValuesByPrefix(columnFamily, byteArrayOf(VEGOBJEKT_KEY_PREFIX)).forEach { value ->
+        rocksDbContext.streamValuesByPrefix(columnFamily, getVegobjektTypePrefix(vegobjektType)).forEach { value ->
             val vegobjekt = ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), value)
             if (vegobjekt.fjernet || vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
                 val key = getVegobjektKey(vegobjekt.type, vegobjekt.id)
@@ -92,22 +104,6 @@ class VegobjekterRocksDbStore(
             .takeWhile { (key, _) -> getVegobjektId(key) <= idRange.endId }
             .map { (_, value) -> ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), value) }
             .toList()
-    }
-
-    override fun getVegobjektStedfestingLookup(vegobjektType: Int): Map<Long, List<Vegobjekt>> {
-        val vegobjektIds = mutableSetOf<Long>()
-        rocksDbContext.streamKeysByPrefix(columnFamily, getStedfestingPrefix(vegobjektType)).forEach { key ->
-            vegobjektIds.add(getStedfestingVegobjektId(key))
-        }
-        val vegobjektKeys = vegobjektIds.map { getVegobjektKey(vegobjektType, it) }
-        val lookup = mutableMapOf<Long, MutableList<Vegobjekt>>()
-        rocksDbContext.getBatch(columnFamily, vegobjektKeys).mapNotNull { it?.toVegobjekt() }.forEach { vegobjekt ->
-            val veglenkesekvensIds = vegobjekt.stedfestinger.map { it.veglenkesekvensId }.toSet()
-            for (veglenkesekvensId in veglenkesekvensIds) {
-                lookup.computeIfAbsent(veglenkesekvensId) { mutableListOf() }.add(vegobjekt)
-            }
-        }
-        return lookup
     }
 
     private fun ByteArray.toVegobjekt(): Vegobjekt = ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), this)

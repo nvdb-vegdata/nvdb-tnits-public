@@ -45,7 +45,7 @@ class TnitsExportService(
             dirtyCheckingRepository.clearAllDirtyVegobjektIds(featureType.typeId)
             dirtyCheckingRepository.clearAllDirtyVeglenkesekvenser()
 
-            vegobjekterRepository.cleanOldVersions()
+            vegobjekterRepository.cleanOldVersions(featureType.typeId)
         }
 
         keyValueStore.putLastUpdateCheck(featureType, timestamp)
