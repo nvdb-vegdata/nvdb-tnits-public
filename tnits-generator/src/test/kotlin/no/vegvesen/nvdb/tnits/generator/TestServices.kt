@@ -13,6 +13,7 @@ import no.vegvesen.nvdb.tnits.common.model.mainVegobjektTyper
 import no.vegvesen.nvdb.tnits.common.model.supportingVegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.config.BackupConfig
 import no.vegvesen.nvdb.tnits.generator.config.ExporterConfig
+import no.vegvesen.nvdb.tnits.generator.config.RetentionConfig
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
@@ -78,6 +79,11 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         bucket = testBucket,
     )
 
+    val retentionConfig = RetentionConfig(
+        deleteSnapshotsAfterDays = 65,
+        deleteUpdatesAfterDays = 180,
+    )
+
     val tnitsFeatureExporter = TnitsFeatureS3Exporter(
         exporterConfig = exporterConfig,
         minioClient = minioClient,
@@ -91,19 +97,10 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
 
     val dirtyCheckingRepository = DirtyCheckingRocksDbStore(dbContext)
 
-    val featureExportCoordinator = TnitsExportService(
-        featureTransformer = FeatureTransformer(
-            cachedVegnett = cachedVegnett,
-            datakatalogApi = datakatalogApi,
-            openLrService = OpenLrService(cachedVegnett),
-            vegobjekterRepository = vegobjekterRepository,
-            exportedFeatureStore = exportedFeatureStore,
-            clock = clock,
-        ),
-        exportWriter,
-        dirtyCheckingRepository = dirtyCheckingRepository,
-        vegobjekterRepository = vegobjekterRepository,
-        keyValueStore = keyValueStore,
+    val timestampService = S3TimestampService(
+        minioClient = minioClient,
+        exporterConfig = exporterConfig,
+        s3Config = s3Config,
     )
 
     val backfillOrchestrator = NvdbBackfillOrchestrator(vegnettLoader, vegobjektLoader)
@@ -138,12 +135,9 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         dirtyCheckingRepository = dirtyCheckingRepository,
         vegobjekterRepository = vegobjekterRepository,
         keyValueStore = keyValueStore,
-    )
-
-    val timestampService = S3TimestampService(
-        minioClient = minioClient,
-        exporterConfig = exporterConfig,
-        s3Config = s3Config,
+        timestampService = timestampService,
+        clock = clock,
+        retentionConfig = retentionConfig,
     )
 
     val automaticCycle = TnitsAutomaticCycle(

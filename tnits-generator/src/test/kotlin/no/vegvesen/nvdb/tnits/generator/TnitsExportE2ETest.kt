@@ -55,7 +55,7 @@ class TnitsExportE2ETest : ShouldSpec() {
                     val expectedXml = readFile("105-expected-snapshot.xml")
                     setupBackfill()
 
-                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
+                    tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.SpeedLimit)
 
                     val xml = getExportedXml(timestamp, TnitsExportType.Snapshot)
                     xml shouldBe expectedXml
@@ -69,7 +69,7 @@ class TnitsExportE2ETest : ShouldSpec() {
 
                 withTestServices(minioClient) {
                     setupBackfill()
-                    featureExportCoordinator.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
+                    tnitsExportService.exportSnapshot(backfillTimestamp, ExportedFeatureType.SpeedLimit)
                     rocksDbBackupService.createBackup()
                 }
 
@@ -133,7 +133,7 @@ class TnitsExportE2ETest : ShouldSpec() {
                     val expectedXml = readFile("538-expected-snapshot.xml")
                     setupBackfill()
 
-                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.RoadName)
+                    tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.RoadName)
 
                     val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.RoadName)
                     xml shouldBe expectedXml
@@ -148,7 +148,7 @@ class TnitsExportE2ETest : ShouldSpec() {
                     val expectedXml = readFile("915-expected-snapshot.xml")
                     setupBackfill()
 
-                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.RoadNumber)
+                    tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.RoadNumber)
 
                     val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.RoadNumber)
                     xml shouldBe expectedXml
@@ -163,7 +163,7 @@ class TnitsExportE2ETest : ShouldSpec() {
                     val expectedXml = readFile("591-expected-snapshot.xml")
                     setupBackfill()
 
-                    featureExportCoordinator.exportSnapshot(timestamp, ExportedFeatureType.MaximumHeight)
+                    tnitsExportService.exportSnapshot(timestamp, ExportedFeatureType.MaximumHeight)
 
                     val xml = getExportedXml(timestamp, TnitsExportType.Snapshot, ExportedFeatureType.MaximumHeight)
                     xml shouldBe expectedXml

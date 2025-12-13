@@ -161,7 +161,16 @@ class S3IntegrationTest : ShouldSpec() {
                 every { generateSnapshot(any()) } returns flowOf(mockSpeedLimit)
             }
 
-            val exporter = TnitsExportService(mockGenerator, exportWriter, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+            val exporter = TnitsExportService(
+                mockGenerator,
+                exportWriter,
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                timestampService = mockk(relaxed = true),
+                clock = mockk(),
+                retentionConfig = mockk(),
+            )
             val exportTimestamp = Instant.parse("2025-01-15T10:30:00Z")
 
             // Act
@@ -219,7 +228,16 @@ class S3IntegrationTest : ShouldSpec() {
                 mockk(relaxed = true),
             )
 
-            val exporter = TnitsExportService(mockGenerator, exportWriter, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+            val exporter = TnitsExportService(
+                mockGenerator,
+                exportWriter,
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                timestampService = mockk(relaxed = true),
+                clock = mockk(relaxed = true),
+                retentionConfig = mockk(relaxed = true),
+            )
             val exportTimestamp = Instant.parse("2025-01-15T11:45:30Z")
 
             // Act
