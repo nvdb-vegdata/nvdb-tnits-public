@@ -86,5 +86,5 @@ fun ApiVegobjekt.getStedfestingLinjer(): List<VegobjektStedfesting> = when (val 
             )
         }
 
-    else -> error("Forventet StedfestingLinjer, fikk ${stedfesting::class.simpleName}")
+    else -> emptyList()
 }

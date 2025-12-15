@@ -34,9 +34,9 @@ data class Vegobjekt(
     val startdato: LocalDate,
     val sluttdato: LocalDate?,
     val sistEndret: Instant,
-    val egenskaper: Map<Int, EgenskapVerdi>,
-    val stedfestinger: List<VegobjektStedfesting>,
-    val originalStartdato: LocalDate?,
+    val egenskaper: Map<Int, EgenskapVerdi> = emptyMap(),
+    val stedfestinger: List<VegobjektStedfesting> = emptyList(),
+    val originalStartdato: LocalDate? = null,
 
     // Bare satt i det vi laster fra API, ikke lagret. Brukes for å finne original startdato.
     @Transient
