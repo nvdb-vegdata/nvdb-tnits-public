@@ -1,37 +1,32 @@
 package no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb
 
 import jakarta.inject.Singleton
-import kotlinx.serialization.protobuf.ProtoBuf
 import no.vegvesen.nvdb.tnits.generator.core.api.DirtyCheckingRepository
+import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkesekvensId
+import no.vegvesen.nvdb.tnits.generator.core.api.VegobjektId
 import no.vegvesen.nvdb.tnits.generator.core.extensions.toLong
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 
 @Singleton
 class DirtyCheckingRocksDbStore(private val rocksDbContext: RocksDbContext) : DirtyCheckingRepository {
 
-    override fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> = rocksDbContext.streamValuesByPrefix(
+    override fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektId> = rocksDbContext.streamKeysByPrefix(
         ColumnFamily.DIRTY_VEGOBJEKTER,
         VegobjekterRocksDbStore.getVegobjektTypePrefix(vegobjektType),
     )
-        .map { value ->
-            ProtoBuf.decodeFromByteArray(VegobjektChange.serializer(), value)
-        }
+        .map { VegobjekterRocksDbStore.getVegobjektId(it) }
         .toSet()
 
-    override fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange> {
+    override fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektId> {
         // The mapping from supporting vegobjekter to dirty veglenkesekvenser is done at load time, so it is correct
         // to fetch indirectly located vegobjekter here
-        val dirtyVeglenkeIds = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toList()
-        return findStedfestingVegobjektIds(dirtyVeglenkeIds.toSet(), vegobjektType)
-            .map { vegobjektId -> VegobjektChange(vegobjektId, ChangeType.MODIFIED) }
-            .toSet()
+        val veglenkesekvensIds = rocksDbContext.streamAllKeys(ColumnFamily.DIRTY_VEGLENKESEKVENSER).map { it.toLong() }.toSet()
+        return findStedfestingVegobjektIds(veglenkesekvensIds, vegobjektType)
     }
 
-    override fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<Long>, vegobjektType: Int): Set<Long> {
-        val vegobjektIds = mutableSetOf<Long>()
+    override fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<VeglenkesekvensId>, vegobjektType: Int): Set<VegobjektId> {
+        val vegobjektIds = mutableSetOf<VegobjektId>()
 
         for (veglenkesekvensId in veglenkesekvensIds) {
             val prefix = VegobjekterRocksDbStore.getStedfestingPrefix(vegobjektType, veglenkesekvensId)

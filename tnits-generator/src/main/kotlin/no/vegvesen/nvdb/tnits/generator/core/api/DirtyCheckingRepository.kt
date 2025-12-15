@@ -1,7 +1,6 @@
 package no.vegvesen.nvdb.tnits.generator.core.api
 
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
+typealias VegobjektId = Long
 
 interface DirtyCheckingRepository {
     /**
@@ -9,32 +8,29 @@ interface DirtyCheckingRepository {
      * explicitly marked as dirty in the current operation.
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
-     * @return Set of VegobjektChange objects containing ID and change type information
+     * @return Set of VegobjektIDs with direct changes
      */
-    fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
+    fun getDirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektId>
 
     /**
      * Retrieves indirect dirty vegobjekt changes for a specific type. These are changes that
      * resulted from related veglenkesekvenser becoming dirty (e.g., a feature positioned on a dirty veglenke).
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
-     * @return Set of VegobjektChange objects containing ID and ChangeType.MODIFIED.
+     * @return Set of VegobjektIDs located on veglenkesekvenser with changes
      */
-    fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektChange>
+    fun getIndirectDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektId>
 
     /**
-     * Retrieves dirty vegobjekt changes as a map, with deduplication logic that prioritizes
-     * direct changes over indirect changes. When a feature has both direct and indirect changes,
-     * the direct change type is used.
+     * Retrieves dirty vegobjekt IDs, both direct and indirect, for a specific type.
      *
      * @param vegobjektType The vegobjekt type ID to check for dirty objects
-     * @return Map of vegobjekt ID to ChangeType, with direct changes prioritized
+     * @return Set of vegobjekt ID with changes
      */
-    fun getDirtyVegobjektChangesAsMap(vegobjektType: Int): Map<Long, ChangeType> {
-        val directChanges = getDirectDirtyVegobjektChanges(vegobjektType).associate { it.id to it.changeType }
-        val indirectChanges = getIndirectDirtyVegobjektChanges(vegobjektType).associate { it.id to it.changeType }
+    fun getDirtyVegobjektChanges(vegobjektType: Int): Set<VegobjektId> {
+        val directChanges = getDirectDirtyVegobjektChanges(vegobjektType)
+        val indirectChanges = getIndirectDirtyVegobjektChanges(vegobjektType)
 
-        // Direct changes take precedence over indirect changes
         return indirectChanges + directChanges
     }
 
@@ -46,7 +42,7 @@ interface DirtyCheckingRepository {
      * @param vegobjektType The vegobjekt type to find positioned objects for
      * @return Set of vegobjekt IDs that are positioned on any of the given veglenkesekvenser
      */
-    fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<Long>, vegobjektType: Int): Set<Long>
+    fun findStedfestingVegobjektIds(veglenkesekvensIds: Set<VeglenkesekvensId>, vegobjektType: Int): Set<VegobjektId>
 
     /**
      * Clears dirty status for specific vegobjekt IDs of a given type.
@@ -54,7 +50,7 @@ interface DirtyCheckingRepository {
      * @param vegobjektType The vegobjekt type
      * @param vegobjektIds Set of vegobjekt IDs to clear from dirty tracking
      */
-    fun clearDirtyVegobjektIds(vegobjektType: Int, vegobjektIds: Set<Long>)
+    fun clearDirtyVegobjektIds(vegobjektType: Int, vegobjektIds: Set<VegobjektId>)
 
     fun clearAllDirtyVegobjektIds(vegobjektType: Int)
 

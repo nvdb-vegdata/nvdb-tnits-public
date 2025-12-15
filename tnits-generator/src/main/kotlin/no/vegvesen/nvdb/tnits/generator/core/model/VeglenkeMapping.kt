@@ -2,17 +2,22 @@ package no.vegvesen.nvdb.tnits.generator.core.model
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toKotlinLocalDate
-import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.tnits.generator.core.extensions.SRID
 import no.vegvesen.nvdb.tnits.generator.core.extensions.parseWkt
+import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens as ApiVeglenkesekvens
+
+fun ApiVeglenkesekvens.toDomain(today: LocalDate): Veglenkesekvens = Veglenkesekvens(
+    id,
+    convertToDomainVeglenker(today),
+)
 
 /**
- * Konverterer en [Veglenkesekvens] fra Uberiket API til en liste av domenemodellen [Veglenke].
+ * Konverterer en [ApiVeglenkesekvens] fra Uberiket API til en liste av domenemodellen [Veglenke].
  * - Filtrer til bare aktive veglenker.
  * - Mapper start- og sluttporter til posisjoner og noder.
  * - Sorterer veglenkene etter startposisjon.
  */
-fun Veglenkesekvens.convertToDomainVeglenker(today: LocalDate): List<Veglenke> {
+fun ApiVeglenkesekvens.convertToDomainVeglenker(today: LocalDate): List<Veglenke> {
     val portLookup = this.porter.associateBy { it.nummer }
 
     return this.veglenker

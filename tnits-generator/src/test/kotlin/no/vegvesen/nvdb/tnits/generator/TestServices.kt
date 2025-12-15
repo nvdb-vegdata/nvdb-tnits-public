@@ -5,7 +5,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emptyFlow
 import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
 import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
 import no.vegvesen.nvdb.tnits.common.model.S3Config
@@ -155,20 +154,20 @@ class TestServices(minioClient: MinioClient) : AutoCloseable {
         val paths = paths.toList().ifEmpty { readJsonTestResources() }
         val (veglenkesekvenser, vegobjekter) = readTestData(*paths.toTypedArray())
         // Initial stream will return all veglenkesekvenser
-        coEvery { uberiketApi.streamVeglenkesekvenser() } returns veglenkesekvenser.asFlow()
+        coEvery { uberiketApi.getVeglenkesekvenser() } returns veglenkesekvenser
         // Next page will return no veglenkesekvenser
-        coEvery { uberiketApi.streamVeglenkesekvenser(isNull(true)) } returns emptyFlow()
+        coEvery { uberiketApi.getVeglenkesekvenser(start = isNull(true)) } returns emptyList()
         for (typeId in mainVegobjektTyper + supportingVegobjektTyper) {
             // Same pattern; initial stream returns all vegobjekter of a given type
-            coEvery { uberiketApi.streamVegobjekter(typeId) } returns
-                vegobjekter.filter { it.typeId == typeId }.asFlow()
+            coEvery { uberiketApi.getCurrentVegobjekter(typeId) } returns
+                vegobjekter.filter { it.type == typeId }
             // Next page returns no vegobjekter of that type
-            coEvery { uberiketApi.streamVegobjekter(any(), start = isNull(true)) } returns emptyFlow()
+            coEvery { uberiketApi.getCurrentVegobjekter(any(), start = isNull(true)) } returns emptyList()
             // When startdato of first version is needed, auto-paginated endpoint is used instead of stream
             coEvery { uberiketApi.getVegobjekterPaginated(any(), any(), any()) } answers {
                 val typeId = firstArg<Int>()
                 val ids = secondArg<Set<Long>>()
-                vegobjekter.filter { it.typeId == typeId && it.id in ids }.asFlow()
+                vegobjekter.filter { it.type == typeId && it.id in ids }.asFlow()
             }
         }
         backfillOrchestrator.performBackfill()

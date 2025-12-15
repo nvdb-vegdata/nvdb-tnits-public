@@ -9,10 +9,11 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import no.vegvesen.nvdb.tnits.generator.MainModule.Companion.commonConfig
 import no.vegvesen.nvdb.tnits.generator.config.HttpConfig
+import kotlin.time.Duration.Companion.milliseconds
 
 class HttpClientRetryTest : ShouldSpec({
 
-    val testHttpConfig = HttpConfig(logLevel = LogLevel.NONE)
+    val testHttpConfig = HttpConfig(logLevel = LogLevel.NONE, initialRetry = 10.milliseconds)
 
     should("retry on 429 Too Many Requests with exponential backoff") {
         // Arrange

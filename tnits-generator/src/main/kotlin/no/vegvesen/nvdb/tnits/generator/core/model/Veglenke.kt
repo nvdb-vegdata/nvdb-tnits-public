@@ -9,6 +9,11 @@ import no.vegvesen.nvdb.apiles.uberiket.TypeVeg
 import org.locationtech.jts.geom.Geometry
 import java.util.*
 
+data class Veglenkesekvens(
+    val veglenkesekvensId: Long,
+    val veglenker: List<Veglenke>,
+)
+
 @Serializable
 data class Superstedfesting(val veglenksekvensId: Long, val startposisjon: Double, val sluttposisjon: Double, val kjorefelt: List<String> = emptyList())
 

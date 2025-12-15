@@ -55,6 +55,7 @@ fun ApiVegobjekt.toDomain(overrideValidFrom: LocalDate? = null): Vegobjekt {
         },
         stedfestinger = getStedfestingLinjer(),
         originalStartdato = overrideValidFrom,
+        versjon = versjon,
     )
 }
 

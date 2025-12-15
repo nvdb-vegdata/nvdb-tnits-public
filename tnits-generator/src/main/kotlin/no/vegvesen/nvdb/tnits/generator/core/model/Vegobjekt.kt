@@ -3,6 +3,7 @@ package no.vegvesen.nvdb.tnits.generator.core.model
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import no.vegvesen.nvdb.apiles.uberiket.Retning
 import no.vegvesen.nvdb.apiles.uberiket.Sideposisjon
 import kotlin.time.Instant
@@ -36,8 +37,13 @@ data class Vegobjekt(
     val egenskaper: Map<Int, EgenskapVerdi>,
     val stedfestinger: List<VegobjektStedfesting>,
     val originalStartdato: LocalDate?,
-    val fjernet: Boolean = false,
-)
+
+    // Bare satt i det vi laster fra API, ikke lagret. Brukes for å finne original startdato.
+    @Transient
+    val versjon: Int? = null,
+) {
+    fun isActive(date: LocalDate) = startdato <= date && (sluttdato == null || sluttdato > date)
+}
 
 @Serializable
 data class VegobjektStedfesting(

@@ -5,9 +5,8 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
-import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon
 import no.vegvesen.nvdb.tnits.generator.TestServices.Companion.withTestServices
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
+import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektHendelse
 
 class VegobjektLoaderTest : ShouldSpec({
 
@@ -15,23 +14,19 @@ class VegobjektLoaderTest : ShouldSpec({
         should("set ChangeType.DELETED regardless of order") {
             withTestServices(mockk()) {
                 every { uberiketApi.streamVegobjektHendelser(any(), any()) } returns flowOf(
-                    VegobjektNotifikasjon().apply {
-                        hendelseId = 2L
-                        vegobjektId = 123L
-                        vegobjektVersjon = 1
-                        hendelseType = "VegobjektVersjonFjernet"
-                    },
-                    VegobjektNotifikasjon().apply {
-                        hendelseId = 3L
-                        vegobjektId = 123L
-                        vegobjektVersjon = 2
-                        hendelseType = "VegobjektVersjonFjernet"
-                    },
+                    VegobjektHendelse(
+                        hendelseId = 2,
+                        vegobjektId = 123,
+                        vegobjektVersjon = 1,
+                    ),
+                    VegobjektHendelse(
+                        hendelseId = 3,
+                        vegobjektId = 123,
+                        vegobjektVersjon = 2,
+                    ),
                 )
 
-                vegobjektLoader.getVegobjektChanges(105, 1L).changesById shouldBe mapOf(
-                    123L to ChangeType.DELETED,
-                )
+                vegobjektLoader.getVegobjektChanges(105, 1L).changedIds shouldBe setOf(123L)
             }
         }
     }

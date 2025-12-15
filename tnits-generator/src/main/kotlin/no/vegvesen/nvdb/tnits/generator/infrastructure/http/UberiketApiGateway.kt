@@ -12,22 +12,43 @@ import kotlinx.coroutines.flow.flow
 import no.vegvesen.nvdb.apiles.uberiket.*
 import no.vegvesen.nvdb.tnits.generator.core.api.HENDELSER_PAGE_SIZE
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
-import no.vegvesen.nvdb.tnits.generator.core.extensions.executeAsNdjsonFlow
 import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
+import no.vegvesen.nvdb.tnits.generator.core.extensions.getNdjson
+import no.vegvesen.nvdb.tnits.generator.core.extensions.today
+import no.vegvesen.nvdb.tnits.generator.core.model.*
+import no.vegvesen.nvdb.tnits.generator.core.model.Veglenkesekvens
+import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
+import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektHendelse
+import kotlin.time.Clock
 import kotlin.time.Instant
+import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens as ApiVeglenkesekvens
+import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 private const val FETCH_IDER_BATCH_SIZE = 100
 
 @Singleton
-class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: HttpClient) : UberiketApi {
+class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: HttpClient, private val clock: Clock) : UberiketApi {
 
-    override suspend fun streamVeglenkesekvenser(start: Long?, slutt: Long?, ider: Collection<Long>?, antall: Int): Flow<Veglenkesekvens> = httpClient
-        .prepareGet("vegnett/veglenkesekvenser/stream") {
-            parameter("start", start)
-            parameter("slutt", slutt)
-            parameter("ider", ider?.joinToString(","))
-            parameter("antall", antall)
-        }.executeAsNdjsonFlow<Veglenkesekvens>()
+    override suspend fun getVeglenkesekvenser(start: Long?, antall: Int): List<Veglenkesekvens> {
+        require(antall <= 1000)
+        val today = clock.today()
+        return httpClient
+            .getNdjson<ApiVeglenkesekvens>("vegnett/veglenkesekvenser/stream") {
+                parameter("start", start)
+                parameter("antall", antall)
+            }
+            .map { it.toDomain(today) }
+    }
+
+    override suspend fun getVeglenkesekvenserWithIds(ider: Collection<Long>): List<Veglenkesekvens> {
+        require(ider.size <= 100) { "too many IDs will make the URL too long" }
+        val today = clock.today()
+        return httpClient
+            .getNdjson<ApiVeglenkesekvens>("vegnett/veglenkesekvenser/stream") {
+                parameter("ider", ider.joinToString(","))
+            }
+            .map { it.toDomain(today) }
+    }
 
     override suspend fun getLatestVeglenkesekvensHendelseId(tidspunkt: Instant): Long = httpClient
         .get("hendelser/veglenkesekvenser/siste") {
@@ -41,12 +62,19 @@ class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: Ht
             parameter("antall", antall)
         }.body()
 
-    override fun streamVeglenkesekvensHendelser(start: Long?): Flow<VegnettNotifikasjon> = flow {
+    override fun streamVeglenkesekvensHendelser(start: Long?): Flow<VeglenkesekvensHendelse> = flow {
         var lastId = start
         while (true) {
             val side = getVeglenkesekvensHendelser(lastId, HENDELSER_PAGE_SIZE)
 
-            emitAll(side.hendelser.asFlow())
+            emitAll(
+                side.hendelser.map {
+                    VeglenkesekvensHendelse(
+                        veglenkesekvensId = it.nettelementId,
+                        hendelseId = it.hendelseId,
+                    )
+                }.asFlow(),
+            )
 
             lastId = side.metadata.neste?.start?.toLong()
 
@@ -56,12 +84,12 @@ class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: Ht
         }
     }
 
-    override suspend fun streamVegobjekter(typeId: Int, ider: Collection<Long>?, start: Long?, antall: Int): Flow<Vegobjekt> = httpClient
-        .prepareGet("vegobjekter/$typeId/stream") {
+    override suspend fun getCurrentVegobjekter(typeId: Int, start: Long?, antall: Int): List<Vegobjekt> = httpClient
+        .getNdjson<ApiVegobjekt>("vegobjekter/$typeId/stream") {
             parameter("start", start)
             parameter("antall", antall)
-            parameter("ider", ider?.joinToString(","))
-        }.executeAsNdjsonFlow<Vegobjekt>()
+        }
+        .map { it.toDomain() }
 
     override suspend fun getLatestVegobjektHendelseId(typeId: Int, tidspunkt: Instant): Long = httpClient
         .get("hendelser/vegobjekter/$typeId/siste") {
@@ -84,12 +112,14 @@ class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: Ht
         }
     }
 
-    override fun streamVegobjektHendelser(typeId: Int, start: Long?): Flow<VegobjektNotifikasjon> = flow {
+    override fun streamVegobjektHendelser(typeId: Int, start: Long?): Flow<VegobjektHendelse> = flow {
         var lastId = start
         while (true) {
             val side = getVegobjektHendelser(typeId, lastId, HENDELSER_PAGE_SIZE)
 
-            emitAll(side.hendelser.asFlow())
+            side.hendelser.forEach {
+                emit(VegobjektHendelse(hendelseId = it.hendelseId, vegobjektId = it.vegobjektId, vegobjektVersjon = it.vegobjektVersjon))
+            }
 
             lastId = side.metadata.neste?.start?.toLong()
 
@@ -99,15 +129,11 @@ class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: Ht
         }
     }
 
-    override suspend fun getVegobjektHendelser(typeId: Int, start: Long?, antall: Int, startDato: Instant?): VegobjektHendelserSide {
-        require(start == null || startDato == null) { "Kan ikke bruke både start og startDato" }
-        return httpClient
-            .get("hendelser/vegobjekter/$typeId") {
-                parameter("start", start)
-                parameter("antall", antall)
-                parameter("startDato", startDato)
-            }.body()
-    }
+    private suspend fun getVegobjektHendelser(typeId: Int, start: Long?, antall: Int): VegobjektHendelserSide = httpClient
+        .get("hendelser/vegobjekter/$typeId") {
+            parameter("start", start)
+            parameter("antall", antall)
+        }.body()
 
     override fun getVegobjekterPaginated(typeId: Int, vegobjektIds: Set<Long>, inkluderIVegobjekt: Set<InkluderIVegobjekt>): Flow<Vegobjekt> = flow {
         vegobjektIds.forEachChunked(FETCH_IDER_BATCH_SIZE) { chunk ->
@@ -119,7 +145,7 @@ class UberiketApiGateway(@Named("uberiketHttpClient") private val httpClient: Ht
                     parameter("start", start)
                 }.body<VegobjekterSide>()
 
-                emitAll(side.vegobjekter.asFlow())
+                emitAll(side.vegobjekter.map { it.toDomain() }.asFlow())
 
                 start = side.metadata.neste?.start
 

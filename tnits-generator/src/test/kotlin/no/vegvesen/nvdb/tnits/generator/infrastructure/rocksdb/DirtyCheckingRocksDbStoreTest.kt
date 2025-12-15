@@ -9,10 +9,8 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
 import no.vegvesen.nvdb.tnits.common.model.VegobjektTyper
 import no.vegvesen.nvdb.tnits.generator.clock
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
 import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektStedfesting
-import no.vegvesen.nvdb.tnits.generator.core.services.storage.VegobjektChange
 import no.vegvesen.nvdb.tnits.generator.openlr.TempRocksDbConfig.Companion.withTempDb
 
 class DirtyCheckingRocksDbStoreTest :
@@ -35,20 +33,13 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val fartsgrenseChanges = listOf(
-                    VegobjektChange(123L, ChangeType.NEW),
-                    VegobjektChange(456L, ChangeType.MODIFIED),
-                    VegobjektChange(789L, ChangeType.DELETED),
-                )
-                val adresseChanges = listOf(
-                    VegobjektChange(111L, ChangeType.NEW),
-                    VegobjektChange(222L, ChangeType.MODIFIED),
-                )
+                val fartsgrenseIds = setOf(123L, 456L, 789L)
+                val adresseIds = setOf(111L, 222L)
 
                 // Publish dirty changes for different types
                 dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseChanges)
-                    publishChangedVegobjekter(VegobjektTyper.ADRESSE, adresseChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
+                    publishChangedVegobjekter(VegobjektTyper.ADRESSE, adresseIds)
                 }
 
                 // Act
@@ -56,8 +47,8 @@ class DirtyCheckingRocksDbStoreTest :
                 val adresseResult = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.ADRESSE)
 
                 // Assert
-                fartsgrenseResult shouldContainExactlyInAnyOrder fartsgrenseChanges
-                adresseResult shouldContainExactlyInAnyOrder adresseChanges
+                fartsgrenseResult shouldContainExactlyInAnyOrder fartsgrenseIds
+                adresseResult shouldContainExactlyInAnyOrder adresseIds
             }
         }
 
@@ -188,32 +179,24 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val allDirtyChanges = listOf(
-                    VegobjektChange(501L, ChangeType.NEW),
-                    VegobjektChange(502L, ChangeType.MODIFIED),
-                    VegobjektChange(503L, ChangeType.NEW),
-                    VegobjektChange(504L, ChangeType.DELETED),
-                )
+                val allDirtyIds = setOf(501L, 502L, 503L, 504L)
                 val idsToClear = setOf(502L, 504L)
 
                 // Publish dirty changes
                 dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, allDirtyIds)
                 }
 
                 // Verify initial state
                 val initialDirtyChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                initialDirtyChanges shouldContainExactlyInAnyOrder allDirtyChanges
+                initialDirtyChanges shouldContainExactlyInAnyOrder allDirtyIds
 
                 // Act
                 dirtyCheckingStore.clearDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE, idsToClear)
 
                 // Assert
                 val remainingDirtyChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val expectedRemaining = listOf(
-                    VegobjektChange(501L, ChangeType.NEW),
-                    VegobjektChange(503L, ChangeType.NEW),
-                )
+                val expectedRemaining = setOf(501L, 503L)
                 remainingDirtyChanges shouldContainExactlyInAnyOrder expectedRemaining
             }
         }
@@ -222,13 +205,10 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val dirtyChanges = listOf(
-                    VegobjektChange(601L, ChangeType.NEW),
-                    VegobjektChange(602L, ChangeType.MODIFIED),
-                )
+                val dirtyIds = setOf(601L, 602L)
 
                 dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyIds)
                 }
 
                 // Act
@@ -236,7 +216,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Assert
                 val remainingDirtyChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                remainingDirtyChanges shouldContainExactlyInAnyOrder dirtyChanges
+                remainingDirtyChanges shouldContainExactlyInAnyOrder dirtyIds
             }
         }
 
@@ -244,32 +224,25 @@ class DirtyCheckingRocksDbStoreTest :
             withTempDb { dbContext ->
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val fartsgrenseChanges = listOf(
-                    VegobjektChange(701L, ChangeType.NEW),
-                    VegobjektChange(702L, ChangeType.MODIFIED),
-                    VegobjektChange(703L, ChangeType.DELETED),
-                )
-                val feltstrekningChanges = listOf(
-                    VegobjektChange(801L, ChangeType.NEW),
-                    VegobjektChange(802L, ChangeType.MODIFIED),
-                )
+                val fartsgrenseIds = setOf(701L, 702L, 703L)
+                val feltstrekningIds = setOf(801L, 802L)
 
                 // Publish dirty changes for different types
                 dbContext.writeBatch {
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseChanges)
-                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningChanges)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, fartsgrenseIds)
+                    publishChangedVegobjekter(VegobjektTyper.FELTSTREKNING, feltstrekningIds)
                 }
 
                 // Verify initial state
-                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE) shouldContainExactlyInAnyOrder fartsgrenseChanges
-                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningChanges
+                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE) shouldContainExactlyInAnyOrder fartsgrenseIds
+                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningIds
 
                 // Act
                 dirtyCheckingStore.clearAllDirtyVegobjektIds(VegobjektTyper.FARTSGRENSE)
 
                 // Assert
                 dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE).shouldBeEmpty()
-                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningChanges
+                dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FELTSTREKNING) shouldContainExactlyInAnyOrder feltstrekningIds
             }
         }
 
@@ -306,7 +279,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Publish dirty veglenkesekvenser
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, clock.now())
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
                 }
 
                 // Verify initial state - should include indirect changes
@@ -314,7 +287,7 @@ class DirtyCheckingRocksDbStoreTest :
                 val initialIndirectChanges = dirtyCheckingStore.getIndirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
                 initialDirectChanges.shouldBeEmpty()
                 initialIndirectChanges shouldHaveSize 1
-                initialIndirectChanges shouldContain VegobjektChange(901L, ChangeType.MODIFIED)
+                initialIndirectChanges shouldContain 901L
 
                 // Act
                 dirtyCheckingStore.clearAllDirtyVeglenkesekvenser()
@@ -344,27 +317,24 @@ class DirtyCheckingRocksDbStoreTest :
                 // Arrange
                 val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
                 val dirtyVeglenkesekvensIds = setOf(2001L, 2002L)
-                val dirtyVegobjektChanges = listOf(
-                    VegobjektChange(1001L, ChangeType.NEW),
-                    VegobjektChange(1002L, ChangeType.MODIFIED),
-                )
+                val dirtyVegobjektIds = setOf(1001L, 1002L)
 
                 // Publish both dirty veglenkesekvenser and direct vegobjekt changes
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds, clock.now())
-                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyVegobjektChanges)
+                    publishChangedVeglenkesekvenser(dirtyVeglenkesekvensIds)
+                    publishChangedVegobjekter(VegobjektTyper.FARTSGRENSE, dirtyVegobjektIds)
                 }
 
                 // Verify initial state includes both direct and indirect changes
                 val initialChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                initialChanges shouldContainExactlyInAnyOrder dirtyVegobjektChanges
+                initialChanges shouldContainExactlyInAnyOrder dirtyVegobjektIds
 
                 // Act
                 dirtyCheckingStore.clearAllDirtyVeglenkesekvenser()
 
                 // Assert - only direct vegobjekt changes should remain
                 val remainingChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                remainingChanges shouldContainExactlyInAnyOrder dirtyVegobjektChanges
+                remainingChanges shouldContainExactlyInAnyOrder dirtyVegobjektIds
             }
         }
 
@@ -400,7 +370,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Mark only one veglenkesekvens as dirty
                 dbContext.writeBatch {
-                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), clock.now())
+                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens))
                 }
 
                 // Act
@@ -409,124 +379,7 @@ class DirtyCheckingRocksDbStoreTest :
 
                 // Assert
                 directChanges.shouldBeEmpty()
-                indirectChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(5001L, ChangeType.MODIFIED))
-            }
-        }
-
-        should("prioritize NEW over MODIFIED for newly added feature affected indirectly by dirty veglenkesekvens") {
-            withTempDb { dbContext ->
-                // Arrange
-                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
-
-                val dirtyVeglenkesekvens = 4001L
-
-                // Create a NEW FARTSGRENSE on the dirty veglenkesekvens
-                val newFartsgrense = createTestVegobjekt(
-                    id = 6001L,
-                    type = VegobjektTyper.FARTSGRENSE,
-                    stedfestinger = listOf(
-                        VegobjektStedfesting(dirtyVeglenkesekvens, 0.0, 1.0),
-                    ),
-                )
-
-                vegobjekterStore.insert(newFartsgrense)
-
-                // Mark the feature as NEW in dirty tracking
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(
-                        VegobjektTyper.FARTSGRENSE,
-                        listOf(VegobjektChange(6001L, ChangeType.NEW)),
-                    )
-                    // Also mark veglenkesekvens as dirty
-                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), clock.now())
-                }
-
-                // Act
-                val directChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val indirectChanges = dirtyCheckingStore.getIndirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val changesById = dirtyCheckingStore.getDirtyVegobjektChangesAsMap(VegobjektTyper.FARTSGRENSE)
-
-                // Assert
-                directChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(6001L, ChangeType.NEW))
-                indirectChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(6001L, ChangeType.MODIFIED))
-                // Direct change should take precedence in the map
-                changesById[6001L] shouldBe ChangeType.NEW
-            }
-        }
-
-        should("handle feature with NEW and DELETED changes (last one wins)") {
-            withTempDb { dbContext ->
-                // Arrange
-                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-
-                // First mark as NEW, then mark as DELETED
-                // The store implementation will only keep the last change type
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(
-                        VegobjektTyper.FARTSGRENSE,
-                        listOf(VegobjektChange(7001L, ChangeType.NEW)),
-                    )
-                }
-
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(
-                        VegobjektTyper.FARTSGRENSE,
-                        listOf(VegobjektChange(7001L, ChangeType.DELETED)),
-                    )
-                }
-
-                // Act
-                val directChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val indirectChanges = dirtyCheckingStore.getIndirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val changesById = dirtyCheckingStore.getDirtyVegobjektChangesAsMap(VegobjektTyper.FARTSGRENSE)
-
-                // Assert - storage only keeps DELETED (the last change)
-                directChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(7001L, ChangeType.DELETED))
-                indirectChanges.shouldBeEmpty()
-                changesById[7001L] shouldBe ChangeType.DELETED
-            }
-        }
-
-        should("prioritize DELETED over MODIFIED for deleted feature with indirect changes") {
-            withTempDb { dbContext ->
-                // Arrange
-                val dirtyCheckingStore = DirtyCheckingRocksDbStore(dbContext)
-                val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
-
-                val dirtyVeglenkesekvens = 4002L
-
-                // Create a FARTSGRENSE on the dirty veglenkesekvens
-                val fartsgrense = createTestVegobjekt(
-                    id = 8001L,
-                    type = VegobjektTyper.FARTSGRENSE,
-                    stedfestinger = listOf(
-                        VegobjektStedfesting(dirtyVeglenkesekvens, 0.0, 1.0),
-                    ),
-                )
-
-                vegobjekterStore.insert(fartsgrense)
-
-                // Mark the feature as DELETED directly
-                dbContext.writeBatch {
-                    publishChangedVegobjekter(
-                        VegobjektTyper.FARTSGRENSE,
-                        listOf(VegobjektChange(8001L, ChangeType.DELETED)),
-                    )
-                    // Also mark veglenkesekvens as dirty (would add MODIFIED indirectly)
-                    publishChangedVeglenkesekvenser(setOf(dirtyVeglenkesekvens), clock.now())
-                }
-
-                // Act
-                val directChanges = dirtyCheckingStore.getDirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val indirectChanges = dirtyCheckingStore.getIndirectDirtyVegobjektChanges(VegobjektTyper.FARTSGRENSE)
-                val changesById = dirtyCheckingStore.getDirtyVegobjektChangesAsMap(VegobjektTyper.FARTSGRENSE)
-
-                // Assert
-                directChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(8001L, ChangeType.DELETED))
-                indirectChanges shouldContainExactlyInAnyOrder setOf(VegobjektChange(8001L, ChangeType.MODIFIED))
-                // Direct change should take precedence in the map
-                changesById[8001L] shouldBe ChangeType.DELETED
+                indirectChanges shouldContainExactlyInAnyOrder setOf(5001L)
             }
         }
     })

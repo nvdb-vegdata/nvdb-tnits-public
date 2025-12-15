@@ -10,14 +10,14 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
-import no.vegvesen.nvdb.apiles.uberiket.VegobjektNotifikasjon
 import no.vegvesen.nvdb.tnits.common.MinioTestHelper
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.TestServices.Companion.withTestServices
+import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektHendelse
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.TnitsExportType
+import no.vegvesen.nvdb.tnits.generator.core.model.toDomain
 import no.vegvesen.nvdb.tnits.generator.infrastructure.s3.TnitsFeatureS3Exporter.Companion.generateS3Key
 import org.testcontainers.containers.MinIOContainer
-import java.time.LocalDate
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 
@@ -87,20 +87,16 @@ class TnitsExportE2ETest : ShouldSpec() {
                             1L -> {
                                 when (typeId) {
                                     105 -> flowOf(
-                                        VegobjektNotifikasjon().apply {
-                                            hendelseId = 2
-                                            vegobjektTypeId = 105
-                                            vegobjektId = 78712521
-                                            vegobjektVersjon = 1
-                                            hendelseType = "VegobjektVersjonEndret"
-                                        },
-                                        VegobjektNotifikasjon().apply {
-                                            hendelseId = 3
-                                            vegobjektTypeId = 105
-                                            vegobjektId = 83589630
-                                            vegobjektVersjon = 1
-                                            hendelseType = "VegobjektVersjonFjernet"
-                                        },
+                                        VegobjektHendelse(
+                                            hendelseId = 2,
+                                            vegobjektId = 78712521,
+                                            vegobjektVersjon = 1,
+                                        ),
+                                        VegobjektHendelse(
+                                            hendelseId = 3,
+                                            vegobjektId = 83589630,
+                                            vegobjektVersjon = 1,
+                                        ),
                                     )
 
                                     else -> emptyFlow()
@@ -112,9 +108,9 @@ class TnitsExportE2ETest : ShouldSpec() {
                     }
                     // 78712521 er lukket, 83589630 er fjernet
                     coEvery { uberiketApi.getVegobjekterPaginated(105, setOf(78712521, 83589630)) } returns flowOf(
-                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json").apply {
-                            gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
-                        },
+                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json")
+                            .toDomain()
+                            .copy(sluttdato = kotlinx.datetime.LocalDate(2025, 9, 26)),
                     )
                     updateOrchestrator.performUpdate()
 
@@ -197,13 +193,11 @@ class TnitsExportE2ETest : ShouldSpec() {
                             1L -> {
                                 when (typeId) {
                                     105 -> flowOf(
-                                        VegobjektNotifikasjon().apply {
-                                            hendelseId = 2
-                                            vegobjektTypeId = 105
-                                            vegobjektId = 78712521
-                                            vegobjektVersjon = 1
-                                            hendelseType = "VegobjektVersjonEndret"
-                                        },
+                                        VegobjektHendelse(
+                                            hendelseId = 2,
+                                            vegobjektId = 78712521,
+                                            vegobjektVersjon = 1,
+                                        ),
                                     )
 
                                     else -> emptyFlow()
@@ -214,9 +208,9 @@ class TnitsExportE2ETest : ShouldSpec() {
                         }
                     }
                     coEvery { uberiketApi.getVegobjekterPaginated(105, setOf(78712521)) } returns flowOf(
-                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json").apply {
-                            gyldighetsperiode!!.sluttdato = LocalDate.parse("2025-09-26")
-                        },
+                        objectMapper.readApiVegobjekt("vegobjekt-105-78712521.json")
+                            .toDomain()
+                            .copy(sluttdato = kotlinx.datetime.LocalDate(2025, 9, 26)),
                     )
 
                     val secondDay = firstDay.plus(1.days)

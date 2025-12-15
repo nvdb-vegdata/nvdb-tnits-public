@@ -8,6 +8,7 @@ import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.api.DirtyVeglenkesekvenser
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.OsloZone
+import no.vegvesen.nvdb.tnits.generator.core.extensions.toProtobuf
 import no.vegvesen.nvdb.tnits.generator.core.model.*
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.BatchOperation
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
@@ -80,7 +81,7 @@ class VegobjekterRocksDbStore(
 
         rocksDbContext.streamValuesByPrefix(columnFamily, getVegobjektTypePrefix(vegobjektType)).forEach { value ->
             val vegobjekt = ProtoBuf.decodeFromByteArray(Vegobjekt.serializer(), value)
-            if (vegobjekt.fjernet || vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
+            if (vegobjekt.sluttdato != null && vegobjekt.sluttdato <= today) {
                 val key = getVegobjektKey(vegobjekt.type, vegobjekt.id)
                 keysToDelete.add(key)
                 keysToDelete.addAll(
@@ -161,37 +162,49 @@ class VegobjekterRocksDbStore(
     }
 
     context(context: WriteBatchContext)
-    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>): DirtyVeglenkesekvenser {
+    override fun batchUpdate(vegobjektType: Int, updates: Map<Long, Vegobjekt?>): DirtyVeglenkesekvenser {
         val dirtyVeglenkesekvenser = mutableSetOf<Long>()
-        for ((vegobjektId, update) in updates) {
+        for ((vegobjektId, after) in updates) {
             val vegobjektKey = getVegobjektKey(vegobjektType, vegobjektId)
 
-            if (update.changeType == ChangeType.DELETED) {
-                val existingVegobjekt = rocksDbContext.get(columnFamily, vegobjektKey)?.toVegobjekt()
-                    ?: continue // Already deleted
-                val vegobjektDeletion = createVegobjektDeletion(existingVegobjekt)
-                context.write(columnFamily, vegobjektDeletion)
+            val before = rocksDbContext.get(columnFamily, vegobjektKey)?.toVegobjekt()
 
-                val stedfestingerDeletions = existingVegobjekt.stedfestinger.map {
-                    dirtyVeglenkesekvenser.add(it.veglenkesekvensId)
+            if (before == null && after == null) {
+                // shouldn't happen
+                continue
+            } else if (before != null && after == null) {
+                // deleted
+                dirtyVeglenkesekvenser.addAll(before.stedfestinger.map { it.veglenkesekvensId })
+
+                val vegobjektDeletion = BatchOperation.Delete(vegobjektKey)
+                val stedfestingerDeletions = before.stedfestinger.map {
                     getStedfestingKey(it.veglenkesekvensId, vegobjektType, vegobjektId)
                 }.toSet().map { BatchOperation.Delete(it) }
 
-                context.write(columnFamily, stedfestingerDeletions)
-            } else {
-                val vegobjekt = update.vegobjekt
-                    ?: error("Vegobjekt must be provided for change type ${update.changeType} (id=$vegobjektId)")
-                val vegobjektUpsert = createVegobjektUpsert(vegobjekt)
+                context.write(columnFamily, stedfestingerDeletions + vegobjektDeletion)
+            } else if (after != null) {
+                // new or modified
+                val vegobjektUpsert = createVegobjektUpsert(after)
                 context.write(columnFamily, vegobjektUpsert)
 
-                val stedfestingerByVeglenkesekvens = vegobjekt.stedfestinger.groupBy { it.veglenkesekvensId }
-                val stedfestingerUpserts = createStedfestingerUpserts(vegobjektType, vegobjekt.id, stedfestingerByVeglenkesekvens)
+                val stedfestingerUpserts = after.stedfestinger.groupBy { it.veglenkesekvensId }.map { (veglenkesekvensId, stedfestinger) ->
+                    val key = getStedfestingKey(veglenkesekvensId, vegobjektType, vegobjektId)
+                    val value = stedfestinger.toProtobuf()
+                    BatchOperation.Put(key, value)
+                }
                 context.write(columnFamily, stedfestingerUpserts)
+                dirtyVeglenkesekvenser.addAll(after.stedfestinger.map { it.veglenkesekvensId })
 
-                val removedVeglenkesekvensIds = findRemovedVeglenkesekvensIds(vegobjektType, vegobjekt.id, stedfestingerByVeglenkesekvens)
-                val stedfestingerDeletions = createStedfestingerDeletions(vegobjektType, vegobjekt.id, removedVeglenkesekvensIds)
-                context.write(columnFamily, stedfestingerDeletions)
-                dirtyVeglenkesekvenser.addAll(stedfestingerByVeglenkesekvens.keys + removedVeglenkesekvensIds)
+                if (before != null) {
+                    val removedVeglenkesekvensIds =
+                        before.stedfestinger.map { it.veglenkesekvensId }.toSet() - after.stedfestinger.map { it.veglenkesekvensId }.toSet()
+                    val stedfestingerDeletions =
+                        removedVeglenkesekvensIds.map {
+                            getStedfestingKey(it, vegobjektType, vegobjektId)
+                        }.toSet().map { BatchOperation.Delete(it) }
+                    context.write(columnFamily, stedfestingerDeletions)
+                    dirtyVeglenkesekvenser.addAll(removedVeglenkesekvensIds)
+                }
             }
         }
 
@@ -230,8 +243,6 @@ class VegobjekterRocksDbStore(
         val removedVedlenkesekvensIds = existingStedfestinger.keys - stedfestingerByVeglenkesekvens.keys
         return removedVedlenkesekvensIds
     }
-
-    private fun createVegobjektDeletion(vegobjekt: Vegobjekt): BatchOperation.Put = createVegobjektUpsert(vegobjekt.copy(fjernet = true))
 
     private fun createVegobjektUpsert(vegobjekt: Vegobjekt): BatchOperation.Put {
         val serializedVegobjekt = ProtoBuf.encodeToByteArray(Vegobjekt.serializer(), vegobjekt)

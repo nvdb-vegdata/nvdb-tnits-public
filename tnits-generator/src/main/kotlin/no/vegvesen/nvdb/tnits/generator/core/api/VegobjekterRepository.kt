@@ -3,14 +3,13 @@ package no.vegvesen.nvdb.tnits.generator.core.api
 import no.vegvesen.nvdb.tnits.generator.core.model.IdRange
 import no.vegvesen.nvdb.tnits.generator.core.model.StedfestingUtstrekning
 import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
-import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektUpdate
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 
 typealias DirtyVeglenkesekvenser = Set<Long>
 
 interface VegobjekterRepository {
     context(_: WriteBatchContext)
-    fun batchUpdate(vegobjektType: Int, updates: Map<Long, VegobjektUpdate>): DirtyVeglenkesekvenser
+    fun batchUpdate(vegobjektType: Int, updates: Map<Long, Vegobjekt?>): DirtyVeglenkesekvenser
 
     context(_: WriteBatchContext)
     fun batchInsert(vegobjektType: Int, vegobjekter: List<Vegobjekt>)

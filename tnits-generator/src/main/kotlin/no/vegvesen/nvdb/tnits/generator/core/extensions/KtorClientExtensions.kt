@@ -1,5 +1,7 @@
 package no.vegvesen.nvdb.tnits.generator.core.extensions
 
+import io.ktor.client.*
+import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
@@ -29,6 +31,23 @@ inline fun <reified T> ByteReadChannel.ndjsonFlow(): Flow<T> = flow {
         val item = objectMapper.readValue(line, T::class.java)
         emit(item)
     }
+}
+
+suspend inline fun <reified T> HttpClient.getNdjson(url: String, crossinline requestBuilder: HttpRequestBuilder.() -> Unit = {}): List<T> {
+    val response: HttpResponse = get(url, requestBuilder)
+    val channel: ByteReadChannel = response.bodyAsChannel()
+
+    val list = mutableListOf<T>()
+
+    while (!channel.isClosedForRead) {
+        val line = channel.readUTF8Line() ?: break
+        val trimmed = line.trim()
+        if (trimmed.isEmpty()) continue
+        val item = objectMapper.readValue(trimmed, T::class.java)
+        list.add(item)
+    }
+
+    return list
 }
 
 // Generic ndjson flow extension for HttpStatement

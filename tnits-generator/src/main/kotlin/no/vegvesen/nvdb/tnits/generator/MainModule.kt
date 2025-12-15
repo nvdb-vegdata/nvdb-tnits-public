@@ -108,7 +108,7 @@ class MainModule {
             expectSuccess = true
             configureJackson()
             configureLogging(httpConfig)
-            configureRetry()
+            configureRetry(httpConfig)
             configureTimeouts()
         }
 
@@ -120,7 +120,7 @@ class MainModule {
             }
         }
 
-        private fun <T : HttpClientEngineConfig> HttpClientConfig<T>.configureRetry() {
+        private fun <T : HttpClientEngineConfig> HttpClientConfig<T>.configureRetry(httpConfig: HttpConfig) {
             install(HttpRequestRetry) {
                 maxRetries = 5
                 retryIf { _, response ->
@@ -128,7 +128,7 @@ class MainModule {
                         response.status == HttpStatusCode.TooManyRequests // 429 rate limiting
                 }
                 retryOnException(retryOnTimeout = true)
-                exponentialDelay(base = 2.0, maxDelayMs = 30_000)
+                exponentialDelay(baseDelayMs = httpConfig.initialRetry.inWholeMilliseconds, base = 2.0, maxDelayMs = 30_000)
 
                 modifyRequest { request ->
                     log.warn("Retrying API request to ${request.url}")

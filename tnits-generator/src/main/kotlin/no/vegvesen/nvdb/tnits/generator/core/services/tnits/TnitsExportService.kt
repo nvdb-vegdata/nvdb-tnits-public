@@ -28,7 +28,7 @@ class TnitsExportService(
 
     suspend fun exportUpdate(timestamp: Instant, featureType: ExportedFeatureType, lastUpdate: Instant? = null) {
         log.info("Genererer delta snapshot av TN-ITS $featureType...")
-        val changesById = dirtyCheckingRepository.getDirtyVegobjektChangesAsMap(featureType.typeId)
+        val changesById = dirtyCheckingRepository.getDirtyVegobjektChanges(featureType.typeId)
 
         if (changesById.isEmpty()) {
             log.info("Ingen endringer siden forrige eksport, hopper over eksport")

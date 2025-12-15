@@ -7,8 +7,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.TestServices.Companion.withTestServices
-import no.vegvesen.nvdb.tnits.generator.core.model.ChangeType
-import no.vegvesen.nvdb.tnits.generator.core.model.VegobjektUpdate
 import no.vegvesen.nvdb.tnits.generator.core.model.tnits.UpdateType
 import kotlin.time.Instant
 
@@ -31,13 +29,12 @@ class FeatureTransformerTest : ShouldSpec() {
                 // Store it as the "previously exported" feature
                 exportedFeatureStore.batchUpdate(mapOf(vegobjektId to originalFeature))
 
-                val changesById = mapOf(vegobjektId to ChangeType.MODIFIED)
                 val timestamp = Instant.parse("2025-01-15T10:00:00Z")
 
                 // Act
                 val emittedFeatures = featureTransformer.generateFeaturesUpdate(
                     ExportedFeatureType.SpeedLimit,
-                    changesById,
+                    setOf(vegobjektId),
                     timestamp,
                 ).toList()
 
@@ -62,20 +59,19 @@ class FeatureTransformerTest : ShouldSpec() {
                 // Store it as the "previously exported" feature
                 exportedFeatureStore.batchUpdate(mapOf(vegobjektId to originalFeature))
 
-                val changesById = mapOf(vegobjektId to ChangeType.MODIFIED)
                 val timestamp = Instant.parse("2025-01-15T10:00:00Z")
 
                 // Override the vegobjekt with an invalid one
                 val vegobjekt = vegobjekterRepository.findVegobjekt(105, vegobjektId)!!
                 val invalidVegobjekt = vegobjekt.copy(egenskaper = emptyMap())
                 dbContext.writeBatch {
-                    vegobjekterRepository.batchUpdate(105, mapOf(vegobjektId to VegobjektUpdate(vegobjektId, ChangeType.MODIFIED, invalidVegobjekt)))
+                    vegobjekterRepository.batchUpdate(105, mapOf(vegobjektId to invalidVegobjekt))
                 }
 
                 // Act
                 val emittedFeatures = featureTransformer.generateFeaturesUpdate(
                     ExportedFeatureType.SpeedLimit,
-                    changesById,
+                    setOf(vegobjektId),
                     timestamp,
                 ).toList()
 

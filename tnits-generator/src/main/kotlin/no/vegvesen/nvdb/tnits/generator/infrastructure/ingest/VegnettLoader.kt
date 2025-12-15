@@ -2,16 +2,12 @@ package no.vegvesen.nvdb.tnits.generator.infrastructure.ingest
 
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.chunked
-import kotlinx.coroutines.flow.toList
 import no.vegvesen.nvdb.tnits.common.extensions.WithLogger
 import no.vegvesen.nvdb.tnits.generator.core.api.KeyValueStore
 import no.vegvesen.nvdb.tnits.generator.core.api.UberiketApi
 import no.vegvesen.nvdb.tnits.generator.core.api.VeglenkerRepository
 import no.vegvesen.nvdb.tnits.generator.core.api.vegnettKeyValues
-import no.vegvesen.nvdb.tnits.generator.core.extensions.forEachChunked
-import no.vegvesen.nvdb.tnits.generator.core.extensions.today
 import no.vegvesen.nvdb.tnits.generator.core.model.Veglenke
-import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.ColumnFamily
 import no.vegvesen.nvdb.tnits.generator.core.services.storage.WriteBatchContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
@@ -49,33 +45,28 @@ class VegnettLoader(
         var totalCount = 0
         var batchCount = 0
 
-        val today = clock.today()
-
         do {
-            val veglenkesekvenser = uberiketApi.streamVeglenkesekvenser(start = lastId).toList()
-            lastId = veglenkesekvenser.lastOrNull()?.id
+            val veglenkesekvensIdAndVeglenker = uberiketApi.getVeglenkesekvenser(start = lastId).toList()
+            lastId = veglenkesekvensIdAndVeglenker.lastOrNull()?.veglenkesekvensId
 
-            if (veglenkesekvenser.isEmpty()) {
+            if (veglenkesekvensIdAndVeglenker.isEmpty()) {
                 log.info("Ingen veglenkesekvenser å sette inn, backfill fullført. Totalt ca. ${veglenkerRepository.size()} veglenkesekvenser.")
                 keyValues.putBackfillCompleted(clock.now())
             } else {
-                val updates = veglenkesekvenser.associate {
-                    val domainVeglenker = it.convertToDomainVeglenker(today)
-                    it.id to domainVeglenker
-                }
+                val veglenkerById = veglenkesekvensIdAndVeglenker.associate { it.veglenkesekvensId to it.veglenker }
 
                 rocksDbContext.writeBatch {
-                    veglenkerRepository.batchInsert(updates)
+                    veglenkerRepository.batchInsert(veglenkerById)
                     keyValues.putBackfillLastId(lastId!!)
                 }
 
-                totalCount += veglenkesekvenser.size
+                totalCount += veglenkesekvensIdAndVeglenker.size
                 batchCount++
                 if (batchCount % 50 == 0) {
                     log.info("Lastet $totalCount veglenkesekvenser")
                 }
             }
-        } while (veglenkesekvenser.isNotEmpty())
+        } while (veglenkesekvensIdAndVeglenker.isNotEmpty())
 
         return totalCount
     }
@@ -91,7 +82,7 @@ class VegnettLoader(
             .collect { hendelser ->
                 lastHendelseId = hendelser.last().hendelseId
 
-                val changedIds = hendelser.map { it.nettelementId }.toSet()
+                val changedIds = hendelser.map { it.veglenkesekvensId }.toSet()
                 val updates = fetchUpdates(changedIds)
 
                 rocksDbContext.writeBatch {
@@ -114,45 +105,23 @@ class VegnettLoader(
         return hendelseCount
     }
 
-    private fun WriteBatchContext.performDirtyMarking(veglenkesekvensIds: MutableSet<Long>) {
+    private fun WriteBatchContext.performDirtyMarking(veglenkesekvensIds: Set<Long>) {
         // If there are no EXPORTED_FEATURES yet it means that we are still in the initial backfill phase
         // and should not mark anything as dirty
         val shouldDirtyMark = rocksDbContext.hasAnyKeys(ColumnFamily.EXPORTED_FEATURES)
         if (shouldDirtyMark) {
-            publishChangedVeglenkesekvenser(veglenkesekvensIds, clock.now())
+            publishChangedVeglenkesekvenser(veglenkesekvensIds)
         }
     }
 
-    private suspend fun fetchUpdates(changedIds: Set<Long>): MutableMap<Long, List<Veglenke>?> {
-        val updates = mutableMapOf<Long, List<Veglenke>?>()
+    private suspend fun fetchUpdates(changedIds: Set<Long>): Map<Long, List<Veglenke>?> {
+        val veglenkerById = changedIds.chunked(100).flatMap { chunk ->
+            uberiketApi.getVeglenkesekvenserWithIds(chunk).toList()
+        }.associate { it.veglenkesekvensId to it.veglenker }
 
-        val today = clock.today()
-
-        // Process changed veglenkesekvenser in chunks
-        changedIds.forEachChunked(100) { chunk ->
-            var start: Long? = null
-            do {
-                val batch =
-                    uberiketApi
-                        .streamVeglenkesekvenser(start = start, ider = chunk)
-                        .toList()
-
-                if (batch.isNotEmpty()) {
-                    batch.forEach { veglenkesekvens ->
-                        val domainVeglenker = veglenkesekvens.convertToDomainVeglenker(today)
-                        updates[veglenkesekvens.id] = domainVeglenker
-                    }
-                    start = batch.maxOf { it.id }
-                }
-            } while (batch.isNotEmpty())
+        // IDs that have no result from API will be marked as null, for deletion
+        return changedIds.associateWith {
+            veglenkerById[it]
         }
-
-        // Handle deleted veglenkesekvenser (those that didn't return data)
-        val foundIds = updates.keys
-        val deletedIds = changedIds - foundIds
-        deletedIds.forEach { deletedId ->
-            updates[deletedId] = null // Mark for deletion
-        }
-        return updates
     }
 }

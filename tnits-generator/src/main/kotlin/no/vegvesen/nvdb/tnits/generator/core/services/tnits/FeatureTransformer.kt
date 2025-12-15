@@ -16,6 +16,7 @@ import no.vegvesen.nvdb.tnits.common.extensions.measure
 import no.vegvesen.nvdb.tnits.common.model.ExportedFeatureType
 import no.vegvesen.nvdb.tnits.generator.core.api.DatakatalogApi
 import no.vegvesen.nvdb.tnits.generator.core.api.ExportedFeatureRepository
+import no.vegvesen.nvdb.tnits.generator.core.api.VegobjektId
 import no.vegvesen.nvdb.tnits.generator.core.api.VegobjekterRepository
 import no.vegvesen.nvdb.tnits.generator.core.extensions.*
 import no.vegvesen.nvdb.tnits.generator.core.model.*
@@ -45,25 +46,27 @@ class FeatureTransformer(
         }
     }
 
-    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changesById: Map<Long, ChangeType>, timestamp: Instant): Flow<TnitsFeature> = flow {
-        changesById.keys.forEachChunked(fetchSize) { ids ->
+    fun generateFeaturesUpdate(featureType: ExportedFeatureType, changedIds: Set<VegobjektId>, timestamp: Instant): Flow<TnitsFeature> = flow {
+        changedIds.forEachChunked(fetchSize) { ids ->
             val vegobjekterById = vegobjekterRepository.findVegobjekter(featureType.typeId, ids)
 
             val previousFeatures = exportedFeatureStore.getExportedFeatures(ids)
 
             log.info(
-                "Fant ${vegobjekterById.count {
-                    it.value != null
-                }} lagrede vegobjekter og ${previousFeatures.count()} tidligere eksporterte vegobjekter for $featureType",
+                "Fant ${
+                    vegobjekterById.count {
+                        it.value != null
+                    }
+                } lagrede vegobjekter og ${previousFeatures.count()} tidligere eksporterte vegobjekter for $featureType",
             )
 
             vegobjekterById.forEach { (id, vegobjekt) ->
                 try {
-                    val changeType = changesById[id]!!
                     val previous = previousFeatures[id]
 
-                    if (changeType == ChangeType.DELETED) {
+                    if (vegobjekt == null) {
                         if (previous != null) {
+                            // Vegobjekt fjernet
                             emit(
                                 previous.copy(
                                     updateType = UpdateType.Remove,
@@ -71,48 +74,51 @@ class FeatureTransformer(
                                 ),
                             )
                         } else {
+                            // Burde aldri skje
                             log.error(
-                                "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType.",
-                            )
-                        }
-                    } else if (vegobjekt == null) {
-                        log.error("Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i databasen! Kan ikke lage oppdatering for $changeType.")
-                    } else if (changeType == ChangeType.MODIFIED && vegobjekt.sluttdato != null) {
-                        if (previous != null) {
-                            emit(
-                                previous.copy(
-                                    updateType = UpdateType.Modify,
-                                    validTo = vegobjekt.sluttdato,
-                                ),
-                            )
-                        } else {
-                            log.error(
-                                "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for $changeType med sluttdato ${vegobjekt.sluttdato}.",
+                                "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for ${UpdateType.Remove}.",
                             )
                         }
                     } else {
-                        val propertyMapper = getPropertyMapper(featureType)
-                        val updateType = when (changeType) {
-                            ChangeType.NEW -> UpdateType.Add
-                            ChangeType.MODIFIED -> UpdateType.Modify
-                            else -> error("this should not happen")
-                        }
-                        val newFeature = processVegobjektToFeature(vegobjekt, propertyMapper, updateType)
-                        if (newFeature != null) {
-                            val isIdentical = previous != null && newFeature.hash == previous.hash
-                            if (!isIdentical) {
-                                emit(newFeature)
+                        if (vegobjekt.sluttdato != null) {
+                            // Vegobjekt lukket
+                            if (previous != null) {
+                                emit(
+                                    previous.copy(
+                                        updateType = UpdateType.Modify,
+                                        validTo = vegobjekt.sluttdato,
+                                    ),
+                                )
                             } else {
-                                log.debug("Skipping identical feature for vegobjekt $id")
+                                // Burde aldri skje
+                                log.error(
+                                    "Vegobjekt med id $id og type ${featureType.typeId} finnes ikke i tidligere eksporterte data! Kan ikke lage oppdatering for ${UpdateType.Modify} med sluttdato ${vegobjekt.sluttdato}.",
+                                )
                             }
-                        } else if (previous != null) {
-                            // Feature was valid before, but no longer. Emit as Removed.
-                            emit(
-                                previous.copy(
-                                    updateType = UpdateType.Remove,
-                                    validTo = timestamp.toLocalDateTime(OsloZone).date,
-                                ),
-                            )
+                        } else {
+                            // Nytt eller endret vegobjekt
+                            val updateType = if (previous == null) {
+                                UpdateType.Add
+                            } else {
+                                UpdateType.Modify
+                            }
+                            val newFeature = processVegobjektToFeature(vegobjekt, featureType, updateType)
+                            if (newFeature != null) {
+                                val isIdentical = previous != null && newFeature.hash == previous.hash
+                                if (!isIdentical) {
+                                    emit(newFeature)
+                                } else {
+                                    log.debug("Skipping identical feature for vegobjekt $id")
+                                }
+                            } else if (previous != null) {
+                                // Feature was valid before, but no longer. Emit as Removed.
+                                emit(
+                                    previous.copy(
+                                        updateType = UpdateType.Remove,
+                                        validTo = timestamp.toLocalDateTime(OsloZone).date,
+                                    ),
+                                )
+                            }
                         }
                     }
                 } catch (exception: Exception) {
@@ -207,8 +213,7 @@ class FeatureTransformer(
                 val idRanges = createIdRanges(ids)
 
                 // Process ranges in parallel - each worker fetches and processes its range
-                val getFeatureProperties = getPropertyMapper(featureType)
-                val features: List<TnitsFeature> = processIdRangesInParallel(featureType, idRanges, getFeatureProperties)
+                val features: List<TnitsFeature> = processIdRangesInParallel(featureType, idRanges)
 
                 count += features.size
                 features.sortedBy { it.id }.forEach { feature ->
@@ -242,30 +247,22 @@ class FeatureTransformer(
         }
     }
 
-    private suspend fun processIdRangesInParallel(
-        featureType: ExportedFeatureType,
-        idRanges: List<IdRange>,
-        getFeatureProperties: VegobjektPropertyMapper,
-    ): List<TnitsFeature> = coroutineScope {
+    private suspend fun processIdRangesInParallel(featureType: ExportedFeatureType, idRanges: List<IdRange>): List<TnitsFeature> = coroutineScope {
         idRanges
             .map { idRange ->
                 async {
-                    processIdRangeForSnapshot(featureType, idRange, getFeatureProperties)
+                    processIdRangeForSnapshot(featureType, idRange)
                 }
             }.awaitAll()
             .flatten()
     }
 
-    private fun processIdRangeForSnapshot(
-        featureType: ExportedFeatureType,
-        idRange: IdRange,
-        getFeatureProperties: VegobjektPropertyMapper,
-    ): List<TnitsFeature> = try {
+    private fun processIdRangeForSnapshot(featureType: ExportedFeatureType, idRange: IdRange): List<TnitsFeature> = try {
         val today = clock.todayIn(OsloZone)
 
         // Each worker fetches and processes its own data range directly
         val vegobjekter = vegobjekterRepository.findVegobjekter(featureType.typeId, idRange)
-            .filter { !it.fjernet && (it.sluttdato == null || it.sluttdato > today) }
+            .filter { it.isActive(today) }
 
         check(vegobjekter.size <= fetchSize) {
             "Fetched ${vegobjekter.size} items for range ${idRange.startId}-${idRange.endId}, which exceeds the fetch size of $fetchSize"
@@ -273,7 +270,7 @@ class FeatureTransformer(
 
         vegobjekter.mapNotNull { vegobjekt ->
             try {
-                processVegobjektToFeature(vegobjekt, getFeatureProperties, UpdateType.Snapshot)
+                processVegobjektToFeature(vegobjekt, featureType, UpdateType.Snapshot)
             } catch (e: Exception) {
                 log.warn("Error processing $featureType ${vegobjekt.id}: ${e.localizedMessage}")
                 null // Skip this item but continue processing others
@@ -284,8 +281,9 @@ class FeatureTransformer(
         emptyList() // Return empty list for this range but don't fail the entire process
     }
 
-    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, propertyMapper: VegobjektPropertyMapper, updateType: UpdateType): TnitsFeature? {
+    private fun processVegobjektToFeature(vegobjekt: Vegobjekt, featureType: ExportedFeatureType, updateType: UpdateType): TnitsFeature? {
         // Early return for invalid vegobjekter to avoid expensive operations
+        val propertyMapper = getPropertyMapper(featureType)
         val properties = propertyMapper.getFeatureProperties(vegobjekt)
         val type = ExportedFeatureType.from(vegobjekt.type)
 

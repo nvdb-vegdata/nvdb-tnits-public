@@ -6,22 +6,22 @@ import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.RemoveObjectsArgs
 import io.minio.messages.DeleteObject
-import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens
 import no.vegvesen.nvdb.apiles.uberiket.VeglenkesekvenserSide
 import no.vegvesen.nvdb.tnits.generator.core.extensions.today
-import no.vegvesen.nvdb.tnits.generator.core.model.convertToDomainVeglenker
+import no.vegvesen.nvdb.tnits.generator.core.model.Veglenkesekvens
+import no.vegvesen.nvdb.tnits.generator.core.model.Vegobjekt
 import no.vegvesen.nvdb.tnits.generator.core.model.toDomain
 import no.vegvesen.nvdb.tnits.generator.core.services.vegnett.CachedVegnett
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.RocksDbContext
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VeglenkerRocksDbStore
 import no.vegvesen.nvdb.tnits.generator.infrastructure.rocksdb.VegobjekterRocksDbStore
-import no.vegvesen.nvdb.tnits.generator.objectMapper
 import java.io.InputStream
 import java.nio.file.Files
 import kotlin.io.path.Path
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
 import kotlin.time.Clock
+import no.vegvesen.nvdb.apiles.uberiket.Veglenkesekvens as ApiVeglenkesekvens
 import no.vegvesen.nvdb.apiles.uberiket.Vegobjekt as ApiVegobjekt
 
 val clock = Clock.System
@@ -32,7 +32,7 @@ fun readJsonTestResources(): List<String> = Files.walk(Path("src/test/resources"
     it.isRegularFile() && it.name.endsWith(".json")
 }.map { it.fileName.toString() }.toList()
 
-fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVegobjekt>> {
+fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<Vegobjekt>> {
     val veglenkesekvenser =
         paths.filter { it.startsWith("veglenkesekvens") }.flatMap { path ->
             streamFile(path).use { inputStream ->
@@ -40,13 +40,13 @@ fun readTestData(vararg paths: String): Pair<List<Veglenkesekvens>, List<ApiVego
                 if (jsonNode.has("veglenkesekvenser")) {
                     objectMapper.treeToValue(jsonNode, VeglenkesekvenserSide::class.java).veglenkesekvenser
                 } else {
-                    listOf(objectMapper.treeToValue(jsonNode, Veglenkesekvens::class.java))
+                    listOf(objectMapper.treeToValue(jsonNode, ApiVeglenkesekvens::class.java))
                 }
             }
-        }
+        }.map { it.toDomain(clock.today()) }
 
     val vegobjekter = paths.filter { it.startsWith("vegobjekt") }.map { path ->
-        objectMapper.readApiVegobjekt(path)
+        objectMapper.readApiVegobjekt(path).toDomain()
     }
 
     return veglenkesekvenser to vegobjekter
@@ -57,13 +57,12 @@ fun setupCachedVegnett(dbContext: RocksDbContext, vararg paths: String): CachedV
 
     val veglenkerStore = VeglenkerRocksDbStore(dbContext, clock)
     for (veglenkesekvens in veglenkesekvenser) {
-        val veglenker = veglenkesekvens.convertToDomainVeglenker(clock.today())
-        veglenkerStore.upsert(veglenkesekvens.id, veglenker)
+        veglenkerStore.upsert(veglenkesekvens.veglenkesekvensId, veglenkesekvens.veglenker)
     }
 
     val vegobjekterStore = VegobjekterRocksDbStore(dbContext, clock)
     for (vegobjekt in vegobjekter) {
-        vegobjekterStore.insert(vegobjekt.toDomain())
+        vegobjekterStore.insert(vegobjekt)
     }
 
     return CachedVegnett(veglenkerStore, vegobjekterStore, clock)

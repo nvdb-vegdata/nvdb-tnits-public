@@ -5,6 +5,8 @@ import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addResourceOrFileSource
 import io.ktor.client.plugins.logging.*
 import no.vegvesen.nvdb.tnits.common.model.S3Config
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 data class AppConfig(
     val uberiketApi: UberiketApiConfig,
@@ -29,7 +31,7 @@ data class UberiketApiConfig(val baseUrl: String)
 
 data class DatakatalogApiConfig(val baseUrl: String)
 
-data class HttpConfig(val logLevel: LogLevel = LogLevel.NONE)
+data class HttpConfig(val logLevel: LogLevel = LogLevel.NONE, val initialRetry: Duration = 1.seconds)
 
 /**
  * Loads configuration from application.conf and environment variables.
