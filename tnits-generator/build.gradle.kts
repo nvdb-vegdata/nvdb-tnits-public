@@ -74,6 +74,7 @@ dependencies {
 
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("io.ktor:ktor-client-mock")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.0")
     testImplementation("io.kotest:kotest-runner-junit5:6.0.0")
     testImplementation("io.kotest:kotest-assertions-core:6.0.0")

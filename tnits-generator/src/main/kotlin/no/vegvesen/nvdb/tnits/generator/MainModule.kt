@@ -1,10 +1,12 @@
 package no.vegvesen.nvdb.tnits.generator
 
 import io.ktor.client.*
+import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
+import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.minio.MinioClient
 import jakarta.inject.Named
@@ -13,10 +15,7 @@ import no.vegvesen.nvdb.tnits.common.api.SharedKeyValueStore
 import no.vegvesen.nvdb.tnits.common.infrastructure.MinioGateway
 import no.vegvesen.nvdb.tnits.common.infrastructure.S3KeyValueStore
 import no.vegvesen.nvdb.tnits.common.model.S3Config
-import no.vegvesen.nvdb.tnits.generator.config.AppConfig
-import no.vegvesen.nvdb.tnits.generator.config.DatakatalogApiConfig
-import no.vegvesen.nvdb.tnits.generator.config.UberiketApiConfig
-import no.vegvesen.nvdb.tnits.generator.config.loadConfig
+import no.vegvesen.nvdb.tnits.generator.config.*
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
@@ -79,7 +78,7 @@ class MainModule {
 
     companion object {
         private fun createUberiketHttpClient(baseUrl: String, appConfig: AppConfig): HttpClient = HttpClient(CIO) {
-            commonConfig(appConfig)
+            commonConfig(appConfig.http)
             defaultRequest {
                 url(baseUrl)
                 headers.append("Accept", "application/json, application/x-ndjson")
@@ -88,7 +87,7 @@ class MainModule {
         }
 
         private fun createDatakatalogHttpClient(baseUrl: String, appConfig: AppConfig): HttpClient = HttpClient(CIO) {
-            commonConfig(appConfig)
+            commonConfig(appConfig.http)
             defaultRequest {
                 url(baseUrl)
                 headers.append("Accept", "application/json")
@@ -96,8 +95,8 @@ class MainModule {
             }
         }
 
-        private fun HttpClientConfig<*>.configureLogging(appConfig: AppConfig) {
-            val logLevel = appConfig.httpClient.logLevel
+        private fun HttpClientConfig<*>.configureLogging(httpConfig: HttpConfig) {
+            val logLevel = httpConfig.logLevel
             if (logLevel != LogLevel.NONE) {
                 install(Logging) {
                     level = logLevel
@@ -105,15 +104,15 @@ class MainModule {
             }
         }
 
-        private fun HttpClientConfig<CIOEngineConfig>.commonConfig(appConfig: AppConfig) {
+        internal fun <T : HttpClientEngineConfig> HttpClientConfig<T>.commonConfig(httpConfig: HttpConfig) {
             expectSuccess = true
             configureJackson()
-            configureLogging(appConfig)
+            configureLogging(httpConfig)
             configureRetry()
             configureTimeouts()
         }
 
-        private fun HttpClientConfig<CIOEngineConfig>.configureTimeouts() {
+        private fun <T : HttpClientEngineConfig> HttpClientConfig<T>.configureTimeouts() {
             install(HttpTimeout) {
                 requestTimeoutMillis = 60_000
                 connectTimeoutMillis = 10_000
@@ -121,10 +120,14 @@ class MainModule {
             }
         }
 
-        private fun HttpClientConfig<CIOEngineConfig>.configureRetry() {
+        private fun <T : HttpClientEngineConfig> HttpClientConfig<T>.configureRetry() {
             install(HttpRequestRetry) {
-                retryOnServerErrors(maxRetries = 5)
-                retryOnException(maxRetries = 5, retryOnTimeout = true)
+                maxRetries = 5
+                retryIf { _, response ->
+                    response.status.value in 500..599 || // 5xx server errors
+                        response.status == HttpStatusCode.TooManyRequests // 429 rate limiting
+                }
+                retryOnException(retryOnTimeout = true)
                 exponentialDelay(base = 2.0, maxDelayMs = 30_000)
 
                 modifyRequest { request ->
@@ -133,7 +136,7 @@ class MainModule {
             }
         }
 
-        private fun HttpClientConfig<CIOEngineConfig>.configureJackson() {
+        private fun <T : HttpClientEngineConfig> HttpClientConfig<T>.configureJackson() {
             install(ContentNegotiation) {
                 jackson {
                     initialize()

@@ -13,7 +13,7 @@ data class AppConfig(
     val exporter: ExporterConfig,
     val backup: BackupConfig,
     val rocksDb: RocksDbConfig,
-    val httpClient: HttpClientConfig = HttpClientConfig(),
+    val http: HttpConfig = HttpConfig(),
     val retention: RetentionConfig,
 )
 
@@ -29,7 +29,7 @@ data class UberiketApiConfig(val baseUrl: String)
 
 data class DatakatalogApiConfig(val baseUrl: String)
 
-data class HttpClientConfig(val logLevel: LogLevel = LogLevel.NONE)
+data class HttpConfig(val logLevel: LogLevel = LogLevel.NONE)
 
 /**
  * Loads configuration from application.conf and environment variables.
