@@ -31,7 +31,7 @@ class TnitsExportService(
         val changesById = dirtyCheckingRepository.getDirtyVegobjektChanges(featureType.typeId)
 
         if (changesById.isEmpty()) {
-            log.info("Ingen endringer siden forrige eksport, hopper over eksport")
+            log.info("Ingen endringer siden forrige eksport av $featureType, hopper over eksport")
         } else {
             log.info("Eksporterer ${changesById.size} endrede vegobjekter for TN-ITS $featureType...")
 

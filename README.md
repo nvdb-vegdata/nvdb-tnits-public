@@ -25,13 +25,9 @@ Detailed documentation can be found in [docs](docs):
 - Run `./gradlew tnits-generator:run` to start the generator. It will automatically perform backfill and generate a snapshot.
 - Run `./gradlew tnits-katalog:bootRun` to start a simple catalog service that serves files from MinIO.
 
-## TN-ITS Export Viewer
+## GitHub
 
-The `viewer.html` file provides a web-based viewer for exploring the exported TN-ITS data. When changes to `viewer.html` are pushed to the main branch on GitHub, a GitHub workflow automatically deploys it to GitHub Pages as `index.html`.
-
-View the live viewer at: https://nvdb-vegdata.github.io/nvdb-tnits-public/
-
-**Note:** The viewer must be pushed to GitHub (not the default SVV Bitbucket) to trigger the deployment workflow.
+The repo is maintained in SVV Bitbucket, but mirrored as a public repository to GitHub, as a reference project. This mirroring has to be done manually.
 
 Add GitHub as a remote:
 
@@ -72,7 +68,4 @@ For OpenLR, we make the following choices:
 
 - When closing a road feature, we set UpdateType to `Modify`, and `validTo` to the end date of the road feature's last version.
 - When removing/deleting a road feature, we show how the road feature looked before it was deleted, and we set UpdateType to `Remove`, and `validTo` to the date of the export itself.
-
-#### API Models vs Domain Models
-
-We use domain models for serialized storage and logic, otherwise API models are used directly to reduce boilerplate and mapping code.
+- If a road feature is no longer valid because of changes to attributes, it will be exported with UpdateType `Remove`.
