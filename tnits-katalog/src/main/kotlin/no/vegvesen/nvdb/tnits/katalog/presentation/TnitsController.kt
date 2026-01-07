@@ -32,7 +32,7 @@ class TnitsController(
     @GetMapping("/types")
     fun getExportedFeatureTypeCodes(): List<ExportedFeatureType> = ExportedFeatureType.entries
 
-    @Operation(description = "List available snapshots for a given road feature type.")
+    @Operation(description = "List available snapshots for a given road feature type. Snapshots are available for the last 2 months.")
     @GetMapping("/{type}/snapshots")
     fun getSnapshots(
         @PathVariable @Parameter(description = "Road feature type to list snapshots for, see /api/v1/tnits/types") type: ExportedFeatureType,
@@ -64,7 +64,7 @@ class TnitsController(
 
     private fun getDownloadUrl(objectName: String): String = "${appConfiguration.baseUrl}/api/v1/download?path=$objectName"
 
-    @Operation(description = "Get delta updates for a given road feature type after a specified timestamp.")
+    @Operation(description = "Get delta updates for a given road feature type after a specified timestamp. Updates are available for the last 180 days.")
     @GetMapping("/{type}/updates")
     fun getUpdatesFrom(
         @PathVariable @Parameter(description = "Road feature type, see /api/v1/tnits/types") type: ExportedFeatureType,
