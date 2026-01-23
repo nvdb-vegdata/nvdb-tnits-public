@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TN-ITS News</title>
+
+    <!-- Common styles -->
+    <link href="/common.css" rel="stylesheet" />
+
+    <style>
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px;
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 30px;
+      }
+
+      .sidebar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 24px;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+      }
+
+      .sidebar h2 {
+        color: #2d3748;
+        font-weight: 600;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #ff6900;
+      }
+
+      .updates-box {
+        padding: 24px;
+      }
+
+      .updates-box md-block {
+        display: block;
+        margin-bottom: 18px;
+      }
+
+      .updates-box md-block:not(:last-child) {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 18px;
+        margin-bottom: 24px;
+      }
+
+      .updates-box md-block h1,
+      .updates-box md-block h2,
+      .updates-box md-block h3,
+      .updates-box md-block h4,
+      .updates-box md-block h5,
+      .updates-box md-block h6 {
+        margin-top: 18px;
+      }
+
+      .updates-box ul,
+      .updates-box ol {
+        padding-left: 20px;
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      .type-code {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+      }
+
+      .main-content {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 32px;
+        min-height: 500px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #a0aec0;
+      }
+
+      @media (max-width: 1024px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          padding: 16px 20px;
+        }
+
+        .container {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 1.25rem;
+        }
+
+        .main-content {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <a class="logo" href="/">
+        <img alt="NVDB - Nasjonal vegdatabank" src="/nvdb_logo.svg" />
+      </a>
+      <nav aria-label="Main navigation" class="main-nav">
+        <a href="/">Home</a>
+        <a href="/api-docs.html">API Docs</a>
+        <a href="/browser.html">Browser</a>
+        <a href="/viewer.html">Viewer</a>
+        <a aria-current="page" href="/news.html">News</a>
+      </nav>
+    </div>
+
+    <div class="container">
+      <aside aria-label="Feature types navigation" class="sidebar">
+        <h2>News and announcements</h2>
+        <p>
+          TN-ITS news, application updates, and other relevant information will
+          be published here.
+        </p>
+      </aside>
+
+      <main class="main-content">
+        <!-- Remove empty-state div after first news entry is added-->
+        <div class="empty-state" id="empty-state">
+          <h3>News and announcements</h3>
+          <p>No news or announcements</p>
+        </div>
+        <!-- prettier-ignore -->
+
+        <!-- To add news, use <md-block> and markdown syntax, examples below. -->
+        <!-- <div class="updates-box">
+            <h1>Updates</h1>
+            <md-block>
+                ### (30.01.25) New release of TN-ITS Eksport API!
+                En oppdatering av TN-ITS Eksport API er nå lansert, med følgende forbedringer:
+                  - feat(#1): Forbedret ytelse ved store datamengder
+                  - feat(#2): Ny endepunkt for filtrering av data etter geografisk område
+                  - feat(#3): Oppdatert dokumentasjon med eksempler på bruk
+            </md-block>
+            <md-block>
+                ### Advarsel om nedetid
+                Advarsel om nedetid på grunn av vedlikehold. 
+            </md-block>
+            <md-block>
+                ### 2026-01-16
+
+                #### Endringer som påvirker eksisterende funksjonalitet (breaking changes)
+                * **NVDB-16319**: Fjernet feltet `målemetode` og `målemtodeHøyde` i geometriers kvalitet. Disse feltene er erstattet av `datafangstmetode` og `datafangstmetodeHøyde`
+                * **NVDB-16764**: Deaktivert uthenting av spesifikke sensitive egenskaper for alle
+
+                #### Ny funksjonalitet
+                * **NVDB-16728**: Gjør det mulig å finne noder basert på polygon
+                * **NVDB-16729**: Gør det mulig å filtrere noder basert på vegsystemreferanse
+                * **NVDB-16633**: Det er nå mulig å søke på vegobjekter med strekningreferanse
+            </md-block>
+            <md-block>
+                ### New Release of TN-ITS Export API
+                An update to the TN-ITS Export API has been released, featuring improvements in various areas.
+            </md-block>
+            <md-block>
+                ### Første lansering
+                TN-ITS Eksport API er nå lansert for offentlig bruk. Tjenesten tilbyr standardiserte eksport av norske vegnettdata i TN-ITS format for europeisk datautveksling.
+            </md-block>
+        </div> -->
+      </main>
+    </div>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+  </body>
+</html>

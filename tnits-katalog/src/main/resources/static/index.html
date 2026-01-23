@@ -5,6 +5,24 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>NVDB TN-ITS Export API</title>
     <link href="/index.css" rel="stylesheet" />
+
+    <style>
+      .update-box {
+        color: #4a5568;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+        padding: 24px;
+      }
+
+      .update-box ul,
+      .update-box ol {
+        padding-left: 16px;
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+    </style>
   </head>
   <body>
     <div class="header">
@@ -16,6 +34,7 @@
         <a href="/api-docs.html">API Docs</a>
         <a href="/browser.html">Browser</a>
         <a href="/viewer.html">Viewer</a>
+        <a href="/news.html">News</a>
       </nav>
     </div>
 
@@ -28,7 +47,7 @@
           data from
           <a
             class="accent-link"
-            href="https://nvdb.atlas.vegvesen.no/"
+            href="https://nvdb.no/"
             rel="noopener noreferrer"
             target="_blank">
             NVDB
@@ -57,6 +76,18 @@
         roads are part of the road network database but may still be under
         construction or pending official opening.
       </div>
+
+      <!-- When we have news: uncomment the next section and add your news in the md-block using markdown -->
+      <!-- What is already in the block is just an example of formatting. keep prettier-ignore as comment. -->
+      <!-- <h2 class="section-title">Latest news</h2> -->
+      <!-- <div class="update-box"> -->
+        <!-- prettier-ignore -->
+        <!-- <md-block>
+            * **(30.01.25):** New release TN-ITS Eksport API!
+            * **Downtime warning:** Due to planned maintenance the application will experience downtime on feb 30th. 
+        </md-block>
+        <a class="accent-link bold" href="/news.html">See all updates</a>
+      </div> -->
 
       <h2 class="section-title">Use Cases</h2>
       <div class="card-grid" style="margin-bottom: 60px">
@@ -230,5 +261,6 @@
         </p>
       </div>
     </div>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
   </body>
 </html>
