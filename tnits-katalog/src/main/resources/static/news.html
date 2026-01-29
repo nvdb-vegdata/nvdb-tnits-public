@@ -60,11 +60,15 @@
         margin-top: 18px;
       }
 
+      .updates-box p {
+        margin-bottom: 10px;
+      }
+
       .updates-box ul,
       .updates-box ol {
         padding-left: 20px;
         margin-top: 0;
-        margin-bottom: 0;
+        margin-bottom: 12px;
       }
 
       .type-code {
@@ -139,24 +143,33 @@
       </aside>
 
       <main class="main-content">
-        <!-- Remove empty-state div after first news entry is added-->
-        <div class="empty-state" id="empty-state">
-          <h3>News and announcements</h3>
-          <p>No news or announcements</p>
-        </div>
-        <!-- prettier-ignore -->
-
         <!-- To add news, use <md-block> and markdown syntax, examples below. -->
-        <!-- <div class="updates-box">
+        <!-- prettier-ignore -->
+        <div class="updates-box">
             <h1>Updates</h1>
             <md-block>
-                ### (30.01.25) New release of TN-ITS Eksport API!
-                En oppdatering av TN-ITS Eksport API er nå lansert, med følgende forbedringer:
-                  - feat(#1): Forbedret ytelse ved store datamengder
-                  - feat(#2): Ny endepunkt for filtrering av data etter geografisk område
-                  - feat(#3): Oppdatert dokumentasjon med eksempler på bruk
+                ### (January 2025) New Service launched: NVDB TN-ITS Export API
+
+                The Norwegian Public Road Administration (NPRA) has launched the NVDB TN-ITS Export API, a public service that provides continuous updates of road object changes from the National Road Database (NVDB).
+                
+                The service delivers daily incremental updates for four key datasets:
+                - speed limits
+                - road names
+                - road numbers
+                - height restrictions
+
+
+                This launch is an important step in Norway's implementation of the EU ITS Directive and the Real-Time Traffic Information Regulation (EU 2022/670). The service follows the European TN-ITS standard (CEN/TS 17268), ensuring that road and traffic data can be shared in a harmonized, reliable, and standardized manner across Europe.
+
+                **The API offers:**
+                - Daily updates and monthly snapshots
+                - A map viewer that visualizes road objects
+                - XML data in TN-ITS format via an open REST API, with no login required
+                
+                The service is open to everyone: [NVDB TN-ITS Export API](https://nvdb-tnits.atlas.vegvesen.no/)
+                Contact us: [tn-its@vegvesen.no](mailto:tn-its@vegvesen.no)
             </md-block>
-            <md-block>
+            <!-- <md-block>
                 ### Advarsel om nedetid
                 Advarsel om nedetid på grunn av vedlikehold. 
             </md-block>
@@ -179,8 +192,8 @@
             <md-block>
                 ### Første lansering
                 TN-ITS Eksport API er nå lansert for offentlig bruk. Tjenesten tilbyr standardiserte eksport av norske vegnettdata i TN-ITS format for europeisk datautveksling.
-            </md-block>
-        </div> -->
+            </md-block> -->
+        </div>
       </main>
     </div>
     <script type="module" src="https://md-block.verou.me/md-block.js"></script>
