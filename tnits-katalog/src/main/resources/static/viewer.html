@@ -106,12 +106,58 @@
     <script>
       // Initialize the Leaflet map
       const map = L.map('map')
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+      // Add Kartverket topo tiles
+      const KartverketLayer = L.TileLayer.extend({
+        getTileUrl: function (coords) {
+          const z = String(coords.z).padStart(2, '0')
+          return (
+            'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/' +
+            z +
+            '/' +
+            coords.y +
+            '/' +
+            coords.x +
+            '.png'
+          )
+        },
+      })
+      new KartverketLayer(null, {
+        attribution:
+          '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+        maxZoom: 18,
       }).addTo(map)
       // Set a default view over Norway (approximate center)
-      map.setView([65.0, 15.0], 4)
+      map.setView([65.0, 15.0], 5)
+      const canvasRenderer = L.canvas({ padding: 0.5, tolerance: 8 })
+      const outlineWeight = 7
+      const defaultStyle = { color: 'black', weight: 4, opacity: 0.8 }
+      const defaultOutlineStyle = {
+        color: 'white',
+        weight: outlineWeight,
+        opacity: 1,
+      }
+      const selectedStyle = { color: 'red', weight: 5, opacity: 1 }
+      const selectedOutlineStyle = {
+        color: 'darkred',
+        weight: outlineWeight,
+        opacity: 1,
+      }
+      let selectedPolyline = null
+      map.on('popupopen', function (e) {
+        const layer = e.popup._source
+        if (layer instanceof L.Polyline && layer._outline) {
+          selectedPolyline = layer
+          layer._outline.setStyle(selectedOutlineStyle)
+          layer.setStyle(selectedStyle)
+        }
+      })
+      map.on('popupclose', function () {
+        if (selectedPolyline) {
+          selectedPolyline._outline.setStyle(defaultOutlineStyle)
+          selectedPolyline.setStyle(defaultStyle)
+          selectedPolyline = null
+        }
+      })
 
       // Global configuration
       let appConfig = null
@@ -536,16 +582,22 @@
               }
             }
             if (latLngs.length > 0) {
-              const polyline = L.polyline(latLngs, {
-                color: '#3b82f6',
-                weight: 4,
-                opacity: 0.8,
+              const outline = L.polyline(latLngs, {
+                ...defaultOutlineStyle,
+                renderer: canvasRenderer,
+                interactive: false,
               })
+              const polyline = L.polyline(latLngs, {
+                ...defaultStyle,
+                renderer: canvasRenderer,
+              })
+              polyline._outline = outline
               if (popupContent !== '') {
                 polyline.bindPopup(popupContent, {
                   maxWidth: 400,
                 })
               }
+              polylines.push(outline)
               polylines.push(polyline)
 
               // Store in feature index if we have a vegobjekt ID
