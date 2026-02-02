@@ -23,7 +23,9 @@ Detailed documentation can be found in [docs](docs):
 - Run `./gradlew installGitHooks` to install pre-commit hook that runs formatting before commits.
 - Run `docker compose up -d` to start MinIO.
 - Run `./gradlew tnits-generator:run` to start the generator. It will automatically perform backfill and generate a snapshot.
-- Run `./gradlew tnits-katalog:bootRun` to start a simple catalog service that serves files from MinIO.
+- Run `./gradlew tnits-katalog:bootRun` to start the catalog service (REST API + embedded frontend) that serves exports from MinIO.
+    - UI: http://127.0.0.1:8999/ (links to browser, viewer and API docs)
+    - Frontend sources live in `tnits-katalog/src/main/resources/static/` (no build step). After editing `.html`/`.js`/`.css`, run `bunx prettier --write tnits-katalog`.
 
 ## GitHub
 

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Kotlin CLI application for synchronizing road network data from the Norwegian Road Database (NVDB) and exporting it in TN-ITS format. The application uses clean architecture principles with RocksDB for storage and Koin for dependency injection.
 
+The repository also contains `tnits-katalog`, a Spring Boot service that exposes the exports via REST API and serves an embedded static frontend (landing page, dataset browser, and map viewer).
+
 **For comprehensive documentation, see:**
 
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design and structure
@@ -88,6 +90,14 @@ See [Testing Guide](docs/TESTING.md) for comprehensive testing documentation.
 ./gradlew ktlintFormat       # Format code automatically
 ./gradlew installGitHooks    # Install pre-commit hook
 ```
+
+### tnits-katalog Frontend
+
+The tnits-katalog UI is served directly from Spring Boot static assets (no JS build step):
+
+- Sources: `tnits-katalog/src/main/resources/static/`
+- Local URL (when running `./gradlew :tnits-katalog:bootRun`): http://127.0.0.1:8999/
+- After editing `.html`/`.js`/`.css`, run: `bunx prettier --write tnits-katalog`
 
 ### API Model Generation
 
