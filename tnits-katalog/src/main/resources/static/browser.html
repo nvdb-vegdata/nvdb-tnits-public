@@ -131,15 +131,56 @@
         font-weight: 600;
       }
 
-      .date-filter {
+      .updates-controls {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
+        justify-content: space-between;
         gap: 12px;
       }
 
-      .date-filter label {
+      .preset-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .preset-filter-btn {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #374151;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .preset-filter-btn:hover {
+        background: #f9fafb;
+      }
+
+      .preset-filter-btn.active {
+        border-color: #ff6900;
+        background: #fff5f0;
+        color: #9a3412;
+        font-weight: 600;
+      }
+
+      .filter-status {
+        margin-top: -8px;
         font-size: 0.9rem;
-        color: #718096;
+        color: #4b5563;
+      }
+
+      .inline-link-btn {
+        border: none;
+        padding: 0;
+        margin-left: 6px;
+        background: none;
+        color: #ff6900;
+        cursor: pointer;
+        text-decoration: underline;
+        font: inherit;
       }
 
       table {
@@ -319,7 +360,7 @@
               </caption>
               <thead>
                 <tr>
-                  <th data-column="timestamp" data-sort="desc" data-sortable>
+                  <th data-column="timestamp" data-sort="asc" data-sortable>
                     Timestamp
                   </th>
                   <th data-column="size" data-sortable>Size</th>
@@ -337,14 +378,27 @@
           <section aria-live="polite" class="section">
             <div class="section-header">
               <h3>Updates</h3>
-              <div class="date-filter">
-                <label for="updates-from">From:</label>
-                <input
-                  aria-label="Filter updates from date"
-                  id="updates-from"
-                  type="date" />
+              <div class="updates-controls">
+                <div
+                  aria-label="Quick filters for updates"
+                  class="preset-filters"
+                  role="group">
+                  <button
+                    class="preset-filter-btn"
+                    data-updates-filter="last_30_days"
+                    type="button">
+                    Last 30 days
+                  </button>
+                  <button
+                    class="preset-filter-btn"
+                    data-updates-filter="all_available"
+                    type="button">
+                    All
+                  </button>
+                </div>
               </div>
             </div>
+            <p class="filter-status" id="updates-filter-status"></p>
             <table>
               <caption class="sr-only">
                 Available update datasets with timestamp, file size, and
@@ -352,7 +406,7 @@
               </caption>
               <thead>
                 <tr>
-                  <th data-column="timestamp" data-sort="desc" data-sortable>
+                  <th data-column="timestamp" data-sort="asc" data-sortable>
                     Timestamp
                   </th>
                   <th data-column="size" data-sortable>Size</th>

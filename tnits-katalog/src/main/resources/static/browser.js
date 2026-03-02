@@ -1,21 +1,23 @@
 import { formatFileSize, formatTimestamp } from './utils.js'
 
+const UPDATE_FILTER = Object.freeze({
+  LAST_30_DAYS: 'last_30_days',
+  ALL_AVAILABLE: 'all_available',
+})
+
 let selectedType = null
 let snapshotsData = []
 let updatesData = []
+let updatesFilter = {
+  mode: UPDATE_FILTER.LAST_30_DAYS,
+  from: getDaysAgoDate(30),
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   void loadFeatureTypes()
-
-  document
-    .getElementById('updates-from')
-    ?.addEventListener('change', (event) => {
-      if (selectedType) {
-        void loadUpdates(selectedType, event.target.value)
-      }
-    })
-
+  setupUpdatesFilterControls()
   setupTableSorting()
+  updateUpdatesFilterStatus()
 })
 
 async function loadFeatureTypes() {
@@ -49,6 +51,7 @@ window.selectFeatureType = function (type) {
   document.querySelector(`[data-type="${type}"]`)?.classList.add('active')
 
   document.getElementById('dataset-details').classList.remove('hidden')
+  updateUpdatesFilterStatus()
 
   void loadSnapshots(type)
   void loadUpdates(type)
@@ -71,18 +74,19 @@ async function loadSnapshots(type) {
     }
   } catch (error) {
     console.error('Failed to load snapshots:', error)
+    storeTableData([], true)
     container.innerHTML =
       '<tr><td colspan="3" class="empty">No snapshots available</td></tr>'
   }
 }
 
-async function loadUpdates(type, from = null) {
+async function loadUpdates(type) {
   const container = document.getElementById('updates-table')
   container.innerHTML =
     '<tr><td colspan="3" class="loading">Loading updates...</td></tr>'
 
-  const fromParam = from || document.getElementById('updates-from')?.value || ''
-  const url = `/api/v1/tnits/${type}/updates${fromParam ? `?from=${fromParam}` : ''}`
+  const fromParam = getActiveFromParam()
+  const url = `/api/v1/tnits/${type}/updates${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
 
   try {
     const response = await fetch(url)
@@ -91,11 +95,11 @@ async function loadUpdates(type, from = null) {
     if (data.updates && data.updates.length > 0) {
       renderUpdates(data.updates, container)
     } else {
-      container.innerHTML =
-        '<tr><td colspan="3" class="empty">No updates available for this period</td></tr>'
+      renderUpdatesEmptyState(container)
     }
   } catch (error) {
     console.error('Failed to load updates:', error)
+    storeTableData([], false)
     container.innerHTML =
       '<tr><td colspan="3" class="error">Failed to load updates</td></tr>'
   }
@@ -133,6 +137,32 @@ function renderUpdates(updates, container) {
   formatTableData(container)
 }
 
+function renderUpdatesEmptyState(container) {
+  storeTableData([], false)
+  const filterText =
+    updatesFilter.mode === UPDATE_FILTER.ALL_AVAILABLE
+      ? 'No updates available'
+      : 'No updates available for the last 30 days'
+
+  const action =
+    updatesFilter.mode === UPDATE_FILTER.ALL_AVAILABLE
+      ? ''
+      : '<button class="inline-link-btn" id="updates-empty-show-all" type="button">Show all</button>'
+
+  container.innerHTML = `<tr><td colspan="3" class="empty">${filterText}${action}</td></tr>`
+
+  if (updatesFilter.mode !== UPDATE_FILTER.ALL_AVAILABLE) {
+    document
+      .getElementById('updates-empty-show-all')
+      ?.addEventListener('click', () => {
+        applyUpdatesFilter(UPDATE_FILTER.ALL_AVAILABLE)
+        if (selectedType) {
+          void loadUpdates(selectedType)
+        }
+      })
+  }
+}
+
 function formatTableData(table) {
   table.querySelectorAll('[data-timestamp]').forEach((cell) => {
     cell.textContent = formatTimestamp(cell.dataset.timestamp)
@@ -141,6 +171,65 @@ function formatTableData(table) {
   table.querySelectorAll('[data-size]').forEach((cell) => {
     cell.textContent = formatFileSize(parseInt(cell.dataset.size))
   })
+}
+
+function setupUpdatesFilterControls() {
+  document.querySelectorAll('[data-updates-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      applyUpdatesFilter(button.dataset.updatesFilter)
+      if (selectedType) {
+        void loadUpdates(selectedType)
+      }
+    })
+  })
+
+  applyUpdatesFilter(UPDATE_FILTER.LAST_30_DAYS)
+}
+
+function applyUpdatesFilter(mode) {
+  if (mode === UPDATE_FILTER.ALL_AVAILABLE) {
+    updatesFilter = { mode, from: null }
+  } else {
+    updatesFilter = {
+      mode: UPDATE_FILTER.LAST_30_DAYS,
+      from: getDaysAgoDate(30),
+    }
+  }
+
+  updateFilterPresetButtons()
+  updateUpdatesFilterStatus()
+}
+
+function updateFilterPresetButtons() {
+  document.querySelectorAll('[data-updates-filter]').forEach((button) => {
+    button.classList.toggle(
+      'active',
+      button.dataset.updatesFilter === updatesFilter.mode,
+    )
+  })
+}
+
+function updateUpdatesFilterStatus() {
+  const statusElement = document.getElementById('updates-filter-status')
+  if (!statusElement) return
+
+  const retentionInfo = ' Updates are retained for 180 days.'
+  statusElement.textContent =
+    updatesFilter.mode === UPDATE_FILTER.ALL_AVAILABLE
+      ? `Showing all available updates.${retentionInfo}`
+      : `Showing updates from the last 30 days.${retentionInfo}`
+}
+
+function getActiveFromParam() {
+  return updatesFilter.mode === UPDATE_FILTER.ALL_AVAILABLE
+    ? ''
+    : updatesFilter.from || ''
+}
+
+function getDaysAgoDate(days) {
+  const now = new Date()
+  now.setUTCDate(now.getUTCDate() - days)
+  return now.toISOString().slice(0, 10)
 }
 
 function setupTableSorting() {
@@ -170,8 +259,8 @@ function setupTableSorting() {
         return sortDir === 'asc' ? aVal - bVal : bVal - aVal
       })
 
-      table.querySelectorAll('th[data-sortable]').forEach((h) => {
-        h.removeAttribute('data-sort')
+      table.querySelectorAll('th[data-sortable]').forEach((sortableHeader) => {
+        sortableHeader.removeAttribute('data-sort')
       })
       header.dataset.sort = sortDir
 

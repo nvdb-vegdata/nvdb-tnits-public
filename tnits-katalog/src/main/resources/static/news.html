@@ -148,6 +148,15 @@
         <div class="updates-box">
             <h1>Updates</h1>
             <md-block>
+                ### (March 2026) Changelog: Updates API and Browser improvements
+
+                We have made a few improvements to the updates endpoint and browser experience:
+
+                - **Default updates result:** `GET /api/v1/tnits/{type}/updates` without `from` now returns all available updates (within the 180-day retention window).
+                - **Sorting:** Snapshot and update lists are now returned in ascending timestamp order (oldest to newest).
+                - **Browser filters:** The updates browser now has two quick filters: **Last 30 days** and **All**.
+            </md-block>
+            <md-block>
                 ### (January 2026) New Service launched: NVDB TN-ITS Export API
 
                 The Norwegian Public Road Administration (NPRA) has launched the NVDB TN-ITS Export API, a public service that provides continuous updates of road object changes from the National Road Database (NVDB).

@@ -60,7 +60,15 @@ GET /api/v1/tnits/SpeedLimit/updates?from=2025-10-20T04:23:14Z
 }
 ```
 
-Download and apply each update from the `updates[]` array in timestamp order. Keep following the `newUpdates` link to stay synchronized—it automatically advances to the latest timestamp.
+If you omit `from`, the endpoint returns all available updates for that feature type (up to 180 days retention):
+```
+GET /api/v1/tnits/SpeedLimit/updates
+```
+
+When `from` is given as a date without time (for example `2025-02-01`), it is interpreted as midnight in `Europe/Oslo`.
+Full ISO timestamps are accepted with either `Z` or explicit offsets (for example `2025-02-01T00:00:00+01:00`).
+
+List endpoints return data in ascending timestamp order (oldest to newest). Download and apply each update from the `updates[]` array in order. Keep following the `newUpdates` link to stay synchronized—it automatically advances to the latest timestamp.
 
 **Navigation Links (HATEOAS):** The API provides hypermedia links (`newUpdates`) for navigation. Simply follow the links in responses rather than constructing URLs manually.
 
